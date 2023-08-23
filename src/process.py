@@ -25,7 +25,7 @@ from matplotlib.widgets  import RectangleSelector
 from functools import cmp_to_key
 import configparser
 
-def read_configuration(file_path : str, structure : str):
+def read_configuration(structure_file : str, structure : str):
 	"""! import a specified structure from a configuration file
 	
 	@param file_path    path to the file to use for configurations
@@ -34,7 +34,7 @@ def read_configuration(file_path : str, structure : str):
 	@result atoms, radii, repeat_x, repeat_y, repeat_z  the atom symbols, radii to use for the atoms, repetition in x-axis, repetition in y-axis, repetition in z-axis
 	"""
 	config = configparser.ConfigParser() 
-	structures = config.read(file_path)
+	config.read(structure_file)
 	atoms = [str(a).strip() for a in config.get(structure, "ATOMS").split(",")]
 	radii = [float (r) for r in config.get(structure, "RADII").split(",")]
 	print("Proceeding with the following:")
@@ -49,7 +49,7 @@ def read_configuration(file_path : str, structure : str):
 	print("repeating in z-axis: {}".format(repeat_z))
 	return atoms, radii, repeat_x, repeat_y, repeat_z
 
-def read_sample(file_path : str, sample_range : str):
+def read_sample(structure_file : str, sample_range : str):
 	"""! import a specified sample range from a configuration file
 	
 	@param file_path    path to the file to use for configurations
@@ -58,13 +58,13 @@ def read_sample(file_path : str, sample_range : str):
 	@result sample_start, sample_end, sample_step  first sample, last sample, step between each one
 	"""
 	config = configparser.ConfigParser() 
-	structures = config.read(file_path)
+	structures = config.read(structure_file)
 	sample_start = int(config.get(sample_range, "START"))
 	sample_end = int(config.get(sample_range, "END"))
 	sample_step = int(config.get(sample_range, "STEP"))
 	return sample_start, sample_end, sample_step
 
-def read_kernel_image_cokernel(file_path : str, setting_name : str):
+def read_kernel_image_cokernel(structure_file : str, setting_name : str):
 	"""! import settings for kernel/image/cokernel 
 	@param file_path	path to the ini file containing the settings
 	@param settings_name	name of the settings to use
@@ -72,7 +72,7 @@ def read_kernel_image_cokernel(file_path : str, setting_name : str):
 	@result
 	"""
 	config = configparser.ConfigParser() 
-	settings = config.read(file_path)
+	settings = config.read(structure_file)
 	kernel = False
 	image = False
 	cokernel = False
@@ -115,6 +115,15 @@ def sample_at(xyz, sample_time, repeat_x : int, repeat_y : int, repeat_z : int, 
 	cell = xyz[sample_time].get_cell()
 	data = numpy.column_stack([xyz[sample_time].get_chemical_symbols(), coord])
 	dfpoints = pandas.DataFrame(data, columns=["Atom", "x", "y", "z"])
+	atoms_found = dfpoints["Atom"].unique()
+	remove = []
+	print(atom_list)
+	for a in atoms_found:
+		if a not in atom_list:
+			remove.append([a])
+			print("We are going to remove the following atom types:", a)
+	if len(remove) != 0:
+		dfpoints = dfpoints[dfpoints["Atom"].isin(atom_list)]
 	conditions = [(dfpoints["Atom"]==atom_list[i]) for i in range(len(atom_list))]
 	choice_weights = [radius_list[i]**2 for i in range(len(radius_list))]
 	dfpoints["w"] = numpy.select(conditions, choice_weights)
@@ -133,7 +142,7 @@ def persistent_homology_filt_dionysus(simplices):
 	m = dionysus.homology_persistence(filt, progress = True)
 	return filt, m
 
-def _diagrams_dionysus(filt, m):
+def extract_diagrams_dionysus(filt, m):
 	return dionysus.init_diagrams(m, filt)
 	
 def get_birth_death(dionysus_diagrams):    

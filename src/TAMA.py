@@ -1,5 +1,15 @@
 #!python3
 ##
+# @mainpage Topological Amorphous Material Analysis (AMA)
+# @authors Yossi Bokor Bleile
+# @version 0.1
+# @date April 2023
+# @copyright if CGAL still used, GPL
+#
+# @section description_main Description
+# Topological Amorphous Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
+# generating source code doca#!/usr/bin/python3
+##
 # @mainpage Amorphous Material Analysis (AMA)
 # @authors Yossi Bokor Bleile
 # @version 0.1
@@ -7,7 +17,7 @@
 # @copyright if CGAL still used, GPL
 #
 # @section description_main Description
-# Amorphouse Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
+# Topological Amorphous Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
 # generating source code documentation with Doxygen.
 #
 # @section arg_parser Argument Parser for Amorphous Material Analysis
@@ -15,7 +25,7 @@
 # -# Graphical User Interface (default)
 # -# Command Line Interface
 #    
-# both of which have several different modes:
+# both of which have several different modes:a
 # -# single (default)
 # -# multi
 # -# batch
@@ -71,23 +81,22 @@ elif args.mode == "m" and args.interface == "g":
 elif args.mode == "b" and args.interface == "g":
     from gui import batch_mode as mode
     mode()
-elif args.mode == "s" and args.kernel == "" and args.interface == "c":
+elif args.mode == "s" and args.kernel == None and args.interface == "c":
     from cli import single_mode as mode
-    mode(args.file, args.types, args.format, args.structure, args.sample_time)
-elif args.mode == "s" and args.kernel != "" and args.interface == "c":
+    mode(args.file, args.format, args.types, args.structure,  args.sample_time)
+elif args.mode == "s" and args.kernel != None and args.interface == "c":
 	from cli import single_mode_kernel as mode
 	mode(args.file, args.types, args.format, args.structure, args.sample_time, args.kernel)
-elif args.mode == "m" and args.kernel == "" and args.interface == "c":
+elif args.mode == "m" and args.kernel == None and args.interface == "c":
     from cli import multi_mode as mode
     mode(args.file, args.types, args.format, args.structure, args.range, save_all=args.save_all)
-elif args.mode == "m" and args.kernel != "" and args.interface == "c":
+elif args.mode == "m" and args.kernel != None and args.interface == "c":
     from cli import multi_mod_kernel as mode
     mode(args.file, args.types, args.format, args.structure, args.range, args.kernel, save_all=args.save_all)
-elif args.mode == "b" and args.kernel == "" and args.interface == "c":
+elif args.mode == "b" and args.kernel == None and args.interface == "c":
     from cli import batch_mode as mode 
     mode(args.directory, args.extension, args.format, args.types, args.structure, args.range, save_all=args.save_all)
-elif args.mode == "b" and args.kernel != "" and args.interface == "c":
+elif args.mode == "b" and args.kernel != None and args.interface == "c":
 	from cli import batch_mode_kernel as mode
 	mode(args.directory, args.extension, args.format, args.types, args.structure, args.range, args.kernel, save_all=args.save_all)
-
 

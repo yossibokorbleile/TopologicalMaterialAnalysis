@@ -52,10 +52,10 @@ def single_mode():
 				repeat_z = int(values_main["repeat_z"])
 			if (loaded == False):
 				file_path = values_main['file_path']
-				atoms = load_atom_file(file_path, values_main["file_format"])
+				points = load_atom_file(file_path, values_main["file_format"])
 				loaded= True
 			s = int(values_main["sample_at"])
-			points = sample_at(xyz, s, repeat_x, repeat_y, repeat_z, atoms, radii)
+			points = sample_at(points, s, repeat_x, repeat_y, repeat_z, atoms, radii)
 			simplices = weighted_alpha_diode(points)
 			filt, m =  persistent_homology_filt_dionysus(simplices)
 			dgms = extract_diagrams_dionysus(filt, m)

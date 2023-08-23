@@ -22,7 +22,7 @@ def batch_mode(parent_dir : str, file_ext : str, format : str, structure_file : 
 	@param sample_range		specific sample settings to use, should be listed in the structure file	
 	"""
 	
-	atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
+	atom_list, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
 	births_1 = []
 	deaths_1 = []
 	births_2 = []
@@ -77,7 +77,7 @@ def batch_mode(parent_dir : str, file_ext : str, format : str, structure_file : 
 		APFs_2 = []
 		for s in sample_every:
 			print("looking at sample {}".format(s))
-			points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atoms, radii)
+			points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atom_list, radii)
 			dgms = persistent_homology_diagrams_from_points_dionysus(points)
 			births_s, deaths_s = get_birth_death(dgms)
 			APF_1 = calculate_APF(births_s[1], deaths_s[1])
@@ -128,7 +128,7 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 	@param sample_range		specific sample settings to use, should be listed in the structure file	
 	"""
 	import oineus
-	atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
+	atom_list, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
 	births_1 = []
 	deaths_1 = []
 	births_2 = []
@@ -183,7 +183,7 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 		APFs_2 = []
 		for s in sample_every:
 			print("looking at sample {}".format(s))
-			points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atoms, radii)
+			points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atom_list, radii)
 			dgms = persistent_homology_diagrams_from_points_dionysus(points)
 			births_s, deaths_s = get_birth_death(dgms)
 			APF_1 = calculate_APF(births_s[1], deaths_s[1])
@@ -369,7 +369,7 @@ def multi_mode(config_file : str, structure_file : str, format : str, structure 
 	@param sample_range		specific sample settings to use, should be listed in the structure file
 	@param save_all		boolean to save images for each sample
  	"""
-	atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
+	atom_list, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
 	births_1 = []
 	deaths_1 = []
 	births_2 = []
@@ -397,7 +397,7 @@ def multi_mode(config_file : str, structure_file : str, format : str, structure 
 	config_name = os.path.splitext(os.path.split(config_file)[1])[0]
 	for s in sample_every:
 		print("looking at sample {}".format(s))
-		points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atoms, radii)
+		points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atom_list, radii)
 		dgms = persistent_homology_diagrams_from_points_dionysus(points)
 		births_s, deaths_s = get_birth_death(dgms)
 		APF_1 = calculate_APF(births_s[1], deaths_s[1])
@@ -440,7 +440,7 @@ def multi_mode(config_file : str, structure_file : str, format : str, structure 
 	
  
  
-def single_mode(config_file : str, structure_file : str, structure : str, sample_time : int):
+def single_mode(config_file : str, format : str, structure_file : str, structure : str, sample_time : int):
 	"""! single mode for CLI usage. 
 	
 	@param config_file	intial configuration file
@@ -448,7 +448,8 @@ def single_mode(config_file : str, structure_file : str, structure : str, sample
 	@param structure 	specific structure to load from the configuration file
 	@param sample_time	time at which to sample	
 	"""
-	atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
+	print("Hi", structure_file)
+	atom_list, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
 	births_1 = []
 	deaths_1 = []
 	births_2 = []
@@ -461,7 +462,7 @@ def single_mode(config_file : str, structure_file : str, structure : str, sample
 	deaths_2 = []
 	APFs_1 = []
 	APFs_2 = []	
-	atoms = load_atom_file(config_file)
+	atoms = load_atom_file(config_file, format)
 	dir = os.path.dirname(config_file)
 	if not os.path.exists(os.path.join(dir, "PD1")):
 		os.mkdir(os.path.join(dir, "PD1"))
@@ -473,7 +474,7 @@ def single_mode(config_file : str, structure_file : str, structure : str, sample
 		os.mkdir(os.path.join(dir, "APF2"))
 	config_name = os.path.splitext(os.path.split(config_file)[1])[0]
 	print("looking at sample {}".format(sample_time))
-	points = sample_at(atoms, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
+	points = sample_at(atoms, sample_time, repeat_x, repeat_y, repeat_z, atom_list, radii)
 	dgms = persistent_homology_diagrams_from_points_dionysus(points)
 	births_s, deaths_s = get_birth_death(dgms)
 	APF_1 = calculate_APF(births_s[1], deaths_s[1])
@@ -505,7 +506,7 @@ def single_mode_kernel(config_file : str, format : str, structure_file : str, st
 	@param kernel 		set to true if you want to do any kernel/image/cokernel persistence, (Default = False)
 	"""
 	import oineus
-	atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
+	atom_list, radii, repeat_x, repeat_y, repeat_z = read_configuration(structure_file, structure)
 	births_1 = []
 	deaths_1 = []
 	births_2 = []
@@ -530,8 +531,7 @@ def single_mode_kernel(config_file : str, format : str, structure_file : str, st
 		os.mkdir(os.path.join(dir, "APF2"))
 	config_name = os.path.splitext(os.path.split(config_file)[1])[0]
 	print("looking at sample {}".format(s))
-	points = sample_at(atoms, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
-	dgms = persistent_homology_diagrams_from_points_dionysus(points)
+	points = sample_at(atoms, sample_time, repeat_x, repeat_y, repeat_z, atom_list, radii)
 	births_s, deaths_s = get_birth_death(dgms)
 	APF_1 = calculate_APF(births_s[1], deaths_s[1])
 	APF_2 = calculate_APF(births_s[2], deaths_s[2])
