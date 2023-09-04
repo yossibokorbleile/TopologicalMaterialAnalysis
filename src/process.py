@@ -137,7 +137,7 @@ def sample_at(xyz, sample_time, repeat_x : int, repeat_y : int, repeat_z : int, 
 def weighted_alpha_diode(points):
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
-def persistent_homology_filt_dionysus(simplices, dim):
+def persistent_homology_filt_dionysus(simplices):
 	restricted_simps = []
 	for s in simplices:
 		if len(s[0]) <= 4:
