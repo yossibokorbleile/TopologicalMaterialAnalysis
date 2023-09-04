@@ -196,7 +196,8 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 			APFs_2.append(APF_2)
 			params = oineus.ReductionParams()
 			params.n_threads, params.kernel, params.image, params.cokernel, params.verbose = read_kernel_image_cokernel(structure_file, kernel_settings)
-			sub = sub_complex(points, math.floor(max(points["z"])), math.ceil(min(points["z"])))
+			spread = math.floor(max(points["z"]))-math.ceil(mi(points["z"]))
+			sub = sub_complex(points, math.floor(max(points["z"]))-0.05*spread, math.ceil(min(points["z"]))+0.05*spread)
 			K, L, L_to_K = oineus_pair(points, sub)
 			kicr = oineus.compute_kernel_image_cokernel_reduction(K, L, L_to_K, params)
 			if params.kernel:
