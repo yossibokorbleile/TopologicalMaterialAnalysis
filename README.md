@@ -1,4 +1,4 @@
-# Amorphous Material Analysis
+# Topological Amorphous Material Analysis
 
 Quick overview: there is a python script Rasmus provided a while ago which does the persistent homology of the ZIF structures. This GUI is meant to first implement this script, and then add certain functionalities. Currently, you need the following Python packages to be installed:
 * PySimpleGUI
@@ -20,16 +20,16 @@ The GUI currently has two modes: `-s` for looking at a single configureation at 
 ## Running the GUI:
 Once you have all the packages installed and are in your python environment of choice, navigate to the GUI directory, and from a terminal (on Mac/Linux) or Command prompt(?) (Windows), run 
 ```python
-src/AMA.py -m s
+src/TAMA.py -m s
 ```
 for single sample mode or 
 
 ```python
-src/AMA.py -m m
+src/TAMA.py -m m
 ```
 for multisample mode or 
 ```python
-src/AMA.py -m b
+src/TAMA.py -m b
 ```
 for batch mode.	
 Using the GUI should be pretyy self-explanatory from here, but I can write more things if you would like.
