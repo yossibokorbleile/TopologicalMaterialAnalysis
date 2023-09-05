@@ -138,7 +138,11 @@ def weighted_alpha_diode(points):
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
 def persistent_homology_filt_dionysus(simplices):
-	filt = dionysus.Filtration(simplices)
+	restricted_simps = []
+	for s in simplices:
+		if len(s[0]) <= 4:
+			restricted_simps.append(s)
+	filt = dionysus.Filtration(restricted_simps)
 	m = dionysus.homology_persistence(filt, progress = True)
 	return filt, m
 

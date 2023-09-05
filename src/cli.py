@@ -145,25 +145,8 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 	print("Have found the following configuration files:")
 	for f in config_files:
 		print(f)
-	#if rank == 0:
-	#	data = numpy.arange(0,len(config_files),1)
-	#	print(data)
-	#	# determine the size of each sub-task
-	#	ave, res = divmod(len(config_files), nprocs)
-	#	counts = [ave + 1 if p < res else ave for p in range(nprocs)]
-	#	# determine the starting and ending indices of each sub-task
-	#	starts = [sum(counts[:p]) for p in range(nprocs)]
-	#	ends = [sum(counts[:p+1]) for p in range(nprocs)]
-	#	# converts data into a list of arrays 
-	#	data = [data[starts[p]:ends[p]] for p in range(nprocs)]
-	#else:
-	#	data = None
-	#data = comm.scatter(data, root=0)
-	#print('Process {} has data:'.format(rank), data)
-	#for i in data:
-	#	config = config_files[i]
 	for config in config_files:
-		#print("Process {} looking at {}".format(rank, config))
+		print("looking at {}".format(config))
 		atoms = load_atom_file(config, format)
 		dir = os.path.dirname(config)
 		if not os.path.exists(os.path.join(dir, "PD1")):
@@ -213,20 +196,27 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 			APFs_2.append(APF_2)
 			params = oineus.ReductionParams()
 			params.n_threads, params.kernel, params.image, params.cokernel, params.verbose = read_kernel_image_cokernel(structure_file, kernel_settings)
-			sub = sub_complex(points, math.floor(max(points["z"])), math.ceil(min(points["z"])))
+			spread = math.floor(max(points["z"]))-math.ceil(min(points["z"]))
+			sub = sub_complex(points, math.floor(max(points["z"]))-0.05*spread, math.ceil(min(points["z"]))+0.05*spread)
 			K, L, L_to_K = oineus_pair(points, sub)
 			kicr = oineus.compute_kernel_image_cokernel_reduction(K, L, L_to_K, params)
 			if params.kernel:
 				pd_1 = kicr.kernel_diagrams().in_dimension(1)
-				pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.csv")
-				fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.csv")
+					fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Kernel diagram in dimension 1 is empty.")
 				pd_2 = kicr.kernel_diagrams().in_dimension(2)
-				pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.csv")
-				fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.csv")
+					fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Kernel diagram in dimension 2 is empty.")
 				APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
 				APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
 				pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_kernel_APF_1.csv")
@@ -239,15 +229,21 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 				matplotlib.pyplot.close()
 			if params.image:
 				pd_1 = kicr.image_diagrams().in_dimension(1)
-				pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.csv")
-				fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.csv")
+					fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Image diagram in dimension 1 is empty.")
 				pd_2 = kicr.kernel_diagrams().in_dimension(2)
-				pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.csv")
-				fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.csv")
+					fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Image diagram in dimension 2 is empty.")
 				APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
 				APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
 				pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_image_APF_1.csv")
@@ -260,15 +256,21 @@ def batch_mode_kernel(parent_dir : str, file_ext : str, format : str, structure_
 				matplotlib.pyplot.close()
 			if params.cokernel:
 				pd_1 = kicr.kernel_diagrams().in_dimension(1)
-				pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.csv")
-				fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.csv")
+					fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Cokernel diagram in dimension 1 is empty.")
 				pd_2 = kicr.kernel_diagrams().in_dimension(2)
-				pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.csv")
-				fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-				matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.png")
-				matplotlib.pyplot.close()
+				try:
+					pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.csv")
+					fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
+					matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.png")
+					matplotlib.pyplot.close()
+				except:
+					print("Cokernel diagram in dimension 2 is empty.")
 				APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
 				APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
 				pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_cokernel_APF_1.csv")
@@ -530,8 +532,9 @@ def single_mode_kernel(config_file : str, format : str, structure_file : str, st
 	if not os.path.exists(os.path.join(dir, "APF2")):
 		os.mkdir(os.path.join(dir, "APF2"))
 	config_name = os.path.splitext(os.path.split(config_file)[1])[0]
-	print("looking at sample {}".format(s))
+	print("looking at sample {}".format(sample_time))
 	points = sample_at(atoms, sample_time, repeat_x, repeat_y, repeat_z, atom_list, radii)
+	dgms = persistent_homology_diagrams_from_points_dionysus(points)
 	births_s, deaths_s = get_birth_death(dgms)
 	APF_1 = calculate_APF(births_s[1], deaths_s[1])
 	APF_2 = calculate_APF(births_s[2], deaths_s[2])
