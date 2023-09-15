@@ -90,7 +90,7 @@ def single_mode():
 									element_justification="center",
 									size=(700,700), 
 									modal=False)
-				fig_apf_1 = plot_APF(APF_1, "blue")
+				fig_apf_1 = plot_APF(APF_1, file_path)
 				draw_figure_w_toolbar(_VARS['APF1']['figCanvas'].TKCanvas, fig_apf_1, _VARS['APF1']['controls_cv'].TKCanvas)
 			if values_main['APF2'] == True:
 				layout_plot_apf_2 = layout_plot_sample_at("APF2", file_path, s)
@@ -101,7 +101,7 @@ def single_mode():
 									element_justification="center",
 									size=(700,700), 
 									modal=False)
-				fig_apf_2 = plot_APF(APF_2, "blue")
+				fig_apf_2 = plot_APF(APF_2, file_path)
 				draw_figure_w_toolbar(_VARS['APF2']['figCanvas'].TKCanvas, fig_apf_2, _VARS['APF2']['controls_cv'].TKCanvas)
 		
 			if values_main['PD1'] == True:
@@ -113,7 +113,7 @@ def single_mode():
 									element_justification="center",
 									size = (700,700),
 									modal = False)
-				fig_pd_1 = plot_PD(births[1], deaths[1], "blue")
+				fig_pd_1 = plot_PD(births[1], deaths[1], file_path)
 				draw_figure_w_toolbar(_VARS['PD1']['figCanvas'].TKCanvas, fig_pd_1, _VARS['PD1']['controls_cv'].TKCanvas)
 				if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 					layout_plot_kic_pd_1 = layout_plot_sample_at("KerImCokPD1", file_path, s)
@@ -136,7 +136,7 @@ def single_mode():
 									  element_justification = 'center',
 									size = (700,700),
 									 modal = False)
-				fig_pd_2 = plot_PD(births[2], deaths[2], "blue")
+				fig_pd_2 = plot_PD(births[2], deaths[2], file_path)
 				draw_figure_w_toolbar(_VARS['PD2']['figCanvas'].TKCanvas, fig_pd_2, _VARS['PD2']['controls_cv'].TKCanvas)
 				if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 					layout_plot_kic_pd_2 = layout_plot_sample_at("KerImCokPD2", file_path, s)
@@ -160,16 +160,16 @@ def single_mode():
 			pandas.DataFrame(APF_2).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_APF_2.csv", header = None)
 
 			if values_main["PD1"]:
-				fig = plot_PD(births[1], deaths[1], "blue")
+				fig = plot_PD(births[1], deaths[1], file_path)
 				plt.savefig(dir+"/"+config_name+"_sample_"+str(s)+"_PD_1.png")
 			if values_main["PD2"]:
-				fig = plot_PD(births[2], deaths[2], "blue")
+				fig = plot_PD(births[2], deaths[2], file_path)
 				plt.savefig(dir+"/"+config_name+"_sample_"+str(s)+"_PD_2.png")
 			if values_main["APF1"]:
-				fig_apf_2 = plot_APF(APF_1, "blue")
+				fig_apf_2 = plot_APF(APF_1, file_path)
 				plt.savefig(dir+"/"+config_name+"_sample_"+str(s)+"_APF_1.png")
 			if values_main["APF2"]:
-				fig_apf_2 = plot_APF(APF_2, "blue")
+				fig_apf_2 = plot_APF(APF_2, file_path)
 				plt.savefig(dir+"/"+config_name+"_sample_"+str(s)+"_APF_2.png")
 		
 		if event_main == "Visualisation":
@@ -379,21 +379,21 @@ def batch_mode():
 					births, deaths = get_birth_death(dgms)
 					pandas.DataFrame(numpy.column_stack([births_s[1], deaths_s[1]])).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.csv")
 					if values_main["PD1"]:
-						fig = plot_PD(births_s[1], deaths_s[1], 'blue')
+						fig = plot_PD(births_s[1], deaths_s[1], config_name)
 						plt.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.png")
 					pandas.DataFrame(numpy.column_stack([births_s[2], deaths_s[2]])).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_PD_2.csv")
 					if values_main["PD2"]:
-						fig = plot_PD(births_s[2], deaths_s[2], 'blue')
+						fig = plot_PD(births_s[2], deaths_s[2], config_name)
 						plt.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_PD_2.png")
 					APF = calculate_APF(births_s[1], deaths_s[1])
 					pandas.DataFrame(APF).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_APF_1.csv")
 					if values_main["APF1"]:
-						fig = plot_APF(APF, 'blue')
+						fig = plot_APF(APF, config_name)
 						plt.savefig(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_APF_1.png")
 					APF = calculate_APF(births_s[2], deaths_s[2])
 					pandas.DataFrame(APF).to_csv(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_APF_2.csv")
 					if values_main["APF2"]:
-						fig = plot_APF(APF, 'blue')
+						fig = plot_APF(APF, config_name)
 						plt.savefig(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_APF_2.png")
 					print("All done!")
 					processed = True

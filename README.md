@@ -11,6 +11,7 @@ Quick overview: there is a python script Rasmus provided a while ago which does 
 * Diode
 * Color
 * Oineus
+* Plotly.express
 * + any i have forgotten
 
 You will also need to ensure tkinter, cgal, tbb, +others? are installed. 

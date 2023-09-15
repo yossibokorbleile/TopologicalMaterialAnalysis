@@ -3,12 +3,11 @@
 # @file plots.py
 # @brief Functions for generating plots.
 # Given persistence diagrams and accumulated persistence functions, there are functions to plot either a single persistence diagram (PD) or accumulated persistence function (APF), or plot several together.
-import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import math
 from colour import Color
-from matplotlib import cm
+from matplotlib import cmfind $HOME -name "*activate" -type f
 from matplotlib.colors import LogNorm
 from scipy.interpolate import interpn
 from matplotlib.ticker import MaxNLocator
@@ -16,113 +15,123 @@ from matplotlib.ticker import FuncFormatter
 import matplotlib.colors as mcolors
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.widgets  import RectangleSelector
+import plotly.express as px
+import plotly.graph_objects as go
 
 import numpy
+import pandas
+
+def plot_APF(APF : numpy.array, name : str):
+	"""! Plot an accumulated persistence function
+	
+	@param APF - numpy.array with 2 columns of coordinates which define the APF
+	@param name - title for the plot
+	
+	@result a plotly.express figure
+	"""
+	## Documentation for a function.
+	# @param APF the apf to plot
+	# @param APF_colour the colour to use
+	
+	fig = px.line(x=APF[:,0], y=APF[:,1], labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	return fig
+
+def plot_APFs(APFs : list, name : str):#, APF_colour, APF_label):
+	"""! Plot a set accumulated persistence function, with automatic colour differentiation.
+	
+	@param APFs - accumlated persistence functions to plot
+	
+	@result a matplotlib figure
+	"""
+	fig = go.Figure(labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	last_pt = math.ceil(max([APFs[i][-1,0] for i in range(len(APFs))])*1.1)
+	for i in range(len(APFs)):
+		APFs[i] = numpy.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
+	for i in range(len(APFs)):
+		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=str(i)))
+	return fig
+
+def plot_PD(birth : list, death : list, name : str):
+	"""! Plot a persistence diagram, with a specific colour
+	
+	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
+	
+	@param births - list of birth times
+	@param deaths - list of death times
+	@param name    - name to use as title of the plot
+	
+	@result a plotly.express figure
+	"""
+	assert len(birth) == len(death), f"Different number of sets of points provided."
+	inf_fin = []
+	vals = []
+	plot_death = []
+	for d in pts:
+		if d != math.inf:
+			vals.append(d)
+	if len(vals) != 0:
+		max_val = max(vals)
+	else:
+		max_val = max(births)
+	fig = go.Figure()
+	for i in range(len(births)):
+		if death[i] == math.inf:
+			plot_death.append(max_val*1.1)
+			inf_fin.append("inf")
+		else:
+			plot_death.append(death[i])
+			inf_fin.append("fin")
+	to_plot = pandas.DataFrame({"birth":birth, "death":plot_death, "type":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
+	return fig
 
 
-def plot_APF(APF : numpy.array, APF_colour : str):#, APF_colour, APF_label):
-    """! Plot an accumulated persistence function
-    
-    @param APF - numpy.array with 2 columns of coordinates which define the APF
-    @param APF_colour - colour to use
-    
-    @result a matplotlib figure
-    """
-    ## Documentation for a function.
-    # @param APF the apf to plot
-    # @param APF_colour the colour to use
-    
-    fig, ax = plt.subplots()
-    ax.plot(APF[:,0], APF[:,1], color=APF_colour)
-    ax.set_xlabel('m (Å$^2$)')
-    ax.set_ylabel('APF (Å$^2$)')
-    fig.tight_layout(pad=5.0)
-    return fig
+def plot_PDs(births : list, deaths : list, name : str):
+	"""! Plot several persistence diagrams, with  automatic colour choices
+	
+	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
 
-def plot_APFs(APFs):#, APF_colour, APF_label):
-    """! Plot a set accumulated persistence function, with automatic colour differentiation.
-    
-    @param APFs - accumlated persistence functions to plot
-    
-    @result a matplotlib figure
-    """
-    last_pt = math.ceil(max([APFs[i][-1,0] for i in range(len(APFs))])*1.1)
-    for i in range(len(APFs)):
-        APFs[i] = numpy.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
-    fig, ax = plt.subplots()
-    for i in range(len(APFs)):
-        c = Color("blue")
-        c.red=i/len(APFs)
-        c.blue =  1 - i/len(APFs)
-        ax.plot(APFs[i][:,0], APFs[i][:,1], color=c.rgb)
-    ax.set_xlabel('m (Å$^2$)')
-    ax.set_ylabel('APF')
-    fig.tight_layout(pad=5.0)
-    return fig
+	@param births - list of list of birth values
+	@param deaths - list of list of death values
+	@param name - title to use for the plot
 
-def plot_PD(births : list, deaths : list, PD_colour : str):
-    """! Plot a persistence diagram, with a specific colour
-    
-    Points at infinity are plotted at a height of 1.1 times the last finite point to die.
-    
-    @param births - list of birth times
-    @param deaths - list of death times
-    @param PD_colour    - colour to use
-    
-    @result a matplotlib figure
-    """
-    fig, ax = plt.subplots()
-    if math.inf in deaths:
-        max_val = max(deaths)
-        birth_fin = []
-        death_fin = []
-        birth_inf = []
-        death_inf = []
-        for i in range(len(deaths)):
-            if deaths[i] == math.inf:
-                birth_inf.append(births[i])
-                death_inf.append(max_val*1.1)
-            else:
-                birth_fin.append(births[i])
-                death_fin.append(deaths[i])
-        ax.scatter(birth_fin, death_fin, color=PD_colour, s = 1, marker = ".")
-        ax.scatter(birth_inf, death_inf, color=PD_colour, s = 1, marker = "^")
-    else:
-        ax.scatter(births, deaths, color=PD_colour, s= 1, marker = ".")
-    ax.set_xlabel('birth')
-    ax.set_ylabel('death')
-    fig.tight_layout(pad=5.0)
-    return fig
+	@results a plotly.express figure
+	"""
+	assert len(births) == len(deaths), f"Different number of sets of points provided."
+	birth = []
+	death = []
+	samp = []
+	inf_fin = []
+	vals = []
+	for pts in pds:
+		dgm_vals = []
+		for d in pts:
+			if d != math.inf:
+				dgm_vals.append(d)
+		if len(dgm_vals) !=0:
+			vals.append(max(dgm_vals))
+	if len(vals) != 0:
+		max_val = max(vals)
+	else:
+		max_val = max([max(pts) for pts in births])
+	fig = go.Figure()
+	for i in range(len(births)):
+		for j in range(len(deaths[i])):
+			if deaths[i][j] == math.inf:
+				birth.append(births[i][j])
+				death.append(max_val*1.1)
+				samp.append(str(i))
+				inf_fin.append("inf")
+			else:
+				birth.append(births[i][j])
+				death.append(deaths[i][j])
+				samp.append(str(i))
+				inf_fin.append("fin")
+	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	return fig
 
-def plot_PDs(births : list, deaths : list):
-    """! Plot several persistence diagrams, with  automatic colour choices
-    """
-    fig, ax = plt.subplots()
-    for i in range(len(births)):
-        c = Color("blue")
-        c.red=i/len(births)
-        c.blue =  1 - i/len(births)
-        if math.inf in deaths[i]:
-            max_val = max(deaths[i])
-            birth_fin = []
-            death_fin = []
-            birth_inf = []
-            death_inf = []
-            for j in range(len(deaths[i])):
-                if deaths[i][j] == math.inf:
-                    birth_inf.append(births[i][j])
-                    death_inf.append(max_val*1.1)
-                else:
-                    birth_fin.append(births[i][j])
-                    death_fin.append(deaths[i][j])
-            ax.scatter(birth_fin, death_fin, color=c.rgb, s = 1, marker = ".")
-            ax.scatter(birth_inf, death_inf, color=c.rgb, s = 1, marker = "^")
-        else:
-            ax.scatter(births[i], deaths[i], color=c.rgb, s=1, marker=".")
-    ax.set_xlabel('birth')
-    ax.set_ylabel('death')
-    fig.tight_layout(pad=5.0)
-    return fig
+
 
 def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, cokernel : bool):
 	"""! Plot kernel, image, cokernel on same figure
@@ -201,10 +210,10 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 	
 
 def draw_figure(canvas, figure):
-    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
-    figure_canvas_agg.draw()
-    figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
-    return figure_canvas_agg
+	figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+	figure_canvas_agg.draw()
+	figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
+	return figure_canvas_agg
 
 def layout_plot_sample_at(name : str, object : str, sample_at):
 	layout = [[sg.Text("{} Plot: {} at sample {}".format(name, object,sample_at), font="Arial 20")],[sg.T('Controls:')], 
@@ -235,19 +244,19 @@ def layout_plot(name : str, object : str):
 	return layout
 
 def draw_figure_w_toolbar(canvas, fig, canvas_toolbar):
-    if canvas.children:
-        for child in canvas.winfo_children():
-            child.destroy()
-    if canvas_toolbar.children:
-        for child in canvas_toolbar.winfo_children():
-            child.destroy()
-    figure_canvas_agg = FigureCanvasTkAgg(fig, master=canvas)
-    figure_canvas_agg.draw()
-    toolbar = Toolbar(figure_canvas_agg, canvas_toolbar)
-    toolbar.update()
-    figure_canvas_agg.get_tk_widget().pack(side='right', fill='both', expand=1)
+	if canvas.children:
+		for child in canvas.winfo_children():
+			child.destroy()
+	if canvas_toolbar.children:
+		for child in canvas_toolbar.winfo_children():
+			child.destroy()
+	figure_canvas_agg = FigureCanvasTkAgg(fig, master=canvas)
+	figure_canvas_agg.draw()
+	toolbar = Toolbar(figure_canvas_agg, canvas_toolbar)
+	toolbar.update()
+	figure_canvas_agg.get_tk_widget().pack(side='right', fill='both', expand=1)
 
 
 class Toolbar(NavigationToolbar2Tk):
-    def __init__(self, *args, **kwargs):
-        super(Toolbar, self).__init__(*args, **kwargs)
+	def __init__(self, *args, **kwargs):
+		super(Toolbar, self).__init__(*args, **kwargs)
