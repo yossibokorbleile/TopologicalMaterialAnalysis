@@ -3,7 +3,6 @@
 Quick overview: there is a python script Rasmus provided a while ago which does the persistent homology of the ZIF structures. This GUI is meant to first implement this script, and then add certain functionalities. Currently, you need the following Python packages to be installed:
 * PySimpleGUI
 * ASE
-* Matplotlib
 * Pandas
 * Numpy
 * SciPy
@@ -11,7 +10,7 @@ Quick overview: there is a python script Rasmus provided a while ago which does 
 * Diode
 * Color
 * Oineus
-* Plotly.express
+* Plotly Express
 * + any i have forgotten
 
 You will also need to ensure tkinter, cgal, tbb, +others? are installed. 
@@ -49,9 +48,9 @@ in `Documentation/latex`.
 
 
 # TODO
-* finish visualisation of a loop
-* save the outputs in a way which can be relaoded for analysis
-* move away from CGAL? (understand alpha complexes and do periodically?)
-* include kernel/image/corkernl
-* do everything via Oineus?
+- finish visualisation of a loop
+- [X] save the outputs in a way which can be relaoded for analysis
+-  move away from CGAL? (understand alpha complexes and do periodically?)
+- [X] include kernel/image/corkernel
+-  do everything via Oineus?
   

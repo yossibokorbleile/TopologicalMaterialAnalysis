@@ -4,7 +4,7 @@
 # @brief Functions for processing the structures.
 # Various wrappers and functions for obtaining filtrations, persistent homology objects and diagrams from point configurations.
 
-from ase import io
+from ase import io, Atoms
 import numpy 
 import pandas
 import diode
@@ -89,19 +89,19 @@ def read_kernel_image_cokernel(structure_file : str, setting_name : str):
 	return n_threads, kernel, image, cokernel, verbose
 
 
-def load_atom_file(file_path : str, format : str):
+def load_atom_file(file_path : str, format : str, index = ":"):
 	"""! load the file containing the initial configureation
 	@param file_path file to load
 	
-	@return xyz     what we obtain from ase.io.read
+	@return atoms     what we obtain from ase.io.read
 	"""
-	atoms = io.read(file_path, index = ":", format = format)
+	atoms = io.read(file_path, index = index, format = format)
 	return atoms
 
-def sample_at(xyz, sample_time, repeat_x : int, repeat_y : int, repeat_z : int, atom_list, radius_list):
+def sample_at(atoms, sample_index, repeat_x : int, repeat_y : int, repeat_z : int, atom_list, radius_list):
 	"""! Sample a structure at a particular time, with cell repetitions.
-	@param xyz		initial configuration
-	@param sample_time 	time to sample at
+	@param atoms		initial configuration
+	@param sample_index 	time to sample at
 	@param repeat_x 	repetition in x dir
 	@param repeat_y 	repetition in y dir
 	@param repeat_z 	repetition in z dir
@@ -110,10 +110,10 @@ def sample_at(xyz, sample_time, repeat_x : int, repeat_y : int, repeat_z : int, 
 
 	@return points		data frame of the points including the repetitions
 	"""
-	xyz[sample_time] = xyz[sample_time].repeat((repeat_x, repeat_y, repeat_z))
-	coord = xyz[sample_time].get_positions()
-	cell = xyz[sample_time].get_cell()
-	data = numpy.column_stack([xyz[sample_time].get_chemical_symbols(), coord])
+	sample  = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z))
+	coord = sample.get_positions()
+	cell = sample.get_cell()
+	data = numpy.column_stack([sample.get_chemical_symbols(), coord])
 	dfpoints = pandas.DataFrame(data, columns=["Atom", "x", "y", "z"])
 	atoms_found = dfpoints["Atom"].unique()
 	remove = []
