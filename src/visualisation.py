@@ -4,17 +4,23 @@
 # @brief Look for represetnatives of the cycles.
 
 import numpy
-#import os
-#from ase import io
 import pandas
 import math
 from ase import Atoms
-#mport dionysus
-#from ase.visualize import view
-#from ase.visualize.plot import plot_atoms
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 def get_representative_loops(points, atoms, filt, m, dgms):
+	"""! Get representative of each homology class in dimension 1.
+
+	@param points
+	@param atoms
+	@param filt
+	@param m
+	@param dgms
+
+	@return dfPD
+	"""
 	simps_birth = []
 	cycle_comps = []
 	cycle_reps = []
@@ -59,12 +65,19 @@ def get_representative_loops(points, atoms, filt, m, dgms):
 		dfPD[atoms[i]+" count"] = atom_count[i]
 	return dfPD
 
-def generate_display(xyz, dfPD, id, atoms, radii):
-	pos_all = [xyz[-1].get_positions()[i] for i in dfPD.at[id,"idPoint"]]
-	chem_sym_all = [xyz[-1].get_chemical_symbols()[i] for i in dfPD.at[id,"idPoint"]]
-	vis_atoms = Atoms(chem_sym_all, pos_all)
-	fig = plt.figure()
-	ax = fig.add_subplot(projection="3d")
-	for i, pos in enumerate(pos_all):
-		ax.scatter(pos[0], pos[1], pos[2])
-	return fig
+def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int): #TODO: visualise a neighbourhood of the representative
+	"""! Display a representative of a cycle.
+	@param points 	pandas.DataFrame of the atoms
+	@param dfPD 	pandas.DataFrame of the representatives of cycles
+	@param id		int corresponding to the id of the cycle you want to visualise
+
+	@return fig		plotly.express figure displaying the ring
+	"""
+	cycle = points.iloc[dfPD.at[id,"idPoint"]]
+	fig = go.Figure()
+	fig_scatter = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom"])
+	cycle.loc[len(to_plot.index)] = cycle.loc[0]
+	fig_lines = px.line_3d(cycle,x="x", y="y", z="z")
+	fig_ring = go.Figure(data=fig_scatter.data + fig_line.data)
+
+	return fig_ring

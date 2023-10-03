@@ -2,23 +2,13 @@
 ##
 # @mainpage Topological Amorphous Material Analysis (AMA)
 # @authors Yossi Bokor Bleile
-# @version 0.1
+# @version 0.2
 # @date April 2023
 # @copyright if CGAL still used, GPL
 #
 # @section description_main Description
 # Topological Amorphous Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
 # generating source code doca#!/usr/bin/python3
-##
-# @mainpage Amorphous Material Analysis (AMA)
-# @authors Yossi Bokor Bleile
-# @version 0.1
-# @date April 2023
-# @copyright if CGAL still used, GPL
-#
-# @section description_main Description
-# Topological Amorphous Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
-# generating source code documentation with Doxygen.
 #
 # @section arg_parser Argument Parser for Amorphous Material Analysis
 # There are two ways you can use Amorphous Material Analysis:

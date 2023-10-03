@@ -10,18 +10,9 @@ import pandas
 import diode
 import dionysus
 import oineus
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import math
 from colour import Color
-from matplotlib import cm
-from matplotlib.colors import LogNorm
 from scipy.interpolate import interpn
-from matplotlib.ticker import MaxNLocator
-from matplotlib.ticker import FuncFormatter
-import matplotlib.colors as mcolors
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.widgets  import RectangleSelector
 from functools import cmp_to_key
 import configparser
 
@@ -135,9 +126,19 @@ def sample_at(atoms, sample_index, repeat_x : int, repeat_y : int, repeat_z : in
 
 
 def weighted_alpha_diode(points):
+	"""! Use diode to fill the weighted alpha shapes
+	@param points 	pandas.DataFrame with columns 'x', 'y', 'z' for coordinates, and column 'w' with the weights.
+
+	@return weighted alpha shape from diode.
+	"""
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
-def persistent_homology_filt_dionysus(simplices):
+def persistent_homology_filt_dionysus(simplices : list):
+	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
+	@param simplices 	list of simplices from dionysus
+
+	@return filt, m 	the dionysus filtration, dionysus persistent homology
+	"""
 	restricted_simps = []
 	for s in simplices:
 		if len(s[0]) <= 4:
@@ -146,64 +147,91 @@ def persistent_homology_filt_dionysus(simplices):
 	m = dionysus.homology_persistence(filt, progress = True)
 	return filt, m
 
-def extract_diagrams_dionysus(filt, m):
-	return dionysus.init_diagrams(m, filt)
-	
-def get_birth_death(dionysus_diagrams):    
-	births = []
-	deaths = []
+def extract_diagrams_from_dionysus(filt, m):
+	"""! Given a dionysus fitlration and persistent homology, extract the persistence diagrams
+	@param filt		dionysus filtration
+	@param m		dionysus persistent homology
+
+	@return dgm		nx2 numpy.array of diagram
+	"""
+	dionysus_diagrams= dionysus.init_diagrams(m, filt)
+	dgms = []
 	for i in range(len(dionysus_diagrams)):
-		births_i = []
-		deaths_i = []
+		dgm_i = numpy.empty((0,2), float)
 		for p in dionysus_diagrams[i]:
-			births_i.append(p.birth)
-			deaths_i.append(p.death)    
-		births.append(numpy.array(births_i))
-		deaths.append(numpy.array(deaths_i))
-	return births, deaths
+			dgm_i = numpy.append(dgm_i, [p.birth, p.death], axis=0)
+		dgms.append(dgm_i)
+	return dgms
+	
+	
 	
 def persistent_homology_diagrams_from_points_dionysus(points):#extract the persistent homology of the frame 
+	"""! Given a set of points with weights, return the persistence diagrams from dionysus.
+	@param points	pandas.DataFrame of points, columns 'x','y','z' coordinates, and column 'w' the weights.
+
+	@return dgms 	dionysus persistence diagrams
+	"""
 	# Calculate the alpha shape using Diode
 	simplices = weighted_alpha_diode(points)
 	# Generate the filtration using Dionysus
 	filt, m = persistent_homology_filt_dionysus(simplices)
 	# Get persistent homologypersistent_homology_dionysus(filtration)
-	dgms = extract_diagrams_dionysus(filt, m)
+	d_dgms = extract_diagrams_from_dionysus(filt, m)
+	dgms = extract_diagrams_from_dionysus
 	return dgms
 
-def aggregate_diagrams(births, deaths): #aggregate the diagrams into one big diagram
-	birth = []
-	death = []
-	for i in range(len(births)):
-		for j in range(len(births[i])):
-			birth.append(births[i][j])  
-			death.append(deaths[i][j]) 
-	birth = numpy.array(birth)
-	death = numpy.array(death)
-	return birth, death
+def aggregate_diagrams(dgms): #aggregate the diagrams into one big diagram
+	"""! Given a list of diagrams, combine these into a single diagram.
 
-def calculate_APF(births, deaths): #TODO: decide what to do with points at infinity
-	lifetime = deaths - births
-	mean_age = (deaths - births)/2
+	@param dgms		list of diagrams as numpy.arrays.
+
+	@return dgm		numpy.array of the combined diagram.
+	"""
+	dgm = numpy.concatenate(dgms, axis=0)
+	return dgm
+	#for i in range(len(births)):
+	#	for j in range(len(births[i])):
+	#		birth.append(births[i][j])  
+	#		death.append(deaths[i][j]) 
+	#birth = numpy.array(birth)
+	#death = numpy.array(death)
+	#return birth, death
+
+def calculate_APF(dgm): #TODO: decide what to do with points at infinity
+	"""! Calcualte the APF from a diagram 
+	@param dgm 		the dionysus diargam you want to calculate the APF for
+
+	@return APF		the APF as a list of coordiantes
+	"""
+	lifetime = dgm[:,1] - dgm[:,0]
+	mean_age = (dgm[:,1] + dgm[:,0])/2
 	APF = numpy.transpose(numpy.vstack([mean_age, lifetime]))
 	APF = APF[APF[:,0].argsort()]
 	for i in range(1, numpy.shape(APF)[0], 1):
 			APF[i,1] = APF[i,1] + APF[i-1,1]
 	return APF
 
-def oineus_compare_long(x, y):
-	if len(x[0]) == len(y[0]):
-		for i in range(len(x[0])):
-			if x[0][i] < y[0][i]:
-				return -1
-			return 1
-	elif len(x[0]) < len(y[0]):
-		return -1
-	else:
-		return 1
+#def oineus_compare_long(x, y):
+#	"""! 
+#	"""
+#	if len(x[0]) == len(y[0]):
+#		for i in range(len(x[0])):
+#			if x[0][i] < y[0][i]:
+#				return -1
+#			return 1
+#	elif len(x[0]) < len(y[0]):
+#		return -1
+#	else:
+#		return 1
 
 
 def oineus_compare(x, y):
+	"""! Comparison to compare list of simplicies to get them in the order for oineus
+	@param x	simplex to compare
+	@param y	simplex to compare
+
+	@return -1 if x<y, 1 otherwise
+	"""
 	if len(x[0]) == len(y[0]):
 		if x[0][0] <= y[0][0]:
 			return -1
@@ -214,7 +242,16 @@ def oineus_compare(x, y):
 	else:
 		return 1
 		
-def oineus_pair(points, sub):
+def oineus_pair(points : pandas.DataFrame, sub : list):
+	"""! Given a set of points, and the points that are in the subset L, construct the complexes and map between them. The subcomplex L will consists of all simplices whose vertex are in the subset.
+
+	@param points		pandas.DataFrame containing the points and their weights
+	@param sub			a list containing the indices of the points on which we construct the subcomplex
+
+	@return K			list of simplices for the entire complex, as needed by oineus
+	@return L			list of simplices for the subcomplex, as needed by oineus
+	@return L_to_K		list which tells you how to map the simplices in L to the simplices in K
+	"""
 	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
@@ -248,7 +285,15 @@ def oineus_pair(points, sub):
 	return K, L, L_to_K
 
 
-def sub_complex(points, z_upper, z_lower):
+def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
+	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
+
+	@param points		pandas.DataFrame containing of the points.
+	@param z_upper		float giving the upper threshold, any point above this is in the subcomplex
+	@param z_lower		float giving the lower threshold, any point below this is in the subcomplex
+
+	@return sub_comp	list containing the indices of the points on which we build the subcomplex
+	"""
 	sub_comp = []
 	for i in range(points.shape[0]):
 		if (points["z"][i] >= z_upper) or (points["z"][i]    <= z_lower):
@@ -257,7 +302,20 @@ def sub_complex(points, z_upper, z_lower):
 			sub_comp.append(False)
 	return sub_comp     
 
-def kernel_image_cokernel(points, kernel, image, cokernel, n_threads, upper_threshold, lower_threshold):
+def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool, cokernel : bool, n_threads : int, upper_threshold : float, lower_threshold : float):
+	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.
+
+	@param points			pandas.DataFrame of the points, with columns 'x','y','z','w' corresponding to the coordinates and weights respectively
+	@param kernel 			boolean parameter to set if kernel persistence is calculated
+	@param image 			boolean parameter to set if image persistence is calculated
+	@param cokernel 		boolean parameter to set if cokernel persistence is calculated
+	@param n_threads		number of threads to use in oineus
+	@param upper_threshold	float, z-coordinate above which points are in the subcomplex 
+	@param lower_threshold	float z-coordinate below which points are in the subcomplex
+
+
+	@return kicr			oineus object which contains the kernel, image, cokernel persistence diagrams as required, can also calculate ones that weren't initially specificed
+	"""
 	params = oineus.ReductionParams()
 	params.n_threads = n_threads
 	params.kernel = kernel
@@ -267,66 +325,3 @@ def kernel_image_cokernel(points, kernel, image, cokernel, n_threads, upper_thre
 	K, L, L_to_K = oineus_pair(points, sub)
 	kicr = oineus.compute_kernel_image_cokernel_reduction(K, L, L_to_K, params)
 	return kicr
-#	if params.kernel:
-#		pd_1 = kicr.kernel_diagrams().in_dimension(1)
-#		pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.csv")
-#		fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.png")
-#		matplotlib.pyplot.close()
-#		pd_2 = kicr.kernel_diagrams().in_dimension(2)
-#		pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.csv")
-#		fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.png")
-#		matplotlib.pyplot.close()
-#		APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
-#		APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
-#		pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_kernel_APF_1.csv")
-#		fig = plot_APF(APF_1, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_kernel_APF_1.png")
-#		matplotlib.pyplot.close()
-#		pandas.DataFrame(APF_2).to_csv(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_kernel_APF_2.csv")
-#		fig = plot_APF(APF_2, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_kernel_APF_2.png")
-#		matplotlib.pyplot.close()
-#	if params.image:
-#		pd_1 = kicr.image_diagrams().in_dimension(1)
-#		pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.csv")
-#		fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_image_PD_1.png")
-#		matplotlib.pyplot.close()
-#		pd_2 = kicr.kernel_diagrams().in_dimension(2)
-#		pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.csv")
-#		fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_image_PD_2.png")
-#		matplotlib.pyplot.close()
-#		APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
-#		APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
-#		pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_image_APF_1.csv")
-#		fig = plot_APF(APF_1, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_image_APF_1.png")
-#		matplotlib.pyplot.close()
-#		pandas.DataFrame(APF_2).to_csv(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_image_APF_2.csv")
-#		fig = plot_APF(APF_2, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_image_APF_2.png")
-#		matplotlib.pyplot.close()
-#	if params.cokernel:
-#		pd_1 = kicr.kernel_diagrams().in_dimension(1)
-#		pandas.DataFrame(numpy.column_stack(pd_1)).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.csv")
-#		fig = plot_PD(pd_1[:,0], pd_1[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.png")
-#		matplotlib.pyplot.close()
-#		pd_2 = kicr.kernel_diagrams().in_dimension(2)
-#		pandas.DataFrame(numpy.column_stack(pd_2)).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.csv")
-#		fig = plot_PD(pd_2[:,0], pd_2[:,1], 'blue')
-#		matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.png")
-#		matplotlib.pyplot.close()
-#		APF_1 = calculate_APF(pd_1[:,0], pd_1[:,1])
-#		APF_2 = calculate_APF(pd_2[:,0], pd_2[:,1])
-#		pandas.DataFrame(APF_1).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_cokernel_APF_1.csv")
-#		fig = plot_APF(APF_1, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_cokernel_APF_1.png")
-#		matplotlib.pyplot.close()			
-#		pandas.DataFrame(APF_2).to_csv(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_cokernel_APF_2.csv")
-#		fig = plot_APF(APF_2, 'blue')
-#		matplotlib.pyplot.savefig(dir+"/APF2/"+config_name+"_sample_"+str(s)+"_cokernel_APF_2.png")
-#		matplotlib.pyplot.close()

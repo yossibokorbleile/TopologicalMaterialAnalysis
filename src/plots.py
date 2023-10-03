@@ -3,18 +3,11 @@
 # @file plots.py
 # @brief Functions for generating plots.
 # Given persistence diagrams and accumulated persistence functions, there are functions to plot either a single persistence diagram (PD) or accumulated persistence function (APF), or plot several together.
-#import matplotlib.pyplot as plt
-#import matplotlib as mpl
+
+
 import math
 from colour import Color
-#from matplotlib import cmfind
-#from matplotlib.colors import LogNorm
 from scipy.interpolate import interpn
-#from matplotlib.ticker import MaxNLocator
-#from matplotlib.ticker import FuncFormatter
-#import matplotlib.colors as mcolors
-#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-#from matplotlib.widgets  import RectangleSelector
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -47,10 +40,12 @@ def plot_APFs(APFs : list, name : str):#, APF_colour, APF_label):
 	for i in range(len(APFs)):
 		APFs[i] = numpy.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
 	for i in range(len(APFs)):
-		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=str(i)))
+		a = px.line(x=APFs[i][:,0], y=APFs[i][:,1], name=str(i))
+		fig = go.Figure(data=fog.data+a.data)
+
 	return fig
 
-def plot_PD(birth : list, death : list, name : str):
+def plot_PD(dgm, name : str):
 	"""! Plot a persistence diagram, with a specific colour
 	
 	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
@@ -61,31 +56,26 @@ def plot_PD(birth : list, death : list, name : str):
 	
 	@result a plotly.express figure
 	"""
-	assert len(birth) == len(death), f"Different number of sets of points provided."
+	birth = []
+	death = []
 	inf_fin = []
-	vals = []
-	plot_death = []
-	for d in death:
-		if d != math.inf:
-			vals.append(d)
-	if len(vals) != 0:
-		max_val = max(vals)
-	else:
-		max_val = max(births)
+	max_val = max(dgm[:,1])
 	fig = go.Figure()
-	for i in range(len(births)):
-		if death[i] == math.inf:
-			plot_death.append(max_val*1.1)
+	for i in range(dgm.shape[0]):
+		if dgm[i,1] == math.inf:
+			birth.append(births[i][j])
+			death.append(max_val*1.1)
 			inf_fin.append("inf")
 		else:
-			plot_death.append(death[i])
+			birth.append(births[i][j])
+			death.append(deaths[i][j])
 			inf_fin.append("fin")
-	to_plot = pandas.DataFrame({"birth":birth, "death":plot_death, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
+	to_plot = pandas.DataFrame({"birth":birth, "death":death, "type":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
 	return fig
 
 
-def plot_PDs(births : list, deaths : list, name : str):
+def plot_PDs(dgms : list, name : str):
 	"""! Plot several persistence diagrams, with  automatic colour choices
 	
 	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
@@ -96,15 +86,14 @@ def plot_PDs(births : list, deaths : list, name : str):
 
 	@results a plotly.express figure
 	"""
-	assert len(births) == len(deaths), f"Different number of sets of points provided."
 	birth = []
 	death = []
 	samp = []
 	inf_fin = []
 	vals = []
-	for pts in pds:
+	for dgm in dgms:
 		dgm_vals = []
-		for d in pts:
+		for d in dgm[:,1]:
 			if d != math.inf:
 				dgm_vals.append(d)
 		if len(dgm_vals) !=0:
@@ -114,22 +103,21 @@ def plot_PDs(births : list, deaths : list, name : str):
 	else:
 		max_val = max([max(pts) for pts in births])
 	fig = go.Figure()
-	for i in range(len(births)):
-		for j in range(len(deaths[i])):
-			if deaths[i][j] == math.inf:
-				birth.append(births[i][j])
+	for i in range(len(dgms)):
+		for j in range(len(dgms)):
+			if dgms[i][j,1] == math.inf:
+				birth.append(dgms[i][j,0])
 				death.append(max_val*1.1)
 				samp.append(str(i))
 				inf_fin.append("inf")
 			else:
-				birth.append(births[i][j])
-				death.append(deaths[i][j])
+				birth.append(dgms[i][j,0])
+				death.append(dgms[i][j,1])
 				samp.append(str(i))
 				inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
 	return fig
-
 
 
 def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, cokernel : bool, name : str):
@@ -142,7 +130,6 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 	@return figu	figure with the chosen PD diagrams
 	"""
 	print("settings are kerne {} image {} cokernel{}".format(kernel, image, cokernel))
-	#fig, ax = plt.subplots()
 	fig = go.Figure()
 	max_val = -math.inf
 	if kernel:

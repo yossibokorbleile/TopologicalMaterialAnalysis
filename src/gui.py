@@ -6,7 +6,7 @@
 # -# single_mode
 # -# multi_mode
 # -# batch_mode
-import matplotlib
+
 from process import *
 from plots import *
 from visualisation import *

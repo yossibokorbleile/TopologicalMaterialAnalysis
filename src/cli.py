@@ -6,10 +6,7 @@ from process import *
 from plots import *
 import os
 import matplotlib
-#from mpi4py import MPI 
-#comm = MPI.COMM_WORLD
-#rank = comm.Get_rank()
-#nprocs = comm.Get_size()
+
 
 
 def batch_mode(parent_dir : str, file_ext : str, format : str, structure_file : str, structure : str, sample_range : str, save_all : bool = False):
@@ -52,25 +49,24 @@ def batch_mode(parent_dir : str, file_ext : str, format : str, structure_file : 
 		if not os.path.exists(os.path.join(dir, "APF2")):
 			os.mkdir(os.path.join(dir, "APF2"))
 		config_name = os.path.splitext(os.path.split(config)[1])[0]
-		births_1 = []
-		deaths_1 = []
-		births_2 = []
-		deaths_2 = []
+		dgms_1 = []
+		#deaths_1 = []
+		dgms_2 = []
+		#deaths_2 = []
 		APFs_1 = []
 		APFs_2 = []
 		for s in sample_every:
 			print("looking at sample {}".format(s))
 			points = sample_at(atoms, s, repeat_x, repeat_y, repeat_z, atom_list, radii)
 			dgms = persistent_homology_diagrams_from_points_dionysus(points)
-			births_s, deaths_s = get_birth_death(dgms)
-			APF_1 = calculate_APF(births_s[1], deaths_s[1])
-			APF_2 = calculate_APF(births_s[2], deaths_s[2])
+			APF_1 = calculate_APF(dgms[1])
+			APF_2 = calculate_APF(dgms[2])
 			if save_all:
-				pandas.DataFrame(numpy.column_stack([births_s[1], deaths_s[1]])).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.csv")
+				pandas.DataFrame(dgms[1]).to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.csv")
 				fig = plot_PD(births_s[1], deaths_s[1], config_name)
 				matplotlib.pyplot.savefig(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.png")
 				matplotlib.pyplot.close()
-				pandas.DataFrame(numpy.column_stack([births_s[2], deaths_s[2]])).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_PD_2.csv")
+				pandas.DataFrame(dgms[2]).to_csv(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_PD_2.csv")
 				fig = plot_PD(births_s[2], deaths_s[2], config_name)
 				matplotlib.pyplot.savefig(dir+"/PD2/"+config_name+"_sample_"+str(s)+"_PD_2.png")
 				matplotlib.pyplot.close()
