@@ -60,11 +60,7 @@ def plot_PD(dgm, name : str):
 	
 	@result a plotly.express figure
 	"""
-	vals=[]
-	for d in dgm[:,1]:
-		if d != math.inf:
-			vals.append(d)
-	max_val = max(vals)
+	max_val = max(dgm[:,1][dgm[:,1] != math.inf])
 	birth = []
 	death = []
 	inf_fin = []
