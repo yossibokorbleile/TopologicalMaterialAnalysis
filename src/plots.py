@@ -60,26 +60,26 @@ def plot_PD(dgm, name : str):
 	
 	@result a plotly.express figure
 	"""
-	max_val = max(dgm[:,1][dgm[:,1] != math.inf])
+	max_val = max(dgm["death"][dgm["death"] != math.inf])
 	birth = []
 	death = []
 	inf_fin = []
 	fig = go.Figure()
 	for i in range(dgm.shape[0]):
-		if dgm[i,1] == math.inf:
-			birth.append(dgm[i,0])
+		if dgm["death"].iloc[i] == math.inf:
+			birth.append(dgm["birth"].iloc[i])
 			death.append(max_val*1.1)
 			inf_fin.append("inf")
 		else:
-			birth.append(dgm[i,0])
-			death.append(dgm[i,1])
+			birth.append(dgm["birth"].iloc[i])
+			death.append(dgm["death"].iloc[i])
 			inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
 	return fig
 
 
-def plot_PDs(births : list, deaths : list, name : str):
+def plot_PDs(dgms, name : str):
 	"""! Plot several persistence diagrams, with  automatic colour choices
 	
 	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
@@ -89,15 +89,15 @@ def plot_PDs(births : list, deaths : list, name : str):
 
 	@results a plotly.express figure
 	"""
-	assert len(births) == len(deaths), f"Different number of sets of points provided."
+	#assert len(births) == len(deaths), f"Different number of sets of points provided."
 	birth = []
 	death = []
 	samp = []
 	inf_fin = []
 	vals = []
-	for pts in pds:
+	for dgm in dgms:
 		dgm_vals = []
-		for d in pts:
+		for d in dgm["death"]:
 			if d != math.inf:
 				dgm_vals.append(d)
 		if len(dgm_vals) !=0:
@@ -105,18 +105,18 @@ def plot_PDs(births : list, deaths : list, name : str):
 	if len(vals) != 0:
 		max_val = max(vals)
 	else:
-		max_val = max([max(pts) for pts in births])
+		max_val = max([max(b) for b in dgm["birth"] for dgm in dmgs])
 	fig = go.Figure()
-	for i in range(len(births)):
-		for j in range(len(deaths[i])):
-			if deaths[i][j] == math.inf:
-				birth.append(births[i][j])
+	for i in range(len(dgm)):
+		for j in range(len(dgms[i]["death"])):
+			if dgms[i]["death"].iloc[j] == math.inf:
+				birth.append(dgs[i]["birth"].iloc[j])
 				death.append(max_val*1.1)
 				samp.append(str(i))
 				inf_fin.append("inf")
 			else:
-				birth.append(births[i][j])
-				death.append(deaths[i][j])
+				birth.append(dgs[i]["birth"].iloc[j])
+				death.append(dgs[i]["death"].iloc[j])
 				samp.append(str(i))
 				inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})

@@ -157,11 +157,15 @@ def extract_diagrams_from_dionysus(filt, m):
 	dionysus_diagrams= dionysus.init_diagrams(m, filt)
 	dgms = []
 	for i in range(len(dionysus_diagrams)):
-		dgm_i = numpy.empty((0,2), float)
+		births = []
+		deaths = []
+		data=[]
 		for p in dionysus_diagrams[i]:
-			dgm_i = numpy.append(dgm_i, [p.birth, p.death], axis=0)
-		dgms.append(dgm_i)
-	return dgms
+			births.append(p.birth)
+			deaths.append(p.death)
+			data.append(p.data)
+		dgms.append(pandas.DataFrame({"birth":births, "death":deaths,"data":data}))
+	return dgms, dionysus_diagrams
 	
 	
 	
@@ -171,16 +175,16 @@ def persistent_homology_diagrams_from_points_dionysus(points):#extract the persi
 
 	@return dgms 	dionysus persistence diagrams
 	"""
+	dgms = []
 	# Calculate the alpha shape using Diode
 	simplices = weighted_alpha_diode(points)
 	# Generate the filtration using Dionysus
 	filt, m = persistent_homology_filt_dionysus(simplices)
 	# Get persistent homologypersistent_homology_dionysus(filtration)
-	d_dgms = extract_diagrams_from_dionysus(filt, m)
-	dgms = extract_diagrams_from_dionysus
+	dgms = extract_diagrams_from_dionysus(filt, m)
 	return dgms
 
-def aggregate_diagrams(dgms): #aggregate the diagrams into one big diagram
+def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
 	"""! Given a list of diagrams, combine these into a single diagram.
 
 	@param dgms		list of diagrams as numpy.arrays.
@@ -203,8 +207,8 @@ def calculate_APF(dgm): #TODO: decide what to do with points at infinity
 
 	@return APF		the APF as a list of coordiantes
 	"""
-	lifetime = dgm[:,1] - dgm[:,0]
-	mean_age = (dgm[:,1] + dgm[:,0])/2
+	lifetime = dgm["death"] - dgm["birth"]
+	mean_age = abs((dgm["death"] + dgm["birth"])/2)
 	APF = numpy.transpose(numpy.vstack([mean_age, lifetime]))
 	APF = APF[APF[:,0].argsort()]
 	for i in range(1, numpy.shape(APF)[0], 1):

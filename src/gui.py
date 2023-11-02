@@ -59,10 +59,10 @@ def single_mode():
 			points = sample_at(points, s, repeat_x, repeat_y, repeat_z, atoms, radii)
 			simplices = weighted_alpha_diode(points)
 			filt, m =  persistent_homology_filt_dionysus(simplices)
-			dgms = extract_diagrams_dionysus(filt, m)
-			births, deaths = get_birth_death(dgms)
-			APF_1 = calculate_APF(births[1], deaths[1])
-			APF_2 = calculate_APF(births[2], deaths[2])	
+			dgms, dionysus_diagrams = extract_diagrams_from_dionysus(filt, m)
+			#births, deaths = get_birth_death(dgms)
+			APF_1 = calculate_APF(dgms[1])
+			APF_2 = calculate_APF(dgms[2])	
 			if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 				if values_main["upper_threshold"] == "Automatic":
 					upper_threshold = math.floor(max(points["z"])) 
@@ -79,24 +79,25 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please Process it.")
 			else:
+				
+				if values_main['PD1'] == True:
+					fig_pd_1 = plot_PD(dgms[1], file_path+" PD1 "+str(s))
+					fig_pd_1.show()
+					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+						fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1"+str(s))
+						fig_kic_pd_1.show()
+				if values_main['PD2'] == True:
+					fig_pd_2 = plot_PD(dgms[2], file_path+" PD2 "+str(s))
+					fig_pd_2.show()
+					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+						fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2"+str(s))
+						fig_kic_pd_2.show()
 				if values_main['APF1'] == True:
 					fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
 					fig_apf_1.show()
 				if values_main['APF2'] == True:
 					fig_apf_2 = plot_APF(APF_2, file_path+" APF2 "+str(s))
 					fig_apf_2.show()			
-				if values_main['PD1'] == True:
-					fig_pd_1 = plot_PD(births[1], deaths[1], file_path+" PD1 "+str(s))
-					fig_pd_1.show()
-					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1"+str(s))
-						fig_kic_pd_1.show()
-				if values_main['PD2'] == True:
-					fig_pd_2 = plot_PD(births[2], deaths[2], file_path+" PD2 "+str(s))
-					fig_pd_2.show()
-					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2"+str(s))
-						fig_kic_pd_2.show()
 				plotted = True
 				
 		
@@ -159,25 +160,26 @@ def single_mode():
 						fig_apf_2.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_APF_2.png")
 		
 		if event_main == "Visualisation":
-			dfPD = get_representative_loops(points, atoms, filt, m, dgms)
+			dfPD = get_representative_loops(points, atoms, filt, m, dionysus_diagrams)
 			visualisation_table_layout = [[sg.Table(values=dfPD.values.tolist(), headings=dfPD.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display")]]
 			visualisation_table_window = sg.Window("AMA: 1-cycle representatives table", visualisation_table_layout, resizable=True)
 			while True:
 				event_visualisation, value_visualisation = visualisation_table_window.read()
 				if event_visualisation == "Display":
 					sg.popup("Clicked on row {}".format(value_visualisation[0][0]))
-					vis = generate_display(xyz, dfPD, value_visualisation[0][0], atoms, radii)
-					layout_vis_window = layout_plot_sample_at("VIS", file_path, value_visualisation[0][0])
-					vis_window = sg.Window('PD2',
-									 layout_vis_window,
-									   finalize = True,
-									 resizable = True,
-									  element_justification = 'center',
-									size = (700,700),
-									 modal = False)
-					#draw_figure_w_toolbar(vis_window['figCanvas'].TKCanvas, vis, vis_window['controls_cv'].TKCanvas)
-				if event_visualisation == sg.WIN_CLOSED:
-					break
+					vis = generate_display(points, dfPD, value_visualisation[0][0])
+					vis.show()
+					#layout_vis_window = layout_plot_sample_at("VIS", file_path, value_visualisation[0][0])
+					#vis_window = sg.Window('PD2',
+					# 				 layout_vis_window,
+					# 				   finalize = True,
+					# 				 resizable = True,
+					# 				  element_justification = 'center',
+					# 				size = (700,700),
+					# 				 modal = False)
+					# #draw_figure_w_toolbar(vis_window['figCanvas'].TKCanvas, vis, vis_window['controls_cv'].TKCanvas)
+				#if event_visualisation == sg.WIN_CLOSED:
+				#	break
 		if event_main == "Exit" or event_main == sg.WIN_CLOSED:
 			break
 	window_main.close()

@@ -10,14 +10,14 @@ from ase import Atoms
 import plotly.express as px
 import plotly.graph_objects as go
 
-def get_representative_loops(points, atoms, filt, m, dgms):
+def get_representative_loops(points, atoms, filt, m, d_dgms):
 	"""! Get representative of each homology class in dimension 1.
 
 	@param points
 	@param atoms
 	@param filt
 	@param m
-	@param dgms
+	@param d_dgms
 
 	@return dfPD
 	"""
@@ -35,7 +35,7 @@ def get_representative_loops(points, atoms, filt, m, dgms):
 		a = list(set(a))
 	simps_birth = numpy.array(simps_birth)
 	pd_cycle = []
-	for p in dgms[1]:
+	for p in d_dgms[1]:
 		# get indices of 2-simplices
 		two_cycles = numpy.where(numpy.fromiter(map(len,cycle_comps), dtype="int")==3)[0]
 		# indices of simplices born at p.death
@@ -48,11 +48,11 @@ def get_representative_loops(points, atoms, filt, m, dgms):
 		# arbitrarily choose the first one
 		pd_cycle.append(cycle_comps[ids_simp_death[birth_cycl_in][0]])
 	dfPD = pandas.DataFrame(data={
-     								"Dimension" : [1 for p in dgms[1]],
-									"Birth" : [p.birth for p in dgms[1]],
-									"Death" : [p.death for p in dgms[1]],  
-									"idPoint" : pd_cycle,
-									"Size" : [len(cycle) for cycle in pd_cycle]
+								"Dimension" : [1 for p in d_dgms[1]],
+								"Birth" : [p.birth for p in d_dgms[1]],
+								"Death" : [p.death for p in d_dgms[1]],  
+								"idPoint" : pd_cycle,
+								"Size" : [len(cycle) for cycle in pd_cycle]
 	})   
 	atom_count = [[] for a in atoms]
 	for i in range(dfPD.shape[0]):
@@ -65,7 +65,7 @@ def get_representative_loops(points, atoms, filt, m, dgms):
 		dfPD[atoms[i]+" count"] = atom_count[i]
 	return dfPD
 
-def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int): #TODO: visualise a neighbourhood of the representative
+def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
 	@param points 	pandas.DataFrame of the atoms
 	@param dfPD 	pandas.DataFrame of the representatives of cycles
@@ -73,11 +73,19 @@ def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : in
 
 	@return fig		plotly.express figure displaying the ring
 	"""
-	cycle = points.iloc[dfPD.at[id,"idPoint"]]
-	fig = go.Figure()
-	fig_scatter = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom"])
-	cycle.loc[len(to_plot.index)] = cycle.loc[0]
-	fig_lines = px.line_3d(cycle,x="x", y="y", z="z")
-	fig_ring = go.Figure(data=fig_scatter.data + fig_line.data)
-
+	print(dfPD["idPoint"].iloc[id])
+	cycle = points.iloc[dfPD["idPoint"].iloc[id]]
+	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
+	for i in range(len(cycle)):
+		fig_data = fig_data+px.line_3d(cycle.iloc[[i,(i+1)%len(cycle)]],x="x", y="y", z="z").data 
+	fig_ring = go.Figure(data=fig_data)
+	neighbour_cycles = []
+	cycle_set = set(cycle)
+	for c in filt:
+		print(c)
+		c_list=list(c)
+		print(c_list)
+		if len(c_list) == 3 and len(cycle_set.intersection(set(c_list)))!=0:
+			neighbour_cycles.append(c_list)
+	print(neighbour_cycles)	
 	return fig_ring
