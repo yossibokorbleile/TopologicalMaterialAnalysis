@@ -60,7 +60,7 @@ def read_kernel_image_cokernel(structure_file : str, setting_name : str):
 	@param file_path	path to the ini file containing the settings
 	@param settings_name	name of the settings to use
 	
-	@result
+	@result m_threads, kernel, image, cokernel, verbose 	values to use for parameters in oineus
 	"""
 	config = configparser.ConfigParser() 
 	settings = config.read(structure_file)
@@ -133,19 +133,11 @@ def weighted_alpha_diode(points):
 	"""
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
-def persistent_homology_filt_dionysus(simplices : list):
-	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
-	@param simplices 	list of simplices from dionysus
 
-	@return filt, m 	the dionysus filtration, dionysus persistent homology
-	"""
-	restricted_simps = []
-	for s in simplices:
-		if len(s[0]) <= 4:
-			restricted_simps.append(s)
-	filt = dionysus.Filtration(restricted_simps)
-	m = dionysus.homology_persistence(filt, progress = True)
-	return filt, m
+def convert_simps_to_oineus(simplices : list):
+	oin_simps = [oineus.Simplex_double(s[0], s[1]) for s in simplices]
+	return oin_simps
+
 
 def extract_diagrams_from_dionysus(filt, m):
 	"""! Given a dionysus fitlration and persistent homology, extract the persistence diagrams
@@ -184,50 +176,6 @@ def persistent_homology_diagrams_from_points_dionysus(points):#extract the persi
 	dgms = extract_diagrams_from_dionysus(filt, m)
 	return dgms
 
-def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
-	"""! Given a list of diagrams, combine these into a single diagram.
-
-	@param dgms		list of diagrams as numpy.arrays.
-
-	@return dgm		numpy.array of the combined diagram.
-	"""
-	dgm = numpy.concatenate(dgms, axis=0)
-	return dgm
-	#for i in range(len(births)):
-	#	for j in range(len(births[i])):
-	#		birth.append(births[i][j])  
-	#		death.append(deaths[i][j]) 
-	#birth = numpy.array(birth)
-	#death = numpy.array(death)
-	#return birth, death
-
-def calculate_APF(dgm): #TODO: decide what to do with points at infinity
-	"""! Calcualte the APF from a diagram 
-	@param dgm 		the dionysus diargam you want to calculate the APF for
-
-	@return APF		the APF as a list of coordiantes
-	"""
-	lifetime = dgm["death"] - dgm["birth"]
-	mean_age = abs((dgm["death"] + dgm["birth"])/2)
-	APF = numpy.transpose(numpy.vstack([mean_age, lifetime]))
-	APF = APF[APF[:,0].argsort()]
-	for i in range(1, numpy.shape(APF)[0], 1):
-			APF[i,1] = APF[i,1] + APF[i-1,1]
-	return APF
-
-#def oineus_compare_long(x, y):
-#	"""! 
-#	"""
-#	if len(x[0]) == len(y[0]):
-#		for i in range(len(x[0])):
-#			if x[0][i] < y[0][i]:
-#				return -1
-#			return 1
-#	elif len(x[0]) < len(y[0]):
-#		return -1
-#	else:
-#		return 1
-
 
 def oineus_compare(x, y):
 	"""! Comparison to compare list of simplicies to get them in the order for oineus
@@ -256,37 +204,49 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	@return L			list of simplices for the subcomplex, as needed by oineus
 	@return L_to_K		list which tells you how to map the simplices in L to the simplices in K
 	"""
+	
+	points["sub"]=sub
+	points.sort_values(by="sub", ascending=False)
 	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
-	K = []
 	L = []
-	L_to_K = []
-	id_L = 0
-	K_to_L = [-1 for i in range(len(simplices))]
+	not_L = []
+	#L_to_K = []
+	#id_L = 0
+	#K_to_L = [-1 for i in range(len(simplices))]
 	for i,s in enumerate(simplices):
 		if len(s[0])==1:
-			K.append([i,s[0],s[1]])
 			if sub[s[0][0]]==True:
-				K_to_L[i]= id_L            
-				L.append([id_L, [K_to_L[s[0][0]]], s[1]])
-				L_to_K.append(i)
-				id_L +=1
+				#K_to_L[i]= id_L            
+				L.append([s[0], s[1]])
+				#L_to_K.append(i)
+				#id_L +=1
+			else:
+				not_L.append([s[0],s[1]])
 		else:
-			K.append([i, s[0],s[1]])
 			sub_complex = True
 			for v in s[0]:
 				if sub[v] == False:
 					sub_complex=False
 					break
 			if sub_complex == True:
-				verts = [K_to_L[v] for v in s[0]]
-				L.append([id_L, verts, s[1]])
-				L_to_K.append(i)
-				K_to_L[i] = id_L
-				id_L +=1
-	return K, L, L_to_K
+				#verts = [K_to_L[v] for v in s[0]]
+				L.append([s[0], s[1]])
+				#L_to_K.append(i)
+				#K_to_L[i] = id_L
+				#id_L +=1
+			else:
+				not_L.append([s[0],s[1]])
+	K = []
+	for s in L:
+		K.append(s)
+	for s in not_L:
+		K.append(s)
+	L = [[i,s[0],s[1]] for i, s in enumerate(L)]
+	K = [[i,s[0],s[1]] for i, s in enumerate(K)]
+	return K, L#, L_to_K
 
 
 def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
@@ -329,3 +289,28 @@ def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool
 	K, L, L_to_K = oineus_pair(points, sub)
 	kicr = oineus.compute_kernel_image_cokernel_reduction(K, L, L_to_K, params)
 	return kicr
+
+
+def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
+	"""! Given a list of diagrams, combine these into a single diagram.
+
+	@param dgms		list of diagrams as numpy.arrays.
+
+	@return dgm		numpy.array of the combined diagram.
+	"""
+	dgm = numpy.concatenate(dgms, axis=0)
+	return dgm
+
+def calculate_APF(dgm): #TODO: decide what to do with points at infinity
+	"""! Calcualte the APF from a diagram 
+	@param dgm 		the dionysus diargam you want to calculate the APF for
+
+	@return APF		the APF as a list of coordiantes
+	"""
+	lifetime = dgm["death"] - dgm["birth"]
+	mean_age = abs((dgm["death"] + dgm["birth"])/2)
+	APF = numpy.transpose(numpy.vstack([mean_age, lifetime]))
+	APF = APF[APF[:,0].argsort()]
+	for i in range(1, numpy.shape(APF)[0], 1):
+			APF[i,1] = APF[i,1] + APF[i-1,1]
+	return APF
