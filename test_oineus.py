@@ -2,16 +2,32 @@ import oineus
 import diode
 import numpy
 import pandas
+from functools import cmp_to_key
 
-points = numpy.random.random((100,4))
-points[:,0:3] = 10*points[0:3]
-points = pandas.DataFrame(points, columns=["x","y", "z","y"])
 
+def oineus_compare(x, y):
+	"""! Comparison to compare list of simplicies to get them in the order for oineus
+	@param x	simplex to compare
+	@param y	simplex to compare
+
+	@return -1 if x<y, 1 otherwise
+	"""
+	if len(x[0]) == len(y[0]):
+		if x[0][0] <= y[0][0]:
+			return -1
+		else:
+			return 1
+	elif len(x[0]) < len(y[0]):
+		return -1
+	else:
+		return 1
+
+points = numpy.random.random((10,4))
+points = pandas.DataFrame(points, columns=["x","y","z","w"])
 sub = []
-
-for i in range(100):
+for i in range(points.shape[0]):
 	z_val = points["z"].iloc[i]
-	if z_val > 9 or z_val <1:
+	if z_val > 0.9 or z_val < 0.1:
 		sub.append(True)
 	else:
 		sub.append(False)
