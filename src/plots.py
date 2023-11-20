@@ -33,6 +33,8 @@ def plot_APF(APF : numpy.array, name : str):
 	"""
 	
 	fig = px.line(x=APF[:,0], y=APF[:,1], labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
 	return fig
 
 def plot_APFs(APFs : list, name : str):#, APF_colour, APF_label):
@@ -48,6 +50,8 @@ def plot_APFs(APFs : list, name : str):#, APF_colour, APF_label):
 		APFs[i] = numpy.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
 	for i in range(len(APFs)):
 		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=str(i)))
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
 	return fig
 
 def plot_PD(dgm, name : str):
@@ -76,6 +80,8 @@ def plot_PD(dgm, name : str):
 			inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "type":inf_fin})
 	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
 	return fig
 
 
@@ -121,6 +127,8 @@ def plot_PDs(dgms, name : str):
 				inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})
 	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
 	return fig
 
 
@@ -193,4 +201,6 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 	#fig.tight_layout(pad=5.0)
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "ker_im_cok":ker_im_cok, "type":inf_fin})
 	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", color="ker_im_cok", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
 	return fig

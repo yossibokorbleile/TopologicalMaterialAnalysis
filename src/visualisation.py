@@ -65,7 +65,16 @@ def get_representative_loops(points, atoms, filt, m, d_dgms):
 		dfPD[atoms[i]+" count"] = atom_count[i]
 	return dfPD
 
-#def get_neighbour_atoms()
+def get_neighbour_atoms(points : pandas.DataFrame, cycle : list, filt):
+	neighbours = []
+	print(cycle)
+	for s in filt:
+		for v in s:
+			if v in cycle:
+				print(v)
+				neighbours.append(s)
+				break
+	return neighbours
 
 def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
@@ -83,11 +92,6 @@ def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : in
 	fig_ring = go.Figure(data=fig_data)
 	neighbour_cycles = []
 	cycle_set = set(cycle)
-	for c in filt:
-		print(c)
-		c_list=list(c)
-		print(c_list)
-		if len(c_list) == 3 and len(cycle_set.intersection(set(c_list)))!=0:
-			neighbour_cycles.append(c_list)
-	print(neighbour_cycles)	
+	neighbour_atoms = get_neighbour_atoms(points, cycle, filt)
+	print(neighbour_atoms)
 	return fig_ring
