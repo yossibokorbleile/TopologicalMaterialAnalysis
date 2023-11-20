@@ -79,18 +79,17 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please Process it.")
 			else:
-				
 				if values_main['PD1'] == True:
 					fig_pd_1 = plot_PD(dgms[1], file_path+" PD1 "+str(s))
 					fig_pd_1.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1"+str(s))
+						fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1 "+str(s))
 						fig_kic_pd_1.show()
 				if values_main['PD2'] == True:
 					fig_pd_2 = plot_PD(dgms[2], file_path+" PD2 "+str(s))
 					fig_pd_2.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2"+str(s))
+						fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2 "+str(s))
 						fig_kic_pd_2.show()
 				if values_main['APF1'] == True:
 					fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
@@ -167,7 +166,7 @@ def single_mode():
 				event_visualisation, value_visualisation = visualisation_table_window.read()
 				if event_visualisation == "Display":
 					sg.popup("Clicked on row {}".format(value_visualisation[0][0]))
-					vis = generate_display(points, dfPD, value_visualisation[0][0])
+					vis = generate_display(points, dfPD, value_visualisation[0][0], filt)
 					vis.show()
 					#layout_vis_window = layout_plot_sample_at("VIS", file_path, value_visualisation[0][0])
 					#vis_window = sg.Window('PD2',

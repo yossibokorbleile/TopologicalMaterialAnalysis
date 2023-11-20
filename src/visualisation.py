@@ -65,6 +65,8 @@ def get_representative_loops(points, atoms, filt, m, d_dgms):
 		dfPD[atoms[i]+" count"] = atom_count[i]
 	return dfPD
 
+#def get_neighbour_atoms()
+
 def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
 	@param points 	pandas.DataFrame of the atoms

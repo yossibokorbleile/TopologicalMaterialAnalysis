@@ -134,18 +134,18 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 	@param cokernel	bool to plot cokernel
 	@return figu	figure with the chosen PD diagrams
 	"""
-	print("settings are kerne {} image {} cokernel{}".format(kernel, image, cokernel))
+	print("settings are kernel {} image {} cokernel {}".format(kernel, image, cokernel))
 	#fig, ax = plt.subplots()
 	fig = go.Figure()
 	max_val = -math.inf
 	if kernel:
 		kernel_pd = kicr.kernel_diagrams().in_dimension(d)
 		if math.inf in kernel_pd[:,1] and max_val < max(kernel_pd[:,1]):
-			max_val = max_val = max(kernel_pd[:,1])
+			max_val = max(kernel_pd[:,1])
 	if image:
 		image_pd = kicr.image_diagrams().in_dimension(d)
 		if math.inf in image_pd[:,1]  and max_val < max(image_pd[:,1]):
-			max_val  = max(image_pd[:,1])
+			max_val = max(image_pd[:,1])
 	if cokernel:
 		cokernel_pd = kicr.cokernel_diagrams().in_dimension(d)
 		if math.inf in cokernel_pd[:,1] and max_val < max(cokernel_pd[:,1]):
@@ -163,7 +163,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 				inf_fin.append("inf")
 			else:
 				birth.append(kernel_pd[i,0])
-				death.append(max_val*1.1)
+				death.append(kernel_pd[i,1])
 				ker_im_cok.append("kernel")
 				inf_fin.append("fin")
 	if image:
@@ -175,7 +175,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 				inf_fin.append("inf")
 			else:
 				birth.append(image_pd[i,0])
-				death.append(max_val*1.1)
+				death.append(image_pd[i,1])
 				ker_im_cok.append("image")
 				inf_fin.append("fin")
 	if cokernel:
@@ -187,10 +187,10 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 				inf_fin.append("inf")
 			else:
 				birth.append(cokernel_pd[i,0])
-				death.append(max_val*1.1)
+				death.append(cokernel_pd[i,1])
 				ker_im_cok.append("cokernel")
 				inf_fin.append("fin")
-	fig.tight_layout(pad=5.0)
+	#fig.tight_layout(pad=5.0)
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "ker_im_cok":ker_im_cok, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", color="ker_im_cok", title=name)
 	return fig

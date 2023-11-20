@@ -1,6 +1,6 @@
 #!python3
 ##
-# @mainpage Topological Amorphous Material Analysis (AMA)
+# @mainpage Topological Amorphous Material Analysis (TAMA)
 # @authors Yossi Bokor Bleile
 # @version 0.2
 # @date April 2023

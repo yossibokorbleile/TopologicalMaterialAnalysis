@@ -133,6 +133,19 @@ def weighted_alpha_diode(points):
 	"""
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
+def persistent_homology_filt_dionysus(simplices : list):
+	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
+	@param simplices 	list of simplices from dionysus
+
+	@return filt, m 	the dionysus filtration, dionysus persistent homology
+	"""
+	restricted_simps = []
+	for s in simplices:
+		if len(s[0]) <= 4:
+			restricted_simps.append(s)
+	filt = dionysus.Filtration(restricted_simps)
+	m = dionysus.homology_persistence(filt, progress = True)
+	return filt, m
 
 def convert_simps_to_oineus(simplices : list):
 	oin_simps = [oineus.Simplex_double(s[0], s[1]) for s in simplices]
@@ -235,7 +248,7 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 				#verts = [K_to_L[v] for v in s[0]]
 				L.append([s[0], s[1]])
 				#L_to_K.append(i)
-				#K_to_L[i] = id_L
+			  	#K_to_L[i] = id_L
 				#id_L +=1
 			else:
 				not_L.append([s[0],s[1]])
@@ -286,8 +299,10 @@ def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool
 	params.image = image
 	params.cokernel = cokernel
 	sub = sub_complex(points, upper_threshold, lower_threshold)
-	K, L, L_to_K = oineus_pair(points, sub)
-	kicr = oineus.compute_kernel_image_cokernel_reduction(K, L, L_to_K, params)
+	K, L = oineus_pair(points, sub)
+	L = oineus.list_to_filtration_float(L, params)
+	K = oineus.list_to_filtration_float(K, params)
+	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	return kicr
 
 
