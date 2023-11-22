@@ -206,6 +206,39 @@ def oineus_compare(x, y):
 		return -1
 	else:
 		return 1
+
+def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
+	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
+
+	@param points		pandas.DataFrame containing of the points.
+	@param z_upper		float giving the upper threshold, any point above this is in the subcomplex
+	@param z_lower		float giving the lower threshold, any point below this is in the subcomplex
+
+	@return sub_comp	list containing the indices of the points on which we build the subcomplex
+	"""
+	sub_comp = []
+	for i in points.index.values:
+		if (points["z"][i] >= z_upper) or (points["z"][i]    <= z_lower):
+			sub_comp.append(True)
+		else:
+			sub_comp.append(False)
+	return sub_comp     
+
+def oineus_filtration(points : pandas.DataFrame, params : oineus.ReductionParams):
+	"""! Given a set of points, compute the oineus.filtration of the alpha complex
+ 	
+	@param points		pandas.DataFrame containing points and their weights
+	@param params		oineus.ReductionParams which contains the settings for oineus
+ 
+	@return K			oineus.filtration
+  	"""
+	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
+	for i in range(len(simplices)):
+		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
+	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
+	K = [[i,s[0],s[1]] for i, s in enumerate(simplices)]
+	K = oineus.list_to_filtration_float(K, params)
+	return K
 		
 def oineus_pair(points : pandas.DataFrame, sub : list):
 	"""! Given a set of points, and the points that are in the subset L, construct the complexes and map between them. The subcomplex L will consists of all simplices whose vertex are in the subset.
@@ -217,8 +250,7 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	@return L			list of simplices for the subcomplex, as needed by oineus
 	@return L_to_K		list which tells you how to map the simplices in L to the simplices in K
 	"""
-	
-	points["sub"]=sub
+	# points["sub"]=sub
 	points.sort_values(by="sub", ascending=False)
 	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
@@ -261,25 +293,7 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	K = [[i,s[0],s[1]] for i, s in enumerate(K)]
 	return K, L#, L_to_K
 
-
-def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
-	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
-
-	@param points		pandas.DataFrame containing of the points.
-	@param z_upper		float giving the upper threshold, any point above this is in the subcomplex
-	@param z_lower		float giving the lower threshold, any point below this is in the subcomplex
-
-	@return sub_comp	list containing the indices of the points on which we build the subcomplex
-	"""
-	sub_comp = []
-	for i in range(points.shape[0]):
-		if (points["z"][i] >= z_upper) or (points["z"][i]    <= z_lower):
-			sub_comp.append(True)
-		else:
-			sub_comp.append(False)
-	return sub_comp     
-
-def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool, cokernel : bool, n_threads : int, upper_threshold : float, lower_threshold : float):
+def kernel_image_cokernel(points : pandas.DataFrame, params : oineus.ReductionParams, upper_threshold : float, lower_threshold : float):
 	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.
 
 	@param points			pandas.DataFrame of the points, with columns 'x','y','z','w' corresponding to the coordinates and weights respectively
@@ -293,12 +307,7 @@ def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool
 
 	@return kicr			oineus object which contains the kernel, image, cokernel persistence diagrams as required, can also calculate ones that weren't initially specificed
 	"""
-	params = oineus.ReductionParams()
-	params.n_threads = n_threads
-	params.kernel = kernel
-	params.image = image
-	params.cokernel = cokernel
-	sub = sub_complex(points, upper_threshold, lower_threshold)
+	# sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
 	L = oineus.list_to_filtration_float(L, params)
 	K = oineus.list_to_filtration_float(K, params)

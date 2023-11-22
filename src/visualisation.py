@@ -65,13 +65,11 @@ def get_representative_loops(points, atoms, filt, m, d_dgms):
 		dfPD[atoms[i]+" count"] = atom_count[i]
 	return dfPD
 
-def get_neighbour_atoms(points : pandas.DataFrame, cycle : list, filt):
+def get_neighbour_cycles(points : pandas.DataFrame, cycle : list, filt):
 	neighbours = []
-	print(cycle)
 	for s in filt:
 		for v in s:
 			if v in cycle:
-				print(v)
 				neighbours.append(s)
 				break
 	return neighbours
@@ -84,14 +82,25 @@ def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : in
 
 	@return fig		plotly.express figure displaying the ring
 	"""
-	print(dfPD["idPoint"].iloc[id])
-	cycle = points.iloc[dfPD["idPoint"].iloc[id]]
+	#print(dfPD["idPoint"].loc[id])
+	cycle = points.iloc[dfPD["idPoint"].loc[id]]
 	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
 	for i in range(len(cycle)):
 		fig_data = fig_data+px.line_3d(cycle.iloc[[i,(i+1)%len(cycle)]],x="x", y="y", z="z").data 
-	fig_ring = go.Figure(data=fig_data)
 	neighbour_cycles = []
 	cycle_set = set(cycle)
-	neighbour_atoms = get_neighbour_atoms(points, cycle, filt)
-	print(neighbour_atoms)
+	neighbours = get_neighbour_cycles(points, cycle.index.values, filt)
+	print(neighbours)
+	neighbour_atoms = list(set(v for s in neighbours for v in s))
+	print(points.loc[neighbour_atoms])
+	neighbour_atoms = points.loc[neighbour_atoms]
+	fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
+	for s in neighbours:
+		s_cycle = list(v for v in s)
+		s_cycle = points.loc[s_cycle]
+		fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data
+		#for i in range(len(s_cycle)):
+		#	fig_data = fig_data+px.line_3d(points.loc[[s_cycle[i],s_cycle[(i+1)%len(s_cycle)]]],x="x", y="y", z="z", fill="toself")).data 
+	fig_ring = go.Figure(data=fig_data)
+	fig_ring.update_layout( title="Visualisation of a representative of loop with ID: {}".format(id))
 	return fig_ring

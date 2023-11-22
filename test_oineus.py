@@ -125,7 +125,7 @@ points = pandas.DataFrame(points, columns=["x","y","z","w"])
 
 kicr = kernel_image_cokernel(points, False, True, False, 4, math.floor(max(points["z"])), math.ceil(min(points["z"])))
 
-image_pd = kicr.image_diagrams().in_dimension(1)
-for pt in image_pd:
+domain_pd = kicr.domain_diagrams().in_dimension(1)
+for pt in domain_pd:
 	print(pt)
 
