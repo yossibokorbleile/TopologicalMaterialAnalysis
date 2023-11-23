@@ -52,5 +52,8 @@ in `Documentation/latex`.
 - [X] save the outputs in a way which can be relaoded for analysis
 -  move away from CGAL? (understand alpha complexes and do periodically?)
 - [X] include kernel/image/corkernel
--  do everything via Oineus?
+- [X] do everything via Oineus?
+-  Update batch and multi mode in GUI
+-  Update CLI/streamlit?
+- error handling for ker/im/cok diagrams 
   

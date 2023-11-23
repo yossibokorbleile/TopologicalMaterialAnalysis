@@ -59,6 +59,7 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	K = [[i,s[0],s[1]] for i, s in enumerate(K)]
 	return K, L#, L_to_K
 
+
 def oineus_compare(x, y):
 	"""! Comparison to compare list of simplicies to get them in the order for oineus
 	@param x	simplex to compare
@@ -76,6 +77,7 @@ def oineus_compare(x, y):
 	else:
 		return 1
 
+
 def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
 	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
 
@@ -92,6 +94,7 @@ def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
 		else:
 			sub_comp.append(False)
 	return sub_comp    
+
 
 def kernel_image_cokernel(points : pandas.DataFrame, kernel : bool, image : bool, cokernel : bool, n_threads : int, upper_threshold : float, lower_threshold : float):
 	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.

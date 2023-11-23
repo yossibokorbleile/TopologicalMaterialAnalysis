@@ -42,7 +42,6 @@ def single_mode():
 	plotted = False
 	params = oineus.ReductionParams()
 
-	#sg.Print('Re-routing the stdout', do_not_reroute_stdout=False)
 	while True:
 		event_main, values_main = window_main.read()
 		if event_main == "Process":
@@ -54,18 +53,13 @@ def single_mode():
 				repeat_x = int(values_main["repeat_x"])
 				repeat_y = int(values_main["repeat_y"])
 				repeat_z = int(values_main["repeat_z"])
-			#if (loaded == False):
+
 			file_path = values_main['file_path']
 			points = load_atom_file(file_path, values_main["file_format"])
-			#loaded= True
 			s = int(values_main["sample_at"])
 			points = sample_at(points, s, repeat_x, repeat_y, repeat_z, atoms, radii)
 			simplices = weighted_alpha_diode(points)
-			#filt, m =  persistent_homology_filt_dionysus(simplices)
-			#dgms, dionysus_diagrams = extract_diagrams_from_dionysus(filt, m)
-			#births, deaths = get_birth_death(dgms)
-			#APF_1 = calculate_APF(dgms[1])
-			#APF_2 = calculate_APF(dgms[2])	
+			params.n_threads = int(values_main["n_threads"])
 			if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 				if values_main["upper_threshold"] == "Automatic":
 					upper_threshold = math.floor(max(points["z"])) 
@@ -78,22 +72,17 @@ def single_mode():
 				params.kernel = values_main["kernel"]
 				params.image = values_main["image"]
 				params.cokernel = values_main["cokernel"]
-				params.n_threads = int(values_main["n_threads"])
-				kicr =  kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
-				dom_diagrams_1 = kicr.domain_diagrams().in_dimension(1)
-				dom_diagrams_2 = kicr.domain.diagrams().in_dimension(2)
+				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
+				if values_main["APF1"]:
+					APF_1 = calculate_APF(dgm_1)
+				if values_main["APF2"]:
+					APF_2 = calculate_APF(dgm_2)	
 			else:
-				params.n_threads = int(values_main["n_threads"])
-				params = oineus.ReductionParams()
-				filt = oineus_filtration(points, params)
-				dcmp = oineus.Decomposition(filt, False)
-				dcmp.reduce(params)
-				dgms = dcmp.diagram(filt, include_inf_points=True)
-				#filt, m =  persistent_homology_filt_dionysus(simplices)
-				#dgms, dionysus_diagrams = extract_diagrams_from_dionysus(filt, m)
-				#births, deaths = get_birth_death(dgms)
-				APF_1 = calculate_APF(dgms.in_dimension(1))
-				APF_2 = calculate_APF(dgms.in_dimension(2))	
+				dgm_1, dgm_2 = oineus_process(points, params)
+				if values_main["APF1"]:
+					APF_1 = calculate_APF(dgm_1)
+				if values_main["APF2"]:
+					APF_2 = calculate_APF(dgm_2)
 			processed = True
    
 		if event_main == "Plot":
@@ -101,23 +90,41 @@ def single_mode():
 				sg.popup_error("File not processed, please Process it.")
 			else:
 				if values_main['PD1'] == True:
-					fig_pd_1 = plot_PD(dgms[1], file_path+" PD1 sample "+str(s))
+					fig_pd_1 = plot_PD(dgm_1, file_path+" PD1 sample "+str(s))
 					fig_pd_1.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1 sample "+str(s))
-						fig_kic_pd_1.show()
+						try:
+							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1 sample "+str(s))
+							fig_kic_pd_1.show()
+						except:
+							print("Kernel/image/cokernel persistence has not been calculated")
 				if values_main['PD2'] == True:
-					fig_pd_2 = plot_PD(dgms[2], file_path+" PD2 sample "+str(s))
+					fig_pd_2 = plot_PD(dgm_2, file_path+" PD2 sample "+str(s))
 					fig_pd_2.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-						fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2 sample "+str(s))
-						fig_kic_pd_2.show()
+						try:
+							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2 sample "+str(s))
+							fig_kic_pd_2.show()
+						except:
+							print("Kernel/image/cokernel persistence has not been calculated")
 				if values_main['APF1'] == True:
-					fig_apf_1 = plot_APF(APF_1, file_path+" APF1 sample "+str(s))
-					fig_apf_1.show()
+					try:
+						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 sample "+str(s))
+						fig_apf_1.show()
+					except:
+						sg.popup_error("APF1 has not been calculated, will calculate it now. Did you change settins after processig the structure?")
+						APF_1 = calculate_APF(dgm_1)
+						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 sample "+str(s))
+						fig_apf_1.show()
 				if values_main['APF2'] == True:
-					fig_apf_2 = plot_APF(APF_2, file_path+" APF2 sample "+str(s))
-					fig_apf_2.show()			
+					try:
+						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 sample "+str(s))
+						fig_apf_2.show()	
+					except:
+						sg.popup_error("APF2 has not been calculated, will calculate it now. Did you change settins after processig the structure?")
+						APF_2 = calculate_APF(dgm_2)
+						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 sample "+str(s))
+						fig_apf_2.show()
 				plotted = True
 				
 		
