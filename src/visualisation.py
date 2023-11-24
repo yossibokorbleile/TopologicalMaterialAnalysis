@@ -10,7 +10,7 @@ from ase import Atoms
 import plotly.express as px
 import plotly.graph_objects as go
 
-def get_representative_loops(points, atoms, filt, m, d_dgms):
+def get_representative_loops_codomain(points, atoms, filt, m, d_dgms):
 	"""! Get representative of each homology class in dimension 1.
 
 	@param points

@@ -71,22 +71,24 @@ elif args.mode == "m" and args.interface == "g":
 elif args.mode == "b" and args.interface == "g":
     from gui import batch_mode as mode
     mode()
-elif args.mode == "s" and args.kernel == None and args.interface == "c":
-    from cli import single_mode as mode
-    mode(args.file, args.format, args.settings, args.type,  args.sample_time)
-elif args.mode == "s" and args.kernel != None and args.interface == "c":
-	from cli import single_mode_kernel as mode
-	mode(args.file, args.settings, args.format, args.type, args.sample_time, args.kernel)
-elif args.mode == "m" and args.kernel == None and args.interface == "c":
-    from cli import multi_mode as mode
-    mode(args.file, args.settings, args.format, args.type, args.range, save_all=args.save_all)
-elif args.mode == "m" and args.kernel != None and args.interface == "c":
-    from cli import multi_mode_kernel as mode
-    mode(args.file, args.settings, args.format, args.type, args.range, args.kernel, save_all=args.save_all)
-elif args.mode == "b" and args.kernel == None and args.interface == "c":
-    from cli import batch_mode as mode 
-    mode(args.directory, args.extension, args.format, args.settings, args.type, args.range, save_all=args.save_all)
-elif args.mode == "b" and args.kernel != None and args.interface == "c":
-	from cli import batch_mode_kernel as mode
-	mode(args.directory, args.extension, args.format, args.settings, args.type, args.range, args.kernel, save_all=args.save_all)
+else: 
+    print("Command line interface is being updated, please use the GUI for the moment.")
+# elif args.mode == "s" and args.kernel == None and args.interface == "c":
+#     from cli import single_mode as mode
+#     mode(args.file, args.format, args.settings, args.type,  args.sample_time)
+# elif args.mode == "s" and args.kernel != None and args.interface == "c":
+# 	from cli import single_mode_kernel as mode
+# 	mode(args.file, args.settings, args.format, args.type, args.sample_time, args.kernel)
+# elif args.mode == "m" and args.kernel == None and args.interface == "c":
+#     from cli import multi_mode as mode
+#     mode(args.file, args.settings, args.format, args.type, args.range, save_all=args.save_all)
+# elif args.mode == "m" and args.kernel != None and args.interface == "c":
+#     from cli import multi_mode_kernel as mode
+#     mode(args.file, args.settings, args.format, args.type, args.range, args.kernel, save_all=args.save_all)
+# elif args.mode == "b" and args.kernel == None and args.interface == "c":
+#     from cli import batch_mode as mode 
+#     mode(args.directory, args.extension, args.format, args.settings, args.type, args.range, save_all=args.save_all)
+# elif args.mode == "b" and args.kernel != None and args.interface == "c":
+# 	from cli import batch_mode_kernel as mode
+# 	mode(args.directory, args.extension, args.format, args.settings, args.type, args.range, args.kernel, save_all=args.save_all)
 
