@@ -344,15 +344,14 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 
 
 
-def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
-	"""! Given a list of diagrams, combine these into a single diagram.
-
-	@param dgms		list of diagrams as numpy.arrays.
-
-	@return dgm		numpy.array of the combined diagram.
-	"""
-	dgm = numpy.concatenate(dgms, axis=0)
-	return dgm
+#def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
+#	"""! Given a list of diagrams, combine these into a single diagram.
+#
+#	@param dgms		list of diagrams as numpy.arrays.
+#	@return dgm		numpy.array of the combined diagram.
+#	"""
+#	dgm = numpy.concatenate(dgms, axis=0)
+#	return dgm
 
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 

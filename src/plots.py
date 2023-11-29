@@ -95,7 +95,6 @@ def plot_PDs(dgms, name : str):
 
 	@results a plotly.express figure
 	"""
-	#assert len(births) == len(deaths), f"Different number of sets of points provided."
 	birth = []
 	death = []
 	samp = []

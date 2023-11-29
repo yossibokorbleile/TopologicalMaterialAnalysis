@@ -62,9 +62,9 @@ info.intro()
 if args.license:
 	info.license()
  
-if args.mode == "s" and args.interface == "g":
-    from gui import single_mode as mode
-    mode()
+if args.interface == "g": #args.mode == "s" and 
+    from gui import entry_window
+    entry_window()
 elif args.mode == "m" and args.interface == "g":
     from gui import multi_mode as mode
     mode()
