@@ -173,26 +173,26 @@ def single_mode():
 				sg.popup_error("File not processed, please process it.")
 			else:
 				dir = os.path.dirname(file_path)
-				config_name = os.path.splitext(os.path.split(file_path)[1])[0]
+				file_name = os.path.splitext(os.path.split(file_path)[1])[0]
 				try:
-					pandas.DataFrame(numpy.column_stack([births[1], deaths[1]]), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_PD_1.csv", header = None)
-					pandas.DataFrame(APF_1, columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_APF_1.csv", header=  None)
+					pandas.DataFrame(numpy.column_stack([births[1], deaths[1]]), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_PD_1.csv", header = None)
+					pandas.DataFrame(APF_1, columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_APF_1.csv", header=  None)
 				except:
 					print("Persistence diagram in dimension 1 is empty.")
 				try:
-					pandas.DataFrame(numpy.column_stack([births[2], deaths[2]]), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_PD_2.csv", header = None)
-					pandas.DataFrame(APF_2, columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_APF_2.csv", header = None)
+					pandas.DataFrame(numpy.column_stack([births[2], deaths[2]]), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_PD_2.csv", header = None)
+					pandas.DataFrame(APF_2, columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_APF_2.csv", header = None)
 				except:
 					print("Persistence diagram in dimension 2 is empty.")
 				if values_main["kernel"]:
-					pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_kernel_PD_1.csv", header = None)
-					pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_kernel_PD_2.csv", header = None)
+					pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_kernel_PD_1.csv", header = None)
+					pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_kernel_PD_2.csv", header = None)
 				if values_main["image"]:
-					pandas.DataFrame(kicr.image_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_image_PD_1.csv", header = None)
-					pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_image_PD_2.csv", header = None)
+					pandas.DataFrame(kicr.image_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_image_PD_1.csv", header = None)
+					pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_image_PD_2.csv", header = None)
 				if values_main["cokernel"]:
-					pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_cokernel_PD_1.csv", header = None)
-					pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+config_name+"_sample_"+str(s)+"_cokernel_PD_2.csv", header = None)
+					pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_cokernel_PD_1.csv", header = None)
+					pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/"+file_name+"_sample_"+str(s)+"_cokernel_PD_2.csv", header = None)
 				if plotted == False:
 					if values_main['APF1'] == True:
 						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
@@ -214,17 +214,17 @@ def single_mode():
 							fig_kic_pd_2.show()
 				else:
 					if values_main["PD1"]:
-						fig_pd_1.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_PD_1.png")
+						fig_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_1.png")
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-							fig_kic_pd_1.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_kic_PD_1.png")
+							fig_kic_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_1.png")
 					if values_main["PD2"]:
-						fig_pd_2.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_PD_2.png")
+						fig_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_2.png")
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-							fig_kic_pd_2.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_kic_PD_2.png")
+							fig_kic_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_2.png")
 					if values_main["APF1"]:
-						fig_apf_1.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_APF_1.png")
+						fig_apf_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_1.png")
 					if values_main["APF2"]:
-						fig_apf_2.write_image(dir+"/"+config_name+"_sample_"+str(s)+"_APF_2.png")
+						fig_apf_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_2.png")
 		
 		if event_main == "Visualisation":
 			if processed == False:
@@ -414,7 +414,6 @@ def batch_mode():
 					os.mkdir(os.path.join(dir, "APF2"))
 				file_name = os.path.splitext(os.path.split(file)[1])[0]
 				for s in sample_every:
-					#points = load_atom_file(config, values_main["file_format"])
 					points = sample_at(simulation, s, repeat_x, repeat_y, repeat_z, atoms, radii)
 					simplices = weighted_alpha_diode(points)
 					params.n_threads = int(values_main["n_threads"])
@@ -431,22 +430,38 @@ def batch_mode():
 						params.image = values_main["image"]
 						params.cokernel = values_main["cokernel"]
 						kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
-						dgm_1.to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.csv")
-						dgm_2.to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_2.csv")
+						if values_main["PD1"]:
+		  					dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
+							if params.kernel:
+								pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_kernel_PD_1.csv", header = None)
+							if params.cokernel:
+								pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_cokernel_PD_1.csv", header = None)
+							if params.image:
+								pandas.DataFrame(kicr.image_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_image_PD_1.csv", header = None)
+						if values_main["PD2"]:
+							dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
+							if params.kernel:
+								pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_kernel_PD_2.csv", header = None)
+							if params.cokernel:
+								pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_cokernel_PD_2.csv", header = None)
+							if params.image:
+								pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_image_PD_2.csv", header = None)
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
 						if values_main["APF2"]:
 							APF_2 = calculate_APF(dgm_2)	
 					else:
 						dgm_1, dgm_2 = oineus_process(points, params)
-						dgm_1.to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_1.csv")	
-						dgm_2.to_csv(dir+"/PD1/"+config_name+"_sample_"+str(s)+"_PD_2.csv")
+						if values_main["PD1"]:
+							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")	
+						if values_main["PD2"]:
+						dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
-							pandas.DataFrame(APF_1, columns=["birth", "death"]).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_APF_1.csv")
+							pandas.DataFrame(APF_1, columns=["birth", "death"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")
 						if values_main["APF2"]:
 							APF_2 = calculate_APF(dgm_2)
-							pandas.DataFrame(APF_2, columns=["birth", "death"]).to_csv(dir+"/APF1/"+config_name+"_sample_"+str(s)+"_APF_2.csv")
+							pandas.DataFrame(APF_2, columns=["birth", "death"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
 			print("All done!")
 			processed = True
 
