@@ -21,18 +21,10 @@ The GUI currently has two modes: `-s` for looking at a single configureation at 
 ## Running the GUI:
 Once you have all the packages installed and are in your python environment of choice, navigate to the GUI directory, and from a terminal (on Mac/Linux) or Command prompt(?) (Windows), run 
 ```python
-src/TAMA.py -m s
+src/TAMA.py
 ```
-for single sample mode or 
 
-```python
-src/TAMA.py -m m
-```
-for multisample mode or 
-```python
-src/TAMA.py -m b
-```
-for batch mode.	
+You can then select from 3 different modes: `single`, `multi` and `batch`.
 Using the GUI should be pretyy self-explanatory from here, but I can write more things if you would like.
 
 ## Documentation
