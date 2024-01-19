@@ -101,21 +101,23 @@ def sample_at(atoms, sample_index, repeat_x : int, repeat_y : int, repeat_z : in
 
 	@return points		data frame of the points including the repetitions with columns 'Atom', 'x', 'y', 'z', 'w'
 	"""
-	sample  = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
+	sample = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
+	print("sample is ", sample)
 	coord = sample.get_positions() #get the coordinates of the atoms once repeated
 	cell = sample.get_cell() #get the cell size
 	dfpoints = pandas.DataFrame(numpy.column_stack([sample.get_chemical_symbols(), coord]), columns=["Atom", "x", "y", "z"]) #combine the atomic symbols with their location into a pandas.DataFrame
 	atoms_found = dfpoints["Atom"].unique() #get a list of all the atoms found in the structure
 	remove = [] #any atoms in the sample which were not in the atoms list are removed 
-	print("Found atoms of the following types: ", atom_list) #print all of the ones we found
+	print("Found atoms of the following types: ", atoms_found, " and atom list is ", atom_list) #print all of the ones we found
 	for a in atoms_found:
 		if a not in atom_list:
-			remove.append([a])
+			remove.append(a)
 	if len(remove) != 0:
 		print("We are going to remove atoms of following types ", remove, " as they were not specified in the configuration.")
 		dfpoints = dfpoints[dfpoints["Atom"].isin(atom_list)] #remove the corresponding atoms
 	conditions = [(dfpoints["Atom"]==atom_list[i]) for i in range(len(atom_list))] #set conditions to select the radius  by atom type
 	choice_weights = [radius_list[i]**2 for i in range(len(radius_list))] #the weights are the radius squared 
+	print("Conditions are size ", len(conditions), " and choice weights are ", choice_weights)
 	dfpoints["w"] = numpy.select(conditions, choice_weights) #set the weights in the dataframe
 	dfpoints["x"] = pandas.to_numeric(dfpoints["x"]) #ensure that everything is numeric and not string
 	dfpoints["y"] = pandas.to_numeric(dfpoints["y"]) #ensure that everything is numeric and not string
