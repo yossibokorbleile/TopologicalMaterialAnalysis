@@ -448,8 +448,10 @@ def batch_mode():
 								pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth", "death"]).to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_image_PD_2.csv", header = None)
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
+							pandas.DataFrame(APF_1, columns=["mean age", "lifetime"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")
 						if values_main["APF2"]:
 							APF_2 = calculate_APF(dgm_2)	
+							pandas.DataFrame(APF_2, columns=["mean age", "lifetime"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
 					else:
 						dgm_1, dgm_2 = oineus_process(points, params)
 						if values_main["PD1"]:
@@ -458,10 +460,10 @@ def batch_mode():
 						dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
-							pandas.DataFrame(APF_1, columns=["birth", "death"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")
+							pandas.DataFrame(APF_1, columns=["mean age", "lifetime"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")
 						if values_main["APF2"]:
 							APF_2 = calculate_APF(dgm_2)
-							pandas.DataFrame(APF_2, columns=["birth", "death"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
+							pandas.DataFrame(APF_2, columns=["mean age", "lifetime"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
 			print("All done!")
 			processed = True
 
