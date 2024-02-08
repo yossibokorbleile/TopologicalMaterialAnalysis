@@ -10,60 +10,50 @@ from ase import Atoms
 import plotly.express as px
 import plotly.graph_objects as go
 
-def get_representative_loops_codomain(points, atoms, filt, m, d_dgms):
+def get_representative_loops(dgm : pandas.DataFrame, V : list):
 	"""! Get representative of each homology class in dimension 1.
-
-	@param points
-	@param atoms
-	@param filt
-	@param m
-	@param d_dgms
-
-	@return dfPD
+	@param dgm 		pandas.DataFrame containing the diagram and the birth and death simplex id
+	@param V		matrix V in sparse column format
+	
+	@return dgm		pandas.DataFrame with new column `cycle rep`
 	"""
-	simps_birth = []
-	cycle_comps = []
 	cycle_reps = []
-	for i, c in enumerate(m):
-		if i % 1000 == 0:
-			print(i)
-		simps_birth.append(filt[i].data)
-		cycle_comps.append([j for j in filt[i]])
-		a = []
-		for x in c:
-			a = a+[j for j in filt[x.index]]
-		a = list(set(a))
-	simps_birth = numpy.array(simps_birth)
-	pd_cycle = []
-	for p in d_dgms[1]:
-		# get indices of 2-simplices
-		two_cycles = numpy.where(numpy.fromiter(map(len,cycle_comps), dtype="int")==3)[0]
-		# indices of simplices born at p.death
-		diff = numpy.absolute(p.death-simps_birth) 
-		ids_same_death = [i for i in numpy.where(diff == min(diff))[0]]
-		#intersec the two sets
-		ids_simp_death = numpy.intersect1d(two_cycles, ids_same_death)
-		#test if m[ids_simp_death] contains filt[p.data]
-		birth_cycl_in = [p.data in [j.index for j in m[i]] for i in ids_simp_death]
-		# arbitrarily choose the first one
-		pd_cycle.append(cycle_comps[ids_simp_death[birth_cycl_in][0]])
-	dfPD = pandas.DataFrame(data={
-								"Dimension" : [1 for p in d_dgms[1]],
-								"Birth" : [p.birth for p in d_dgms[1]],
-								"Death" : [p.death for p in d_dgms[1]],  
-								"idPoint" : pd_cycle,
-								"Size" : [len(cycle) for cycle in pd_cycle]
-	})   
-	atom_count = [[] for a in atoms]
-	for i in range(dfPD.shape[0]):
-		list_atoms_in_cycle = points.iloc[dfPD.iloc[i]["idPoint"]]["Atom"].tolist()
-		for i, a in enumerate(atoms):
-			atom_count[i].append(list_atoms_in_cycle.count(a))
-	#append the count to the dataframe
-	print(atom_count)
-	for i in range(len(atoms)):
-		dfPD[atoms[i]+" count"] = atom_count[i]
-	return dfPD
+	for i in range(dgm.shape[0]):
+		birth_id = dgm["birth simplex"].iloc[i]
+		cycle_reps.append(V[birth_id])
+		print("rep for {} is {}".format(i,[birth_id]))
+	dgm["cycle rep"] = cycle_reps
+	return dgm
+
+def loop_composition(loop, points, atom_types):
+	"""! Get the composition of a given representative 
+
+	@param loop		list containing the ids of the vertices in the loop
+	@param points	pandas.DataFrame of the points (atoms) in the structure
+	@param atom_types list of the atom types we are considering (restricting to)
+
+	@return comp	dictionary listing the number of atoms of each type in the loop
+	"""
+	comp = dict([(a, 0) for a in atom_types])
+	for x in loop:
+		comp[points["Atom"].iloc[x]] +=1
+	print(comp)
+	return comp
+
+def generate_visulisation_df(dgm : pandas.DataFrame, V, points, atom_types):  
+	"""! generate the pandas.DataFrame containing the information about the points so we can display it 
+
+	@param dgm		pandas.DataFrame of the diagram, with columns `birth`, `death`, `birth simplex`, `death simplex`, `cycle rep`
+	"""
+	dgm =  get_representative_loops(dgm, V)
+	#get the composition of the cycle representatives
+	comps = []
+	for i in range(dgm.shape[0]):
+		comps.append(loop_composition(dgm["cycle rep"].iloc[i], points, atom_types))
+	#for each atom type we are looking at, add a column with the number of atoms of this type in the cycle representative
+	for a in atom_types:
+		dgm[a] = [c[a] for c in comps]
+	return dgm
 
 def get_neighbour_cycles(points : pandas.DataFrame, cycle : list, filt):
 	neighbours = []
@@ -74,16 +64,16 @@ def get_neighbour_cycles(points : pandas.DataFrame, cycle : list, filt):
 				break
 	return neighbours
 
-def generate_display(points : pandas.DataFrame, dfPD : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
+def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
 	@param points 	pandas.DataFrame of the atoms
-	@param dfPD 	pandas.DataFrame of the representatives of cycles
+	@param dgm 	pandas.DataFrame of the representatives of cycles
 	@param id		int corresponding to the id of the cycle you want to visualise
 
 	@return fig		plotly.express figure displaying the ring
 	"""
-	#print(dfPD["idPoint"].loc[id])
-	cycle = points.iloc[dfPD["idPoint"].loc[id]]
+	#print(dgm["idPoint"].loc[id])
+	cycle = points.iloc[dgm["idPointz"].loc[id]]
 	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
 	for i in range(len(cycle)):
 		fig_data = fig_data+px.line_3d(cycle.iloc[[i,(i+1)%len(cycle)]],x="x", y="y", z="z").data 

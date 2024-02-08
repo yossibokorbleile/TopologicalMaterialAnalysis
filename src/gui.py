@@ -118,7 +118,7 @@ def single_mode():
 				if values_main["APF2"]:
 					APF_2 = calculate_APF(dgm_2)	
 			else:
-				dgm_1, dgm_2 = oineus_process(points, params)
+				dcmp, filt, dgm_1, dgm_2 = oineus_process(points, params)
 				if values_main["APF1"]:
 					APF_1 = calculate_APF(dgm_1)
 				if values_main["APF2"]:
@@ -230,13 +230,13 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please process it.")
 			else:
-				dfPD = get_representative_loops(points, atoms, filt, m, dionysus_diagrams)
-				visualisation_table_layout = [[sg.Table(values=dfPD.values.tolist(), headings=dfPD.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display")]]
+				dfVis = generate_visulisation_df(dgm_1, dcmp.v_data, points, atoms)
+				visualisation_table_layout = [[sg.Table(values=dfVis.values.tolist(), headings=dfVis.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display")]]
 				visualisation_table_window = sg.Window("AMA: 1-cycle representatives table", visualisation_table_layout, resizable=True)
 				while True:
 					event_visualisation, value_visualisation = visualisation_table_window.read()
 					if event_visualisation == "Display":
-						vis = generate_display(points, dfPD, value_visualisation[0][0], filt)
+						vis = generate_display(points, dfVis, value_visualisation[0][0], filt)
 						vis.show()
 					if event_visualisation == "Exit" or event_visualisation == sg.WIN_CLOSED:
 						break
@@ -431,7 +431,7 @@ def batch_mode():
 						params.cokernel = values_main["cokernel"]
 						kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
 						if values_main["PD1"]:
-		  					dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
+							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
 							if params.kernel:
 								pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_kernel_PD_1.csv", header = None)
 							if params.cokernel:
@@ -457,7 +457,7 @@ def batch_mode():
 						if values_main["PD1"]:
 							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")	
 						if values_main["PD2"]:
-						dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
+							dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
 							pandas.DataFrame(APF_1, columns=["mean age", "lifetime"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")
