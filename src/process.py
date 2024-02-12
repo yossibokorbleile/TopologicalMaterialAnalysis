@@ -309,10 +309,10 @@ def oineus_process(points : pandas.DataFrame, params : oineus.ReductionParams):
 	dcmp =  oineus.Decomposition(filt, False) #initialise the decomposition without cohomology
 	dcmp.reduce(params) #reduce the matrix
 	dgms = dcmp.diagram(filt) #initialise the diagrams
-	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return dcmp, filt, dgm_1, dgm_2
@@ -336,10 +336,10 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	L = oineus.list_to_filtration_float(L)
 	K = oineus.list_to_filtration_float(K)
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
-	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_2 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return kicr, dgm_1, dgm_2

@@ -10,18 +10,23 @@ from ase import Atoms
 import plotly.express as px
 import plotly.graph_objects as go
 
-def get_representative_loops(dgm : pandas.DataFrame, V : list):
+def get_representative_loops(dgm : pandas.DataFrame, V, filt):
 	"""! Get representative of each homology class in dimension 1.
 	@param dgm 		pandas.DataFrame containing the diagram and the birth and death simplex id
-	@param V		matrix V in sparse column format
+	@param filt		oineus filtration
 	
 	@return dgm		pandas.DataFrame with new column `cycle rep`
 	"""
 	cycle_reps = []
+	print(dgm.shape[0])
 	for i in range(dgm.shape[0]):
-		birth_id = dgm["birth simplex"].iloc[i]
-		cycle_reps.append(V[birth_id])
-		print("rep for {} is {}".format(i,[birth_id]))
+		idx = dgm["death simplex"].iloc[i]
+		sorted_rep = V[filt.get_sorted_id_by_id(idx)]
+		rep = []
+		for v in sorted_rep:
+			rep.append(filt.get_id_by_sorted_id(v))
+		cycle_reps.append(rep)
+		print("{} ({}, {}): unsorted birth_id {} sorted birth id {} rep sorted {} rep unsorted {}".format(i,dgm["birth"].iloc[i], dgm["death"].iloc[i],idx,filt.get_sorted_id_by_id(idx),V[filt.get_sorted_id_by_id(idx)], rep))
 	dgm["cycle rep"] = cycle_reps
 	return dgm
 
@@ -36,16 +41,15 @@ def loop_composition(loop, points, atom_types):
 	"""
 	comp = dict([(a, 0) for a in atom_types])
 	for x in loop:
-		comp[points["Atom"].iloc[x]] +=1
-	print(comp)
+		comp[points["Atom"].iloc[x]] += 1
 	return comp
 
-def generate_visulisation_df(dgm : pandas.DataFrame, V, points, atom_types):  
+def generate_visulisation_df(dgm : pandas.DataFrame, V, filt, points, atom_types):  
 	"""! generate the pandas.DataFrame containing the information about the points so we can display it 
 
 	@param dgm		pandas.DataFrame of the diagram, with columns `birth`, `death`, `birth simplex`, `death simplex`, `cycle rep`
 	"""
-	dgm =  get_representative_loops(dgm, V)
+	dgm =  get_representative_loops(dgm, V, filt)
 	#get the composition of the cycle representatives
 	comps = []
 	for i in range(dgm.shape[0]):
