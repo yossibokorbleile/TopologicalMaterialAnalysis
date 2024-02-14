@@ -309,10 +309,10 @@ def oineus_process(points : pandas.DataFrame, params : oineus.ReductionParams):
 	dcmp =  oineus.Decomposition(filt, False) #initialise the decomposition without cohomology
 	dcmp.reduce(params) #reduce the matrix
 	dgms = dcmp.diagram(filt) #initialise the diagrams
-	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2, sorted=False)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
+	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return dcmp, filt, dgm_1, dgm_2
@@ -343,17 +343,6 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return kicr, dgm_1, dgm_2
-
-
-
-#def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
-#	"""! Given a list of diagrams, combine these into a single diagram.
-#
-#	@param dgms		list of diagrams as numpy.arrays.
-#	@return dgm		numpy.array of the combined diagram.
-#	"""
-#	dgm = numpy.concatenate(dgms, axis=0)
-#	return dgm
 
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 

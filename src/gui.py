@@ -230,7 +230,7 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please process it.")
 			else:
-				dfVis = generate_visulisation_df(dgm_1, dcmp.v_data, filt, points, atoms)
+				dfVis = generate_visulisation_df(dgm_1, dcmp.r_data, filt, points, atoms)
 				visualisation_table_layout = [[sg.Table(values=dfVis.values.tolist(), headings=dfVis.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display")]]
 				visualisation_table_window = sg.Window("AMA: 1-cycle representatives table", visualisation_table_layout, resizable=True)
 				while True:
