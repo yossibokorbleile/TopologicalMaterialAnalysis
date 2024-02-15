@@ -80,11 +80,11 @@ def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types
 	dgm["vertices"]=verts
 	return dgm
 
-def get_neighbour_cycles(points : pandas.DataFrame, cycle : list, filt):
+def get_neighbour_cycles(points : pandas.DataFrame, cycle_vertices : list, filt):
 	neighbours = []
-	for s in filt:
+	for s in filt.simplices():
 		for v in s:
-			if v in cycle:
+			if v in cycle_vertices:
 				neighbours.append(s)
 				break
 	return neighbours
@@ -97,26 +97,24 @@ def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int
 
 	@return fig		plotly.express figure displaying the ring
 	"""
-	#print(dgm["idPoint"].loc[id])
 	cycle = points.iloc[[filt.get_id_by_sorted_id(v) for v in dgm["vertices"].loc[id]]]
 	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
 	print(dgm["edges"].loc[id])
 	for e in dgm["edges"].loc[id]:
 		fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
-	#neighbour_cycles = []
-	#cycle_set = set(cycle)
-	#neighbours = get_neighbour_cycles(points, cycle.index.values, filt)
-	#print(neighbours)
-	#neighbour_atoms = list(set(v for s in neighbours for v in s))
-	#print(points.loc[neighbour_atoms])
-	#neighbour_atoms = points.loc[neighbour_atoms]
-	#fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
-	#for s in neighbours:
-		# s_cycle = list(v for v in s)
-		# s_cycle = points.loc[s_cycle]
-		# fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data
-		#for i in range(len(s_cycle)):
-		#	fig_data = fig_data+px.line_3d(points.loc[[s_cycle[i],s_cycle[(i+1)%len(s_cycle)]]],x="x", y="y", z="z", fill="toself")).data 
+	neighbour_cycles = []
+	neighbours = get_neighbour_cycles(points, [v for v in dgm["vertices"].loc[id]], filt)
+	print(neighbours)
+	neighbour_atoms = list(set(v for s in neighbours for v in s))
+	print(points.loc[neighbour_atoms])
+	neighbour_atoms = points.loc[neighbour_atoms]
+	fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
+	for s in neighbours:
+		s_cycle = list(v for v in s)
+		s_cycle = points.loc[s_cycle]
+		fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data
+		for i in range(len(s_cycle)):
+			fig_data = fig_data+px.line_3d(points.loc[[s_cycle[i],s_cycle[(i+1)%len(s_cycle)]]],x="x", y="y", z="z", fill="toself")).data 
 	fig_ring = go.Figure(data=fig_data)
 	fig_ring.update_layout( title="Visualisation of a representative of loop with ID: {}".format(id))
 	return fig_ring
