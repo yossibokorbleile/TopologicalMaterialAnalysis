@@ -20,27 +20,21 @@ def get_representative_loops(dgm : pandas.DataFrame, R, filt):
 	cycle_reps = []
 	for i in range(dgm.shape[0]):
 		idx = dgm["death simplex"].iloc[i]
-		#print(idx)
-		sorted_rep = R[idx]
 		rep = []
-		for v in sorted_rep:
+		for v in R[idx]:
 			rep.append(filt.get_cell(v))
 		cycle_reps.append(rep)
-		#print("{} ({}, {}): unsorted birth_id {} sorted birth id {} rep sorted {} rep unsorted {}".format(i,dgm["birth"].iloc[i], dgm["death"].iloc[i],idx,filt.get_sorted_id_by_id(idx),R[filt.get_sorted_id_by_id(idx)], rep))
 	dgm["cycle rep"] = cycle_reps
 	return dgm
 
 def get_vertices_and_edges(loop, filt):
 	verts = []
 	edges = []
-	#print("gettin vertices and edges")
 	for x in loop:
-		#print(x)
 		verts.append(x.vertices[0])
 		verts.append(x.vertices[1])
 		edges.append([x.vertices[0], x.vertices[1]])
-	#print("got them")
-	return verts, edges
+	return list(set(verts)), edges
 
 def loop_composition(verts, filt, points, atom_types):
 	"""! Get the composition of a given representative 
@@ -76,20 +70,24 @@ def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types
 	#for each atom type we are looking at, add a column with the number of atoms of this type in the cycle representative
 	for a in atom_types:
 		dgm[a] = [c[a] for c in comps]
-	dgm["edges"]=edges
 	dgm["vertices"]=verts
+	dgm["edges"]=edges
 	return dgm
 
-def get_neighbour_cycles(points : pandas.DataFrame, cycle_vertices : list, filt):
-	neighbours = []
+def get_neighbour_cells(points : pandas.DataFrame, cycle_vertices : list, filt):
+	neighbour_vertices = []
+	neighbour_edges = []
 	for s in filt.simplices():
-		for v in s:
-			if v in cycle_vertices:
-				neighbours.append(s)
-				break
-	return neighbours
+		if len(s.vertices) == 2:#restrict to edges for the moment
+			for v in s.vertices:
+				if v in cycle_vertices:
+					neighbour_vertices.append(s.vertices[0])
+					neighbour_vertices.append(s.vertices[1])
+					neighbour_edges.append(s.vertices)
+					break
+	return neighbour_vertices, neighbour_edges
 
-def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int, filt): #TODO: visualise a neighbourhood of the representative
+def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int, filt, neighbours = False): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
 	@param points 	pandas.DataFrame of the atoms
 	@param dgm 	pandas.DataFrame of the representatives of cycles
@@ -99,22 +97,20 @@ def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int
 	"""
 	cycle = points.iloc[[filt.get_id_by_sorted_id(v) for v in dgm["vertices"].loc[id]]]
 	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
-	print(dgm["edges"].loc[id])
 	for e in dgm["edges"].loc[id]:
-		fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
-	neighbour_cycles = []
-	neighbours = get_neighbour_cycles(points, [v for v in dgm["vertices"].loc[id]], filt)
-	print(neighbours)
-	neighbour_atoms = list(set(v for s in neighbours for v in s))
-	print(points.loc[neighbour_atoms])
-	neighbour_atoms = points.loc[neighbour_atoms]
-	fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
-	for s in neighbours:
-		s_cycle = list(v for v in s)
-		s_cycle = points.loc[s_cycle]
-		fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data
-		for i in range(len(s_cycle)):
-			fig_data = fig_data+px.line_3d(points.loc[[s_cycle[i],s_cycle[(i+1)%len(s_cycle)]]],x="x", y="y", z="z", fill="toself")).data 
+		fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").update_traces(line_color='red', line_width=5).data 
+	if neighbours:
+		neighbour_vertices, neighbour_edges = get_neighbour_cells(points, [v for v in dgm["vertices"].loc[id]], filt)
+		neighbour_atoms = list(set(filt.get_id_by_sorted_id(v) for v in neighbour_vertices))
+		neighbour_atoms = points.loc[neighbour_atoms]
+		fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
+		for e in neighbour_edges:
+			fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
+			#s_cycle = list(v for v in s)
+			#s_cycle = points.loc[s_cycle]
+			#fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data
+			#for i in range(len(s_cycle)):
+			#	fig_data = fig_data+px.line_3d(points.loc[[s_cycle[i],s_cycle[(i+1)%len(s_cycle)]]],x="x", y="y", z="z", fill="toself").data 
 	fig_ring = go.Figure(data=fig_data)
 	fig_ring.update_layout( title="Visualisation of a representative of loop with ID: {}".format(id))
 	return fig_ring
