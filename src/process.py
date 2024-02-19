@@ -8,7 +8,7 @@ from ase import io, Atoms
 import numpy 
 import pandas
 import diode
-import dionysus
+#import dionysus
 import oineus
 import math
 from colour import Color
@@ -133,19 +133,19 @@ def weighted_alpha_diode(points):
 	"""
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
-def persistent_homology_filt_dionysus(simplices : list): #no longer needed
-	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
-	@param simplices 	list of simplices from dionysus
-
-	@return filt, m 	the dionysus filtration, dionysus persistent homology
-	"""
-	restricted_simps = []
-	for s in simplices:
-		if len(s[0]) <= 4:
-			restricted_simps.append(s)
-	filt = dionysus.Filtration(restricted_simps)
-	m = dionysus.homology_persistence(filt, progress = True)
-	return filt, m
+#def persistent_homology_filt_dionysus(simplices : list): #no longer needed
+#	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
+#	@param simplices 	list of simplices from dionysus
+#
+#	@return filt, m 	the dionysus filtration, dionysus persistent homology
+#	"""
+#	restricted_simps = []
+#	for s in simplices:
+#		if len(s[0]) <= 4:
+#			restricted_simps.append(s)
+#	filt = dionysus.Filtration(restricted_simps)
+#	m = dionysus.homology_persistence(filt, progress = True)
+#	return filt, m
 
 def convert_simps_to_oineus(simplices : list): 
 	"""! Diode is set to create simplices for dionysus, so we need to convert them to the correct type for oineus.
@@ -157,40 +157,40 @@ def convert_simps_to_oineus(simplices : list):
 	return oin_simps
 
 
-def extract_diagrams_from_dionysus(filt, m): #no longer used
-	"""! Given a dionysus fitlration and persistent homology, extract the persistence diagrams
-	@param filt		dionysus filtration
-	@param m		dionysus persistent homology
-
-	@return dgm		nx2 numpy.array of diagram
-	"""
-	dionysus_diagrams= dionysus.init_diagrams(m, filt)
-	dgms = []
-	for i in range(len(dionysus_diagrams)):
-		births = []
-		deaths = []
-		data=[]
-		for p in dionysus_diagrams[i]:
-			births.append(p.birth)
-			deaths.append(p.death)
-			data.append(p.data)
-		dgms.append(pandas.DataFrame({"birth":births, "death":deaths,"data":data}))
-	return dgms, dionysus_diagrams
+#def extract_diagrams_from_dionysus(filt, m): #no longer used
+#	"""! Given a dionysus fitlration and persistent homology, extract the persistence diagrams
+#	@param filt		dionysus filtration
+#	@param m		dionysus persistent homology
+#
+#	@return dgm		nx2 numpy.array of diagram
+#	"""
+#	dionysus_diagrams= dionysus.init_diagrams(m, filt)
+#	dgms = []
+#	for i in range(len(dionysus_diagrams)):
+#		births = []
+#		deaths = []
+#		data=[]
+#		for p in dionysus_diagrams[i]:
+#			births.append(p.birth)
+#			deaths.append(p.death)
+#			data.append(p.data)
+#		dgms.append(pandas.DataFrame({"birth":births, "death":deaths,"data":data}))
+#	return dgms, dionysus_diagrams
 	
-def persistent_homology_diagrams_from_points_dionysus(points):#extract the persistent homology of the frame 
-	"""! Given a set of points with weights, return the persistence diagrams from dionysus.
-	@param points	pandas.DataFrame of points, columns 'x','y','z' coordinates, and column 'w' the weights.
-
-	@return dgms 	dionysus persistence diagrams
-	"""
-	dgms = []
-	# Calculate the alpha shape using Diode
-	simplices = weighted_alpha_diode(points)
-	# Generate the filtration using Dionysus
-	filt, m = persistent_homology_filt_dionysus(simplices)
-	# Get persistent homologypersistent_homology_dionysus(filtration)
-	dgms = extract_diagrams_from_dionysus(filt, m)
-	return dgms
+#def persistent_homology_diagrams_from_points_dionysus(points):#extract the persistent homology of the frame 
+#	"""! Given a set of points with weights, return the persistence diagrams from dionysus.
+#	@param points	pandas.DataFrame of points, columns 'x','y','z' coordinates, and column 'w' the weights.
+#
+#	@return dgms 	dionysus persistence diagrams
+#	"""
+#	dgms = []
+#	# Calculate the alpha shape using Diode
+#	simplices = weighted_alpha_diode(points)
+#	# Generate the filtration using Dionysus
+#	filt, m = persistent_homology_filt_dionysus(simplices)
+#	# Get persistent homologypersistent_homology_dionysus(filtration)
+#	dgms = extract_diagrams_from_dionysus(filt, m)
+#	return dgms
 
 
 def oineus_compare(x, y):
@@ -240,7 +240,7 @@ def oineus_filtration(points : pandas.DataFrame, params : oineus.ReductionParams
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
 	K = [[i,s[0],s[1]] for i, s in enumerate(simplices)]
-	K = oineus.list_to_filtration_float(K, params)
+	K = oineus.list_to_filtration(K)
 	return K
 		
 def oineus_pair(points : pandas.DataFrame, sub : list):
@@ -312,10 +312,10 @@ def oineus_process(points : pandas.DataFrame, params : oineus.ReductionParams):
 	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
-	return dgm_1, dgm_2
+	return dcmp, filt, dgm_1, dgm_2
 	
 def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.ReductionParams, upper_threshold : float, lower_threshold : float):
 	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.
@@ -333,8 +333,8 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	"""
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration_float(L, params)
-	K = oineus.list_to_filtration_float(K, params)
+	L = oineus.list_to_filtration_float(L)
+	K = oineus.list_to_filtration_float(K)
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
@@ -344,20 +344,9 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return kicr, dgm_1, dgm_2
 
-
-
-#def aggregate_diagrams(dgms : pandas.DataFrame): #aggregate the diagrams into one big diagram
-#	"""! Given a list of diagrams, combine these into a single diagram.
-#
-#	@param dgms		list of diagrams as numpy.arrays.
-#	@return dgm		numpy.array of the combined diagram.
-#	"""
-#	dgm = numpy.concatenate(dgms, axis=0)
-#	return dgm
-
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 
-	@param dgm 		the dionysus diargam you want to calculate the APF for
+	@param dgm 		the diargam you want to calculate the APF for
 
 	@return APF		the APF as a list of coordiantes
 	"""

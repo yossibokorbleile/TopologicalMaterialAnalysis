@@ -67,7 +67,7 @@ def single_mode():
   	"""
 	right_click_menu = ['Unused', ["Multi", "Batch", "Exit", "Quit"]]
 	#menu_def = [["AMA", ["Quit"]], ["Mode", ["Multi", "Batch"]]]
-	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Single Mode", font=TitleFont)],  [sg.Text("Intial configuration file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Structure name:", font=TextFont), sg.Input(key="structure", font=InputFont)], [sg.Text("Manual structure settings", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Please select index of the sample you want:",font=TextFont), sg.Input("0", key="sample_at")], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont),sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
+	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Single Mode", font=TitleFont)],  [sg.Text("Intial configuration file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Structure name:", font=TextFont), sg.Input(key="structure", font=InputFont)], [sg.Text("Manual structure settings", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Please select index of the sample you want:",font=TextFont), sg.Input("0", key="sample_at")], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont),sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
 	
 	window_main = sg.Window("Topological Amorphous Material Analysis", layout_main, resizable = True, size=(700,700), right_click_menu=right_click_menu)
 
@@ -118,7 +118,7 @@ def single_mode():
 				if values_main["APF2"]:
 					APF_2 = calculate_APF(dgm_2)	
 			else:
-				dgm_1, dgm_2 = oineus_process(points, params)
+				dcmp, filt, dgm_1, dgm_2 = oineus_process(points, params)
 				if values_main["APF1"]:
 					APF_1 = calculate_APF(dgm_1)
 				if values_main["APF2"]:
@@ -230,13 +230,13 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please process it.")
 			else:
-				dfPD = get_representative_loops(points, atoms, filt, m, dionysus_diagrams)
-				visualisation_table_layout = [[sg.Table(values=dfPD.values.tolist(), headings=dfPD.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display")]]
+				dfVis = generate_visulisation_df(dgm_1, dcmp.r_data, filt, points, atoms)
+				visualisation_table_layout = [[sg.Table(values=dfVis.values.tolist(), headings=dfVis.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display"), sg.Checkbox("Plot neighbours", key="neighbours", font=ButtonFont)]]
 				visualisation_table_window = sg.Window("AMA: 1-cycle representatives table", visualisation_table_layout, resizable=True)
 				while True:
 					event_visualisation, value_visualisation = visualisation_table_window.read()
 					if event_visualisation == "Display":
-						vis = generate_display(points, dfPD, value_visualisation[0][0], filt)
+						vis = generate_display(points, dfVis, value_visualisation[0][0], filt, value_visualisation["neighbours"])
 						vis.show()
 					if event_visualisation == "Exit" or event_visualisation == sg.WIN_CLOSED:
 						break
@@ -431,7 +431,7 @@ def batch_mode():
 						params.cokernel = values_main["cokernel"]
 						kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
 						if values_main["PD1"]:
-		  					dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
+							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
 							if params.kernel:
 								pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"]).to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_kernel_PD_1.csv", header = None)
 							if params.cokernel:
@@ -457,7 +457,7 @@ def batch_mode():
 						if values_main["PD1"]:
 							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")	
 						if values_main["PD2"]:
-						dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
+							dgm_2.to_csv(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.csv")
 						if values_main["APF1"]:
 							APF_1 = calculate_APF(dgm_1)
 							pandas.DataFrame(APF_1, columns=["mean age", "lifetime"]).to_csv(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.csv")

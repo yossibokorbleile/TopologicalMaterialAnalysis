@@ -8,7 +8,6 @@ Quick overview: there is a python script Rasmus provided a while ago which does 
 * SciPy
 * Dionysus
 * Diode
-* Color
 * Oineus
 * Plotly Express
 * colour
