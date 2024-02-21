@@ -32,7 +32,7 @@ def plot_APF(APF : numpy.array, name : str):
 	@result a plotly.express figure
 	"""
 	
-	fig = px.line(x=APF[:,0], y=APF[:,1], labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	fig = px.line(x=APF["mean age"], y=APF["lifetime"], labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
@@ -59,7 +59,7 @@ def plot_PD(dgm, name : str):
 	
 	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
 	
-	@param dgm 	- 	numpy.array of size nx2
+	@param dgm 	- 	pandas.DataFrame of the diagram
 	@param name    - name to use as title of the plot
 	
 	@result a plotly.express figure

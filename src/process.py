@@ -14,7 +14,7 @@ import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
-import configparser
+ 
 
 def read_configuration(structure_file : str, structure : str):
 	"""! import a specified structure from a configuration file
@@ -347,7 +347,6 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 
 	@param dgm 		the diargam you want to calculate the APF for
-
 	@return APF		the APF as a list of coordiantes
 	"""
 	lifetime = abs(dgm["death"] - dgm["birth"]) #get the lifetime of each point
@@ -356,7 +355,7 @@ def calculate_APF(dgm):
 	APF = APF[APF[:,0].argsort()] #sort the numpy array by ascending mean age
 	for i in range(1, numpy.shape(APF)[0], 1):
 			APF[i,1] = APF[i,1] + APF[i-1,1] #TODO: remove duplicates and only keep the last value of each one
-	return APF
+	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
 
 
 	

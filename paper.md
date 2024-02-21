@@ -16,7 +16,7 @@ affiliations:
    index: 1
  - name: School of Mathematics and Statistics, The Univeristy of Sydney, Australia
    index: 2
-date: 22 January 2024
+date: ???
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
@@ -25,37 +25,23 @@ bibliography: paper.bib
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+Understanding the relationship between structural features and physical properties of materials is an important aspect of chemistry and materials science, in particular developing new materials. There are various *scales* at which we can examine the structure of materials: what are the very *local* structures between neighbouring atoms, how do these local structures fit together, and finally, what is the global or long range structure? These structures are examined with various degrees of difficulty, depending on the material. 
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+`TAMA`, or `TopologicalAmorphousMaterialAnalysis` is a Python application for researchers in 
+chemsitry and materials science, who wish to use persistent homology to analyse the structure 
+of materials.  `TAMA` is designed to enable users with varying degrees of programming knowledge 
+to leverage persistent homology for their research. It has both a GUI and CLI, enabling use in a 
+wide range of computing environments. Through the GUI, users are able to perform exploratory 
+analysis and visualise structural features. This removes the need for individual users to master 
+the mathematical concepts required to perform such analysis, allowing users to focus on the 
+analysis itself. While a certain level of knowledge is required to interpret the output and 
+visualisation, these are easily understood in the materials science context.
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+The application is easily used by both students and experienced researchers, in chemistry
+and materials science, as well as data scienctists wishing to explore the use cases of 
+topological data analysis, in particular persistent homology. 
 
 # Mathematics
 
