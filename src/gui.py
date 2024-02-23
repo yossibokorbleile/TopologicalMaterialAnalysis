@@ -67,7 +67,7 @@ def single_mode():
   	"""
 	right_click_menu = ['Unused', ["Multi", "Batch", "Exit", "Quit"]]
 	#menu_def = [["AMA", ["Quit"]], ["Mode", ["Multi", "Batch"]]]
-	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Single Mode", font=TitleFont)],  [sg.Text("Intial structure file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)], [sg.Text("Manual configuration settings", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Please select index of the sample you want:",font=TextFont), sg.Input("0", key="sample_at")], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont),sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
+	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Single Mode", font=TitleFont)],  [sg.Text("Intial structure file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)], [sg.Text("Manual configuration settings", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Please select index of the sample you want:",font=TextFont), sg.Input("0", key="sample_at")], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont), sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
 	
 	window_main = sg.Window("Topological Amorphous Material Analysis", layout_main, resizable = True, size=(700,700), right_click_menu=right_click_menu)
 
@@ -92,33 +92,30 @@ def single_mode():
 			print("atoms ", atoms)
 			print("radii ", radii)
 			file_path = values_main["file_path"]
-			points = load_atom_file(file_path, values_main["file_format"])
-			print(points)
-			print("loaded")
+			#atom_locations = load_atom_file(file_path, values_main["file_format"])
 			s = int(values_main["sample_at"])
-			points = sample_at(points, s, repeat_x, repeat_y, repeat_z, atoms, radii)
-			print(points)
-			simplices = weighted_alpha_diode(points)
+			atom_locations = sample_at(file_path, values_main["file_format"], s, repeat_x, repeat_y, repeat_z, atoms, radii)
+			simplices = weighted_alpha_diode(atom_locations)
 			params.n_threads = int(values_main["n_threads"])
 			if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 				if values_main["upper_threshold"] == "Automatic":
-					upper_threshold = math.floor(max(points["z"])) 
+					upper_threshold = math.floor(max(atom_locations["z"])) 
 				else:
 					upper_threshold = float(values_main["upper_threshold"])
 				if values_main["lower_threshold"] == "Automatic":
-						lower_threshold = math.ceil(min(points["z"]))
+						lower_threshold = math.ceil(min(atom_locations["z"]))
 				else:
 					lower_threshold = float(values_main["lower_threshold"])
 				params.kernel = values_main["kernel"]
 				params.image = values_main["image"]
 				params.cokernel = values_main["cokernel"]
-				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
+				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
 				if values_main["APF1"]:
 					APF_1 = calculate_APF(dgm_1)
 				if values_main["APF2"]:
 					APF_2 = calculate_APF(dgm_2)	
 			else:
-				dcmp, filt, dgm_1, dgm_2 = oineus_process(points, params)
+				dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
 				if values_main["APF1"]:
 					APF_1 = calculate_APF(dgm_1)
 				if values_main["APF2"]:
@@ -230,13 +227,13 @@ def single_mode():
 			if processed == False:
 				sg.popup_error("File not processed, please process it.")
 			else:
-				dfVis = generate_visulisation_df(dgm_1, dcmp.r_data, filt, points, atoms)
+				dfVis = generate_visulisation_df(dgm_1, dcmp.r_data, filt, atom_locations, atoms)
 				visualisation_table_layout = [[sg.Table(values=dfVis.values.tolist(), headings=dfVis.columns.values.tolist(), auto_size_columns=True, num_rows = 50, display_row_numbers=True, selected_row_colors="red on yellow", enable_events=True)], [sg.Button("Display selected", key="Display"), sg.Checkbox("Plot neighbours", key="neighbours", font=ButtonFont)]]
 				visualisation_table_window = sg.Window("AMA: 1-cycle representatives table", visualisation_table_layout, resizable=True)
 				while True:
 					event_visualisation, value_visualisation = visualisation_table_window.read()
 					if event_visualisation == "Display":
-						vis = generate_display(points, dfVis, value_visualisation[0][0], filt, value_visualisation["neighbours"])
+						vis = generate_display(atom_locations, dfVis, value_visualisation[0][0], filt, value_visualisation["neighbours"])
 						vis.show()
 					if event_visualisation == "Exit" or event_visualisation == sg.WIN_CLOSED:
 						break
@@ -253,8 +250,8 @@ def multi_mode():
 	"""! GUI for multi mode"""
 	right_click_menu = ['Unused', ["Single", "Batch", "Exit", "Quit"]]
 	#menu_def = [["AMA", ["Quit"]], ["Mode", ["Single", "Batch"]]]
-	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Multi Mode", font=TitleFont)],  [sg.Text("Intial configuration file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Structure name:", font=TextFont), sg.Input(key="structure", font=InputFont)], [sg.Text("Manua structure settings", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Enter the start of the sample range:", font=ButtonFont), sg.Input("4005", key="range-start", font=InputFont)], [sg.Text("Enter the end of the sample range:", font=ButtonFont), sg.Input("4405",key="range-end", font=InputFont)], [sg.Text("Enter the sample step range:", font=ButtonFont), sg.Input("200",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Text("Status messages and progress:", key="label", enable_events=True, font=TextFont, justification='left', expand_x=True), sg.MLine(key='messages'+sg.WRITE_ONLY_KEY, size=(200,8))], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont),sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]] 
-	#[sg.Text("Progress Tracking", key='-OUT-', enable_events=True, font=TextFont, justification='center', expand_x=True),sg.ProgressBar(100, orientation='h', expand_x=True, size=(20, 20),  key='progress')],
+	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Multi Mode", font=TitleFont)],  [sg.Text("Intial structure file:", font=TextFont), sg.FileBrowse(key="file_path", font=ButtonFont), sg.Text("Enter file format:", font=TextFont), sg.Input("Auto", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)], [sg.Text("Manual configuration", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Enter the start of the sample range:", font=ButtonFont), sg.Input("0", key="range-start", font=InputFont)], [sg.Text("Enter the end of the sample range:", font=ButtonFont), sg.Input("2",key="range-end", font=InputFont)], [sg.Text("Enter the sample step range:", font=ButtonFont), sg.Input("1",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)], [sg.Text("Status messages and progress:", key="label", enable_events=True, font=TextFont, justification='left', expand_x=True), sg.MLine(key='messages'+sg.WRITE_ONLY_KEY, size=(200,8))], [sg.Button("Process", font=ButtonFont),  sg.Button("Plot", font=ButtonFont), sg.Button("Visualisation",font=ButtonFont),sg.Button("Save", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)],
+	[sg.Text("Progress Tracking", key='-OUT-', enable_events=True, font=TextFont, justification='center', expand_x=True),sg.ProgressBar(100, orientation='h', expand_x=True, size=(20, 20),  key='progress')]]
 
 	window_main = sg.Window("Topological Amorphous Material Analysis", layout_main, resizable = True, size=(800,1000), right_click_menu=right_click_menu)
 	params = oineus.ReductionParams()
@@ -266,7 +263,7 @@ def multi_mode():
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("EVENT: Process")
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("begun")
 			if values_main["config_file"] != "":
-				atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(values_main["config_file"], values_main["structure"])
+				atoms, radii, repeat_x, repeat_y, repeat_z = read_configuration(values_main["config_file"], values_main["configuration"])
 			else:	
 				atoms = [str(a).strip() for a in values_main['atoms'].split(",")]
 				radii = [float(r) for r in values_main['radii'].split(",")]
@@ -277,45 +274,43 @@ def multi_mode():
 			file_path = values_main['file_path']
 			dgms_1 = []
 			dgms_2 = []
-			if values_main["APF1"]:
-				APFs_1 = []
-			if values_main["APF2"]:
-				APFs_2 = []
+			APFs_1 = []
+			APFs_2 = []
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("settings loaded")
-			coords = load_atom_file(file_path, values_main["file_format"])
+			#coords = load_atom_file(file_path, values_main["file_format"])
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("coordinates loaded")
 			sample_every = list(range(int(values_main["range-start"]), int(values_main["range-end"]), int(values_main["range-step"])))
 			params.n_threads = int(values_main["n_threads"])
 			for i,s in enumerate(sample_every):
 				window_main['messages'+sg.WRITE_ONLY_KEY].print("sample "+str(i)+" out of "+str(len(sample_every))+"\r")
-				points = sample_at(coords, s, repeat_x, repeat_y, repeat_z, atoms, radii)
-				simplices = weighted_alpha_diode(points)
-				#window_main['progress'].update_bar(math.ceil(100*i/len(sample_every)))
+				atom_locations = sample_at(file_path, values_main["file_format"], s, repeat_x, repeat_y, repeat_z, atoms, radii)
+				simplices = weighted_alpha_diode(atom_locations)
+				window_main['progress'].update_bar(math.ceil(100*i/len(sample_every)))
 				window_main['messages'+sg.WRITE_ONLY_KEY].print("looking at sample "+str(s))
 				if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 					if values_main["upper_threshold"] == "Automatic":
-						upper_threshold = math.floor(max(points["z"])) 
+						upper_threshold = math.floor(max(atom_locations["z"])) 
 					else:
 						upper_threshold = float(values_main["upper_threshold"])
 					if values_main["lower_threshold"] == "Automatic":
-							lower_threshold = math.ceil(min(points["z"]))
+							lower_threshold = math.ceil(min(atom_locations["z"]))
 					else:
 						lower_threshold = float(values_main["lower_threshold"])
 					params.kernel = values_main["kernel"]
 					params.image = values_main["image"]
 					params.cokernel = values_main["cokernel"]
-					kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
-					if values_main["APF1"]:
-						APF_1 = calculate_APF(dgm_1)
-					if values_main["APF2"]:
-						APF_2 = calculate_APF(dgm_2)	
+					kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
+					APF_1 = calculate_APF(dgm_1)
+					APF_2 = calculate_APF(dgm_2)	
 				else:
-					dgm_1, dgm_2 = oineus_process(points, params)
-					if values_main["APF1"]:
-						APF_1 = calculate_APF(dgm_1)
-					if values_main["APF2"]:
-						APF_2 = calculate_APF(dgm_2)
-			#window_main['progress'].update_bar(100)
+					dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
+					APF_1 = calculate_APF(dgm_1)
+					APF_2 = calculate_APF(dgm_2)
+				dgms_1.append(dgm_1)
+				dgms_2.append(dgm_2)
+				APFs_1.append(APF_1)
+				APFs_2.append(APF_2)
+			window_main['progress'].update_bar(100)
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("finished")
 			processed = True
 
@@ -326,13 +321,17 @@ def multi_mode():
 				sg.popup_error("File not processed, please Process.")
 			else:
 				if values_main['APF1'] == True:
-					fig_APFs_1 = plot_APFs(APFs_1)
+					fig_APFs_1 = plot_APFs(APFs_1,"")
+					fig_APFs_1.show()
 				if values_main['APF2'] == True:
-					fig_APFs_2 = plot_APFs(APFs_2)
+					fig_APFs_2 = plot_APFs(APFs_2,"")
+					fig_APFs_2.show()
 				if values_main['PD1'] == True:
-					fig_PDs_1 = plot_PDs(dgms_1)
+					fig_PDs_1 = plot_PDs(dgms_1,"")
+					fig_PDs_1.show()
 				if values_main['PD2'] == True:	
-					fig_PDs_2 = plot_PDs(dgms_2)
+					fig_PDs_2 = plot_PDs(dgms_2,"")
+					fig_PDs_2.show()
 		
 		if event_main == "Save":
 			save_path = sg.popup_get_text("Please enter the path to the directory in which you want to save the PDs and APFs.")
@@ -355,7 +354,7 @@ def batch_mode():
 	"""! GUI for batch mode"""
 	right_click_menu = ['Unused', ["Single", "Multi", "Exit", "Quit"]]
 	#menu_def = [["AMA", ["Quit"]], ["Mode", ["Single", "Multi"]]]
-	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Batch Mode", font=TitleFont)], [ sg.Text("Select parent directory:", font=ButtonFont), sg.FolderBrowse(key="file_dir", font=ButtonFont), sg.Text("Enter file extension:", font=ButtonFont), sg.Input(".xyz", key="file_ext", font=ButtonFont)], [sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Structure name:", font=TextFont), sg.Input(key="structure", font=InputFont)],[sg.Text("Manua structure settingst", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Sample range:", font=HeaderFont2)],[sg.Text("Sample range start:", font=TextFont), sg.Input("4005", key="range-start", font=InputFont)], [sg.Text("Sample range end:", font=TextFont), sg.Input("4405",key="range-end", font=InputFont)], [sg.Text("Sample range step:", font=TextFont), sg.Input("200",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)],[sg.Button("Process", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
+	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Batch Mode", font=TitleFont)], [ sg.Text("Select parent directory:", font=ButtonFont), sg.FolderBrowse(key="file_dir", font=ButtonFont), sg.Text("Enter file extension:", font=ButtonFont), sg.Input(".xyz", key="file_ext", font=ButtonFont)], [sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)],[sg.Text("Manual configuration", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Sample range:", font=HeaderFont2)],[sg.Text("Sample range start:", font=TextFont), sg.Input("4005", key="range-start", font=InputFont)], [sg.Text("Sample range end:", font=TextFont), sg.Input("4405",key="range-end", font=InputFont)], [sg.Text("Sample range step:", font=TextFont), sg.Input("200",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)],[sg.Button("Process", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
  
 	window_main = sg.Window("Topological Amorphous Material Analysis", layout_main, resizable = True, size=(600,750), right_click_menu=right_click_menu)
 	loaded = False
@@ -414,22 +413,22 @@ def batch_mode():
 					os.mkdir(os.path.join(dir, "APF2"))
 				file_name = os.path.splitext(os.path.split(file)[1])[0]
 				for s in sample_every:
-					points = sample_at(simulation, s, repeat_x, repeat_y, repeat_z, atoms, radii)
-					simplices = weighted_alpha_diode(points)
+					atom_locations = sample_at(simulation, s, repeat_x, repeat_y, repeat_z, atoms, radii)
+					simplices = weighted_alpha_diode(atom_locations)
 					params.n_threads = int(values_main["n_threads"])
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 						if values_main["upper_threshold"] == "Automatic":
-							upper_threshold = math.floor(max(points["z"])) 
+							upper_threshold = math.floor(max(atom_locations["z"])) 
 						else:
 							upper_threshold = float(values_main["upper_threshold"])
 						if values_main["lower_threshold"] == "Automatic":
-								lower_threshold = math.ceil(min(points["z"]))
+								lower_threshold = math.ceil(min(atom_locations["z"]))
 						else:
 							lower_threshold = float(values_main["lower_threshold"])
 						params.kernel = values_main["kernel"]
 						params.image = values_main["image"]
 						params.cokernel = values_main["cokernel"]
-						kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(points, params, upper_threshold, lower_threshold)
+						kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
 						if values_main["PD1"]:
 							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")
 							if params.kernel:
@@ -453,7 +452,7 @@ def batch_mode():
 							APF_2 = calculate_APF(dgm_2)	
 							pandas.DataFrame(APF_2, columns=["mean age", "lifetime"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
 					else:
-						dgm_1, dgm_2 = oineus_process(points, params)
+						dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
 						if values_main["PD1"]:
 							dgm_1.to_csv(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.csv")	
 						if values_main["PD2"]:

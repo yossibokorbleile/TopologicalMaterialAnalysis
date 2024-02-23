@@ -103,7 +103,7 @@ def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int
 		neighbour_vertices, neighbour_edges = get_neighbour_cells(points, [v for v in dgm["vertices"].loc[id]], filt)
 		neighbour_atoms = list(set(filt.get_id_by_sorted_id(v) for v in neighbour_vertices))
 		neighbour_atoms = points.loc[neighbour_atoms]
-		fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",neighbour_atoms.index]).data 
+		fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom").data 
 		for e in neighbour_edges:
 			fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
 			#s_cycle = list(v for v in s)

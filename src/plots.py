@@ -112,7 +112,7 @@ def plot_PDs(dgms, name : str):
 	else:
 		max_val = max([max(b) for b in dgm["birth"] for dgm in dmgs])
 	fig = go.Figure()
-	for i in range(len(dgm)):
+	for i in range(len(dgms)):
 		for j in range(len(dgms[i]["death"])):
 			if dgms[i]["death"].iloc[j] == math.inf:
 				birth.append(dgs[i]["birth"].iloc[j])
@@ -120,8 +120,8 @@ def plot_PDs(dgms, name : str):
 				samp.append(str(i))
 				inf_fin.append("inf")
 			else:
-				birth.append(dgs[i]["birth"].iloc[j])
-				death.append(dgs[i]["death"].iloc[j])
+				birth.append(dgms[i]["birth"].iloc[j])
+				death.append(dgms[i]["death"].iloc[j])
 				samp.append(str(i))
 				inf_fin.append("fin")
 	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})

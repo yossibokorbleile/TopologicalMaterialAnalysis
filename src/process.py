@@ -16,30 +16,30 @@ from scipy.interpolate import interpn
 from functools import cmp_to_key
  
 
-def read_configuration(structure_file : str, structure : str):
+def read_configuration(configuration_file : str, configuration : str):
 	"""! import a specified structure from a configuration file
 	
-	@param file_path    path to the file to use for configurations
-	@param structure    name of the structure to use
+	@param configuration_file    path to the file to use for configurations
+	@param configuration    name of the structure to use
 	
 	@result atoms, radii, repeat_x, repeat_y, repeat_z  the atom symbols, radii to use for the atoms, repetition in x-axis, repetition in y-axis, repetition in z-axis
 	"""
 	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
-	config.read(structure_file) #load the file containing the structures
-	atoms = [str(a).strip() for a in config.get(structure, "ATOMS").split(",")] #read the atoms in the selected structure
-	radii = [float (r) for r in config.get(structure, "RADII").split(",")] #get the radii to use for the atoms
+	config.read(configuration_file) #load the file containing the structures
+	atoms = [str(a).strip() for a in config.get(configuration, "ATOMS").split(",")] #read the atoms in the selected structure
+	radii = [float (r) for r in config.get(configuration, "RADII").split(",")] #get the radii to use for the atoms
 	print("Proceeding with the following:\nAtoms:") #print what has been loaded into the program, should probably display this in the GUI so that it can be confirmed
 	for i, a in enumerate(atoms):
 		print("{} with radius {}".format(a, radii[i])) #print atom and the radius
-	repeat_x = int(config.get(structure, "REPEAT_X")) #read repitition in x-axis
+	repeat_x = int(config.get(configuration, "REPEAT_X")) #read repitition in x-axis
 	print("repeating in x-axis: {}".format(repeat_x)) #print repitition in x-axis
-	repeat_y = int(config.get(structure, "REPEAT_Y")) #read repitition in y-axis
+	repeat_y = int(config.get(sconfiguratione, "REPEAT_Y")) #read repitition in y-axis
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
-	repeat_z = int(config.get(structure, "REPEAT_Z")) #read repitition in z-axis
+	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
 	return atoms, radii, repeat_x, repeat_y, repeat_z
 
-def read_sample(structure_file : str, sample_range : str):
+def read_sample(structure_file : str, configuration : str):
 	"""! import a specified sample range from a configuration file
 	
 	@param file_path    path to the file to use for configurations
@@ -48,10 +48,10 @@ def read_sample(structure_file : str, sample_range : str):
 	@result sample_start, sample_end, sample_step  first sample, last sample, step between each one
 	"""
 	config = configparser.ConfigParser() #config parser to read the file
-	structures = config.read(structure_file) #load the file which contains the information
-	sample_start = int(config.get(sample_range, "START")) #read sample start
-	sample_end = int(config.get(sample_range, "END")) #read sample end
-	sample_step = int(config.get(sample_range, "STEP")) #read time step
+	structures = config.read(configuration_file) #load the file which contains the information
+	sample_start = int(config.get(configuration, "START")) #read sample start
+	sample_end = int(config.get(configuration, "END")) #read sample end
+	sample_step = int(config.get(configuration, "STEP")) #read time step
 	print("Have read the following settings for sampling:")
 	print("sample_start:", sample_start) #print sample start
 	print("sample_end: ", sample_end) #print sample end
@@ -80,16 +80,15 @@ def read_oineus_settings(structure_file : str, setting_name : str):
 	return params
 
 
-def load_atom_file(file_path : str, format : str, index = ":"):
+def load_atom_file(file_path : str, format : str, index):
 	"""! load the file containing the initial configureation
 	@param file_path file to load
-	
 	@return atoms     what we obtain from ase.io.read
 	"""
-	atoms = io.read(file_path, index = index, format = format) #just read the atoms file
+	atoms = io.read(file_path, index = index)#, format = format) #just read the atoms file
 	return atoms
 
-def sample_at(atoms, sample_index, repeat_x : int, repeat_y : int, repeat_z : int, atom_list, radius_list):
+def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repeat_y : int, repeat_z : int, atom_list, radius_list):
 	"""! Sample a structure at a particular time, with cell repetitions.
 	@param atoms		initial configuration
 	@param sample_index 	time to sample at
@@ -101,8 +100,9 @@ def sample_at(atoms, sample_index, repeat_x : int, repeat_y : int, repeat_z : in
 
 	@return points		data frame of the points including the repetitions with columns 'Atom', 'x', 'y', 'z', 'w'
 	"""
-	sample = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
-	print("sample is ", sample)
+	print(repeat_x, repeat_y, repeat_z)
+	sample = load_atom_file(file_path, format, sample_index).repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
+	#sample = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
 	coord = sample.get_positions() #get the coordinates of the atoms once repeated
 	cell = sample.get_cell() #get the cell size
 	dfpoints = pandas.DataFrame(numpy.column_stack([sample.get_chemical_symbols(), coord]), columns=["Atom", "x", "y", "z"]) #combine the atomic symbols with their location into a pandas.DataFrame

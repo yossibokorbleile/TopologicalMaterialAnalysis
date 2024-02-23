@@ -42,7 +42,6 @@ parser.add_argument("-i", "--interface", choices=["g", "c"], default="g", help="
 parser.add_argument("-s", "--settings", action="store", help="""Specify the file which contains the settings, only used with the command line interface.""")
 parser.add_argument("-n", "--name", action="store", help="""Specify name of the settings to be used, only used with the command line interface.""")
 args = parser.parse_args()
-print(args.settings)
 info.intro()
 
 if args.license:
