@@ -10,8 +10,7 @@ radii=[0.389, 0.718, 0.635, 1.491]
 repeat_x=repeat_y=repeat_z=1
 params=oineus.ReductionParams()
 Params.n_threads=16
-points = load_atom_file(file_path,'xyz')
 s=0
-points = sample_at(points, s, repeat_x, repeat_y, repeat_z, atoms, radii)
-dcmp, filt, dgm_1, dgm_2 = oineus_process(points, params)
+atom_locations = sample_at(file_path,"xyz", s, repeat_x, repeat_y, repeat_z, atoms, radii)
+dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
 

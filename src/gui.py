@@ -7,6 +7,7 @@
 # -# multi_mode
 # -# batch_mode
 
+import info
 from process import *
 from plots import *
 from visualisation import *
@@ -31,6 +32,7 @@ HeaderFont2 = 'Times 20'
 TextFont = 'Times 16'
 InputFont = 'Times 14'
 ButtonFont = 'Times 16'
+InfoFont = 'Times 11'
 sg.theme('LightGrey')
 menu_bar = [["AMA", ["Quit"]], ["Mode", ["Single", "Multi", "Batch"]]]
 
@@ -39,12 +41,12 @@ def entry_window():
 	"""! Entry point for the GUI
 	"""
 	right_click_menu_entry = ["Unused", ["Single", "Multi", "Batch", "Quit"]]
-	
-	
-	layout_entry = [[sg.Menu(menu_bar, key="menu")], [sg.Button("Single", font=ButtonFont), sg.Button("Multi", font=ButtonFont), sg.Button("Batch", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
-	window_entry = sg.Window("Topological Amorphous Material Analysis", layout_entry, resizable = True, size=(500,500), right_click_menu=right_click_menu_entry)
+	layout_entry = [[sg.Menu(menu_bar, key="menu")], [sg.Button("License", font=ButtonFont), sg.Button("Single", font=ButtonFont), sg.Button("Multi", font=ButtonFont), sg.Button("Batch", font=ButtonFont), sg.Button("Quit", font=ButtonFont)], [sg.Text(info.copyright(), font=InfoFont)]]
+	window_entry = sg.Window("Topological Amorphous Material Analysis", layout_entry, resizable = True, size=(500,300), right_click_menu=right_click_menu_entry)
 	while True:
 		event_entry, values_entry = window_entry.read()
+		if event_entry == "License":
+			sg.popup_scrolled(info.license(), title="License", font=TextFont)
 		if event_entry == "Single":
 			window_entry.close()
 			single_mode()
@@ -95,7 +97,6 @@ def single_mode():
 			#atom_locations = load_atom_file(file_path, values_main["file_format"])
 			s = int(values_main["sample_at"])
 			atom_locations = sample_at(file_path, values_main["file_format"], s, repeat_x, repeat_y, repeat_z, atoms, radii)
-			simplices = weighted_alpha_diode(atom_locations)
 			params.n_threads = int(values_main["n_threads"])
 			if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 				if values_main["upper_threshold"] == "Automatic":
@@ -193,39 +194,45 @@ def single_mode():
 				if plotted == False:
 					if values_main['APF1'] == True:
 						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
-						#fig_apf_1.show()
 					if values_main['APF2'] == True:
 						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 "+str(s))
-						#fig_apf_2.show()			
 					if values_main['PD1'] == True:
 						fig_pd_1 = plot_PD(births[1], deaths[1], file_path+" PD1 "+str(s))
-						#fig_pd_1.show()
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 1"+str(s))
-							#fig_kic_pd_1.show()
 					if values_main['PD2'] == True:
 						fig_pd_2 = plot_PD(births[2], deaths[2], file_path+" PD2 "+str(s))
-						#fig_pd_2.show()
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 2"+str(s))
-							#fig_kic_pd_2.show()
 				else:
 					if values_main["PD1"]:
 						try:
 							fig_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_1.png")
+						except:
+							print("saving failed")
 						try: #values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_1.png")
+						except:
+							print("saving failed")
 					if values_main["PD2"]:
 						try:
 							fig_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_2.png")
+						except:
+							print("saving failed")
 						try:#if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_2.png")
+						except:
+							print("saving failed")
 					if values_main["APF1"]:
 						try:
 							fig_apf_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_1.png")
+						except:
+							print("saving failed")
 					if values_main["APF2"]:
 						try:
 							fig_apf_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_2.png")
+						except:
+							print("saving failed")
 		
 		if event_main == "Visualisation":
 			if processed == False:
@@ -245,10 +252,19 @@ def single_mode():
 			window_main.close()
 			entry_window()
 			break
-		
-		if event_main == "Quit":
+		if event_main == "Multi":
+			window_main.close()
+			multi_mode()
 			break
-	window_main.close()
+		if event_main == "Batch":
+			window_main.close()
+			batch_mode()
+			break
+		if event_main == "Quit":
+			window_main.close()
+			break
+
+	
  
 def multi_mode():
 	"""! GUI for multi mode"""
@@ -288,7 +304,7 @@ def multi_mode():
 			for i,s in enumerate(sample_every):
 				window_main['messages'+sg.WRITE_ONLY_KEY].print("sample "+str(i)+" out of "+str(len(sample_every))+"\r")
 				atom_locations = sample_at(file_path, values_main["file_format"], s, repeat_x, repeat_y, repeat_z, atoms, radii)
-				simplices = weighted_alpha_diode(atom_locations)
+				#simplices = weighted_alpha_diode(atom_locations)
 				window_main['progress'].update_bar(math.ceil(100*i/len(sample_every)))
 				window_main['messages'+sg.WRITE_ONLY_KEY].print("looking at sample "+str(s))
 				if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
@@ -318,17 +334,16 @@ def multi_mode():
 			window_main['messages'+sg.WRITE_ONLY_KEY].print("finished")
 			processed = True
 
-
-
 		if event_main == "Plot":
 			if processed == False:
 				sg.popup_error("File not processed, please Process.")
 			else:
+				AFP_names = [string(s) for s in sample_every]
 				if values_main['APF1'] == True:
-					fig_APFs_1 = plot_APFs(APFs_1,"")
+					fig_APFs_1 = plot_APFs(APFs_1, APF_names, "")
 					fig_APFs_1.show()
 				if values_main['APF2'] == True:
-					fig_APFs_2 = plot_APFs(APFs_2,"")
+					fig_APFs_2 = plot_APFs(APFs_2, APF_names, "")
 					fig_APFs_2.show()
 				if values_main['PD1'] == True:
 					fig_PDs_1 = plot_PDs(dgms_1,"")
@@ -343,22 +358,29 @@ def multi_mode():
 				pandas.DataFrame.to_csv(save_path+"_sample_"+str(s)+"_PD_1.csv", pandas.DataFrame(numpy.column_stack(births_1[i], deaths_1[i])))
 				pandas.DataFrame.to_csv(save_path+"_sample_"+str(s)+"_PD_2.csv", pandas.DataFrame(numpy.column_stack(births_2[i], deaths_2[i])))
 				pandas.DataFrame.to_csv(save_path+"_sample_"+str(s)+"_APF_1.csv", pandas.DataFrame(APFs_1[i]))
-				pandas.DataFrame.to_csv(save_path+"_sample_"+str(s)+"_APF_2.csv", pandas.DataFrame(APFs_2[i]))
-		
+				pandas.DataFrame.to_csv(save_path+"_sample_"+str(s)+"_APF_2.csv", pandas.DataFrame(APFs_2[i]))	
 		if event_main == "Exit" or event_main == sg.WIN_CLOSED:
 			window_main.close()
 			entry_window()
 			break
-
-		if event_main == "Quit":
+		if event_main == "Single":
+			window_main.close()
+			single_mode()
 			break
-	window_main.close()
- 
+		if event_main == "Batch":
+			window_main.close()
+			batch_mode()
+			break
+		if event_main == "Quit":
+			window_main.close()
+			break
+
+
 def batch_mode():
 	"""! GUI for batch mode"""
 	right_click_menu = ['Unused', ["Single", "Multi", "Exit", "Quit"]]
 	#menu_def = [["AMA", ["Quit"]], ["Mode", ["Single", "Multi"]]]
-	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Batch Mode", font=TitleFont)], [ sg.Text("Select parent directory:", font=ButtonFont), sg.FolderBrowse(key="file_dir", font=ButtonFont), sg.Text("Enter file extension:", font=ButtonFont), sg.Input(".xyz", key="file_ext", font=ButtonFont)], [sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)],[sg.Text("Manual configuration", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Sample range:", font=HeaderFont2)],[sg.Text("Sample range start:", font=TextFont), sg.Input("4005", key="range-start", font=InputFont)], [sg.Text("Sample range end:", font=TextFont), sg.Input("4405",key="range-end", font=InputFont)], [sg.Text("Sample range step:", font=TextFont), sg.Input("200",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)],[sg.Button("Process", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
+	layout_main = [[sg.Menu(menu_bar, key="menu")],[sg.Text("Batch Mode", font=TitleFont)], [ sg.Text("Select parent directory:", font=ButtonFont), sg.FolderBrowse(key="file_dir", font=ButtonFont), sg.Text("Enter file extension:", font=ButtonFont), sg.Input(".xyz", key="file_ext", font=ButtonFont)], [sg.Text("Enter file format:", font=TextFont), sg.Input("xyz", key="file_format", font=InputFont)], [sg.Text("Configuration file settings", font=HeaderFont1)], [sg.Text("File:", font=TextFont), sg.FileBrowse(key="config_file", font=ButtonFont), sg.Text("Configuration name:", font=TextFont), sg.Input(key="configuration", font=InputFont)],[sg.Text("Manual configuration", font=HeaderFont1)], [sg.Text("Atoms:", font=TextFont), sg.Input("H, C, N, Zn", key="atoms", font=InputFont)], [sg.Text("Radii:", font=TextFont), sg.Input("0.389, 0.718, 0.635, 1.491", key="radii", font=InputFont)], [sg.Text("Sample range:", font=HeaderFont2)],[sg.Text("Sample range start:", font=TextFont), sg.Input("0", key="range-start", font=InputFont)], [sg.Text("Sample range end:", font=TextFont), sg.Input("1",key="range-end", font=InputFont)], [sg.Text("Sample range step:", font=TextFont), sg.Input("1",key="range-step", font=InputFont)], [sg.Text("Repeating the configuration:", font=HeaderFont2)], [sg.Text("Repeation in x-axis:", font=TextFont), sg.Input("1", key="repeat_x", font=InputFont)], [sg.Text("Repeation in y-axis:", font=TextFont), sg.Input("1", key="repeat_y", font=InputFont)], [sg.Text("Repeation in z-axis:", font=TextFont), sg.Input("1", key="repeat_z", font=InputFont)], [sg.Text("Kernel/Image/Cokernel Settings:", font=HeaderFont2)], [sg.Text("Number of threads:", font=TextFont), sg.Input("4", font=InputFont, key="n_threads")], [sg.Text("Upper Threshold:", font=TextFont), sg.Input("Automatic", key="upper_threshold")], [sg.Text("Lower Threshold:", font=TextFont), sg.Input("Automatic", key="lower_threshold")], [sg.Checkbox("Kernel", key="kernel", font=ButtonFont), sg.Checkbox("Image", key="image", font=ButtonFont), sg.Checkbox("Cokernel", key="cokernel", font=ButtonFont)], [sg.Text("Please select which plots you would like to generate:", font=HeaderFont1)],[sg.Text("Persistence Diagram", font=TextFont), sg.Checkbox("Dimension 1", key="PD1", font=ButtonFont), sg.Checkbox("Dimension 2", key="PD2", font=ButtonFont)], [sg.Text("Accumulated Persistence Function", font=TextFont), sg.Checkbox("Dimension 1", key="APF1", font=ButtonFont), sg.Checkbox("Dimension 2", key="APF2", font=ButtonFont)],[sg.Button("Process", font=ButtonFont), sg.Checkbox("Generate plots", key="plots", font=ButtonFont), sg.Button("Exit", font=ButtonFont), sg.Button("Quit", font=ButtonFont)]]
  
 	window_main = sg.Window("Topological Amorphous Material Analysis", layout_main, resizable = True, size=(600,750), right_click_menu=right_click_menu)
 	loaded = False
@@ -402,11 +424,9 @@ def batch_mode():
 			deaths_2 = []
 			APFs_1 = []
 			APFs_2 = []
-			for file in atom_files:
-				print("Looking at {}".format(file), " and specified file format is ", values_main["file_format"])
-				simulation = load_atom_file(file, values_main["file_format"])
-				print(atoms)
-				dir = os.path.dirname(file)
+			for file_path in atom_files:
+				print("Looking at {}".format(file_path), " and specified file format is ", values_main["file_format"])
+				dir = os.path.dirname(file_path)
 				if not os.path.exists(os.path.join(dir, "PD1")):
 					os.mkdir(os.path.join(dir, "PD1"))
 				if not os.path.exists(os.path.join(dir, "PD2")):
@@ -415,10 +435,9 @@ def batch_mode():
 					os.mkdir(os.path.join(dir, "APF1"))
 				if not os.path.exists(os.path.join(dir, "APF2")):
 					os.mkdir(os.path.join(dir, "APF2"))
-				file_name = os.path.splitext(os.path.split(file)[1])[0]
+				file_name = os.path.splitext(os.path.split(file_path)[1])[0]
 				for s in sample_every:
-					atom_locations = sample_at(simulation, s, repeat_x, repeat_y, repeat_z, atoms, radii)
-					simplices = weighted_alpha_diode(atom_locations)
+					atom_locations = sample_at(file_path, values_main["file_format"], s, repeat_x, repeat_y, repeat_z, atoms, radii)
 					params.n_threads = int(values_main["n_threads"])
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 						if values_main["upper_threshold"] == "Automatic":
@@ -467,16 +486,40 @@ def batch_mode():
 						if values_main["APF2"]:
 							APF_2 = calculate_APF(dgm_2)
 							pandas.DataFrame(APF_2, columns=["mean age", "lifetime"]).to_csv(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.csv")
+					if values_main["plots"]:
+						if values_main["PD1"]:
+							fig_pd_1 = plot_PD(dgm_1, file_path+" PD1 sample "+str(s))
+							fig_pd_1.write_image(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_PD_1.png")
+							if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+								fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 1"+str(s))
+								fig_kic_pd_1.write_html(dir+"/PD1/"+file_name+"_sample_"+str(s)+"_kic_PD_1.html")
+						if values_main["PD2"]:
+							fig_pd_2 = plot_PD(dgm_2, file_path+" PD2 sample "+str(s))	
+							fig_pd_2.write_image(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_PD_2.png")
+							if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:#if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+								fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 2"+str(s))
+								fig_kic_pd_2.write_html(dir+"/PD2/"+file_name+"_sample_"+str(s)+"_kic_PD_2.html")
+						if values_main["APF1"]:
+							fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
+							fig_apf_1.write_image(dir+"/APF1/"+file_name+"_sample_"+str(s)+"_APF_1.png")
+						if values_main["APF2"]:
+							fig_apf_2 = plot_APF(APF_2, file_path+" APF2 "+str(s))
+							fig_apf_2.write_image(dir+"/APF2/"+file_name+"_sample_"+str(s)+"_APF_2.png")
 			print("All done!")
 			processed = True
-
 		if event_main == "Exit" or event_main == sg.WIN_CLOSED:
 			window_main.close()
 			entry_window()
 			break
-		
-		if event_main == "Quit":
+		if event_main == "Single":
+			window_main.close()
+			single_mode()
 			break
-	window_main.close()
- 
+		if event_main == "Multi":
+			window_main.close()
+			multi_mode()
+			break
+		if event_main == "Quit":
+			window_main.close()
+			break
  

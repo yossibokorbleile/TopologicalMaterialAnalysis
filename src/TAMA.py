@@ -42,12 +42,13 @@ parser.add_argument("-i", "--interface", choices=["g", "c"], default="g", help="
 parser.add_argument("-s", "--settings", action="store", help="""Specify the file which contains the settings, only used with the command line interface.""")
 parser.add_argument("-n", "--name", action="store", help="""Specify name of the settings to be used, only used with the command line interface.""")
 args = parser.parse_args()
-info.intro()
 
+print(info.name_bold())
+print(info.copyright())
+print(info.help())
 if args.license:
-	info.license()
- 
-if args.interface == "g":
+	print(info.license())
+elif args.interface == "g":
 	if args.settings != None:
 		print("Settings file ignored when using the GUI.")
 	from gui import entry_window

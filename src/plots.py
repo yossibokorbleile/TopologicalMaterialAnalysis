@@ -37,19 +37,20 @@ def plot_APF(APF : numpy.array, name : str):
 	fig.update_yaxes(rangemode="tozero")
 	return fig
 
-def plot_APFs(APFs : list, name : str):#, APF_colour, APF_label):
+def plot_APFs(APFs : list, APF_names : list, fig_name : str):#, APF_colour, APF_label):
 	"""! Plot a set accumulated persistence function, with automatic colour differentiation.
 	
 	@param APFs - accumlated persistence functions to plot
 	
 	@result a matplotlib figure
 	"""
-	fig = go.Figure(labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	assert len(APFs) == len(APF_names)
+	fig = go.Figure(labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=fig_name)
 	last_pt = math.ceil(max([APFs[i][-1,0] for i in range(len(APFs))])*1.1)
 	for i in range(len(APFs)):
 		APFs[i] = numpy.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
 	for i in range(len(APFs)):
-		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=str(i)))
+		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=APF_names[i]))
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
@@ -78,8 +79,8 @@ def plot_PD(dgm, name : str):
 			birth.append(dgm["birth"].iloc[i])
 			death.append(dgm["death"].iloc[i])
 			inf_fin.append("fin")
-	to_plot = pandas.DataFrame({"birth":birth, "death":death, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", title=name)
+	to_plot = pandas.DataFrame({"birth":birth, "death":death, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="inf_fin", title=name)
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
@@ -124,8 +125,8 @@ def plot_PDs(dgms, name : str):
 				death.append(dgms[i]["death"].iloc[j])
 				samp.append(str(i))
 				inf_fin.append("fin")
-	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="type", title=name)
+	to_plot = pandas.DataFrame({"birth":birth, "death":death, "sample":samp, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="inf_fin", title=name)
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig

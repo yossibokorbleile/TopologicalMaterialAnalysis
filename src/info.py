@@ -18,14 +18,24 @@ print("Current Directory", path)
 print(os.path.abspath(os.path.join(path, os.pardir)))
 
 def license():
-    """! obtain license information and print it
-    """
-    with open(os.path.abspath(os.path.join(path, os.pardir))+"/LICENSE", 'r') as license:
-    	print(license.read())
-     
-def intro():
-    """! print brief introduction about the program
-    """
-    print("Topological Amorphous Material Analysis Copyright (C) Yossi Bokor Bleile, Aalborg University\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `TAMA.py -l`.\nFor help run `TAMA.py -h`.")
-    return "Topological Amorphous Material Analysis Copyright (C) Yossi Bokor Bleile, Aalborg University\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `TAMA.py -l`.\nFor help run `TAMA.py -h`."
+	"""! obtain license information and print it
+	"""
+	license_text = ""
+	with open(os.path.abspath(os.path.join(path, os.pardir))+"/LICENSE.md", 'r') as license:
+		license_text = license_text +license.read()
+	return license_text
+	 
+def name_bold():
+	"""! return the name in bold
+	"""
+	return "\033[1m"+"Topological Amorphous Material Analysis"+"\033[0m" 
+
+def copyright():
+	"""! return copyright information
+	"""	
+	return "Copyright (C) Yossi Bokor Bleile, Aalborg University\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `./TAMA.py -l`."
 	
+def help():
+	"""! return instructions on how to get help
+	"""	
+	return "For help run `./TAMA.py -h`."
