@@ -127,29 +127,30 @@ def single_mode():
 				sg.popup_error("File not processed, please Process it.")
 			else:
 				if values_main['PD1'] == True:
-					fig_pd_1 = plot_PD(dgm_1, file_path+" PD1 sample "+str(s))
-					fig_pd_1.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 						try:
-							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1 sample "+str(s))
+							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 1 sample "+str(s))
 							fig_kic_pd_1.show()
 						except:
-							print("Kernel/image/cokernel persistence has not been calculated")
+							print("Kernel/image/cokernel persistence has not been calculated.")
+					else:
+						fig_pd_1 = plot_PD(dgm_1, file_path+" PD1 sample "+str(s))
+						fig_pd_1.show()
 				if values_main['PD2'] == True:
-					fig_pd_2 = plot_PD(dgm_2, file_path+" PD2 sample "+str(s))
-					fig_pd_2.show()
 					if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 						try:
-							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2 sample "+str(s))
+							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 2 sample "+str(s))
 							fig_kic_pd_2.show()
 						except:
-							print("Kernel/image/cokernel persistence has not been calculated")
+							print("Kernel/image/cokernel persistence has not been calculated.")
+					else:
+						fig_pd_2 = plot_PD(dgm_2, file_path+" PD2 sample "+str(s))
+						fig_pd_2.show()
 				if values_main['APF1'] == True:
 					try:
 						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 sample "+str(s))
 						fig_apf_1.show()
 					except:
-						sg.popup_error("APF1 has not been calculated, will calculate it now. Did you change settins after processig the structure?")
 						APF_1 = calculate_APF(dgm_1)
 						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 sample "+str(s))
 						fig_apf_1.show()
@@ -158,7 +159,6 @@ def single_mode():
 						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 sample "+str(s))
 						fig_apf_2.show()	
 					except:
-						sg.popup_error("APF2 has not been calculated, will calculate it now. Did you change settins after processig the structure?")
 						APF_2 = calculate_APF(dgm_2)
 						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 sample "+str(s))
 						fig_apf_2.show()
@@ -193,35 +193,39 @@ def single_mode():
 				if plotted == False:
 					if values_main['APF1'] == True:
 						fig_apf_1 = plot_APF(APF_1, file_path+" APF1 "+str(s))
-						fig_apf_1.show()
+						#fig_apf_1.show()
 					if values_main['APF2'] == True:
 						fig_apf_2 = plot_APF(APF_2, file_path+" APF2 "+str(s))
-						fig_apf_2.show()			
+						#fig_apf_2.show()			
 					if values_main['PD1'] == True:
 						fig_pd_1 = plot_PD(births[1], deaths[1], file_path+" PD1 "+str(s))
-						fig_pd_1.show()
+						#fig_pd_1.show()
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 1"+str(s))
-							fig_kic_pd_1.show()
+							fig_kic_pd_1 = plot_kernel_image_cokernel_PD(kicr, 1, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 1"+str(s))
+							#fig_kic_pd_1.show()
 					if values_main['PD2'] == True:
 						fig_pd_2 = plot_PD(births[2], deaths[2], file_path+" PD2 "+str(s))
-						fig_pd_2.show()
+						#fig_pd_2.show()
 						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
-							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" kernel/image/cokernel dimension 2"+str(s))
-							fig_kic_pd_2.show()
+							fig_kic_pd_2 = plot_kernel_image_cokernel_PD(kicr, 2, True, values_main["kernel"], values_main["image"], values_main["cokernel"], file_path+" codmain/kernel/image/cokernel dimension 2"+str(s))
+							#fig_kic_pd_2.show()
 				else:
 					if values_main["PD1"]:
-						fig_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_1.png")
-						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+						try:
+							fig_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_1.png")
+						try: #values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_1.png")
 					if values_main["PD2"]:
-						fig_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_2.png")
-						if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
+						try:
+							fig_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_PD_2.png")
+						try:#if values_main["kernel"] or values_main["image"] or values_main["cokernel"]:
 							fig_kic_pd_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_kic_PD_2.png")
 					if values_main["APF1"]:
-						fig_apf_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_1.png")
+						try:
+							fig_apf_1.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_1.png")
 					if values_main["APF2"]:
-						fig_apf_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_2.png")
+						try:
+							fig_apf_2.write_image(dir+"/"+file_name+"_sample_"+str(s)+"_APF_2.png")
 		
 		if event_main == "Visualisation":
 			if processed == False:

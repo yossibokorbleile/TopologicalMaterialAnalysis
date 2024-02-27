@@ -132,7 +132,7 @@ def plot_PDs(dgms, name : str):
 
 
 
-def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, cokernel : bool, name : str):
+def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool, image : bool, cokernel : bool, name : str):
 	"""! Plot kernel, image, cokernel on same figure
 	@param kicr 	oineus::KerImCokReduced 
 	@param d	 	the dimension to extract (either 1 or 2)
@@ -141,65 +141,78 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, kernel : bool, image : bool, co
 	@param cokernel	bool to plot cokernel
 	@return figu	figure with the chosen PD diagrams
 	"""
-	print("settings are kernel {} image {} cokernel {}".format(kernel, image, cokernel))
-	#fig, ax = plt.subplots()
 	fig = go.Figure()
 	max_val = -math.inf
+	if codomain:
+		codomain_pd = kicr.codomain_diagrams().in_dimension(d)
+		if math.inf in codomain_pd[:,1] and max_val < max([d for d in codomain_pd[:,1] if d !=math.inf]):
+			max_val = max(codomain_pd[:,1])
 	if kernel:
 		kernel_pd = kicr.kernel_diagrams().in_dimension(d)
-		if math.inf in kernel_pd[:,1] and max_val < max(kernel_pd[:,1]):
+		if math.inf in kernel_pd[:,1] and max_val < max([d for d in kernel_pd[:,1] if d !=math.inf]):
 			max_val = max(kernel_pd[:,1])
 	if image:
 		image_pd = kicr.image_diagrams().in_dimension(d)
-		if math.inf in image_pd[:,1]  and max_val < max(image_pd[:,1]):
+		if math.inf in image_pd[:,1]  and max_val < max([d for d in image_pd[:,1] if d !=math.inf]):
 			max_val = max(image_pd[:,1])
 	if cokernel:
 		cokernel_pd = kicr.cokernel_diagrams().in_dimension(d)
-		if math.inf in cokernel_pd[:,1] and max_val < max(cokernel_pd[:,1]):
+		if math.inf in cokernel_pd[:,1] and max_val < max([d for d in cokernel_pd[:,1] if d !=math.inf]):
 			max_val =  max(cokernel_pd[:,1])
 	birth = []
 	death = []
-	ker_im_cok = []
+	pt_type = []
 	inf_fin = []
+	if codomain:
+		for i in range(codomain_pd.shape[0]):
+			if codomain_pd[i,1] == math.inf:
+				birth.append(codomain_pd[i,0])
+				death.append(max_val*1.1)
+				pt_type.append("codomain")
+				inf_fin.append("inf")
+			else:
+				birth.append(codomain_pd[i,0])
+				death.append(codomain_pd[i,1])
+				pt_type.append("codomain")
+				inf_fin.append("fin")
 	if kernel:
 		for i in range(kernel_pd.shape[0]):
 			if kernel_pd[i,1] == math.inf:
 				birth.append(kernel_pd[i,0])
 				death.append(max_val*1.1)
-				ker_im_cok.append("kernel")
+				pt_type.append("kernel")
 				inf_fin.append("inf")
 			else:
 				birth.append(kernel_pd[i,0])
 				death.append(kernel_pd[i,1])
-				ker_im_cok.append("kernel")
+				pt_type.append("kernel")
 				inf_fin.append("fin")
 	if image:
 		for i in range(image_pd.shape[0]):
 			if image_pd[i,1] == math.inf:
 				birth.append(image_pd[i,0])
 				death.append(max_val*1.1)
-				ker_im_cok.append("image")
+				pt_type.append("image")
 				inf_fin.append("inf")
 			else:
 				birth.append(image_pd[i,0])
 				death.append(image_pd[i,1])
-				ker_im_cok.append("image")
+				pt_type.append("image")
 				inf_fin.append("fin")
 	if cokernel:
 		for i in range(cokernel_pd.shape[0]):
 			if cokernel_pd[i,1] == math.inf:
 				birth.append(cokernel_pd[i,0])
 				death.append(max_val*1.1)
-				ker_im_cok.append("cokernel")
+				pt_type.append("cokernel")
 				inf_fin.append("inf")
 			else:
 				birth.append(cokernel_pd[i,0])
 				death.append(cokernel_pd[i,1])
-				ker_im_cok.append("cokernel")
+				pt_type.append("cokernel")
 				inf_fin.append("fin")
-	#fig.tight_layout(pad=5.0)
-	to_plot = pandas.DataFrame({"birth":birth, "death":death, "ker_im_cok":ker_im_cok, "type":inf_fin})
-	fig = px.scatter(to_plot, x="birth", y="death", symbol="type", color="ker_im_cok", title=name)
+	to_plot = pandas.DataFrame({"birth":birth, "death":death, "pt_type":pt_type, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="inf_fin", color="pt_type", title=name)
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
