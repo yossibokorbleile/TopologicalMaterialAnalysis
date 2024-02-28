@@ -80,13 +80,13 @@ def read_oineus_settings(structure_file : str, setting_name : str):
 	return params
 
 
-def load_atom_file(file_path : str, format : str, index):
-	"""! load the file containing the initial configureation
-	@param file_path file to load
-	@return atoms     what we obtain from ase.io.read
-	"""
-	atoms = io.read(file_path, index = index)#, format = format) #just read the atoms file
-	return atoms
+# def load_atom_file(file_path : str, format : str, index):
+# 	"""! load the file containing the initial configureation
+# 	@param file_path file to load
+# 	@return atoms     what we obtain from ase.io.read
+# 	"""
+# 	atoms = io.read(file_path, format=format, index = index)#, format = format) #just read the atoms file
+# 	return atoms
 
 def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repeat_y : int, repeat_z : int, atom_list, radius_list):
 	"""! Sample a structure at a particular time, with cell repetitions.
@@ -100,8 +100,11 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 
 	@return points		data frame of the points including the repetitions with columns 'Atom', 'x', 'y', 'z', 'w'
 	"""
-	print(repeat_x, repeat_y, repeat_z)
-	sample = load_atom_file(file_path, format, sample_index).repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
+	print("Repeating as follows: ",repeat_x, repeat_y, repeat_z)
+	if format == "Auto":
+		sample = io.read(file_path, index=sample_index).repeat((repeat_x, repeat_y, repeat_z))
+	else:
+		sample = io.read(file_path, format=format, index=sample_index).repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
 	#sample = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
 	coord = sample.get_positions() #get the coordinates of the atoms once repeated
 	cell = sample.get_cell() #get the cell size
@@ -156,43 +159,6 @@ def convert_simps_to_oineus(simplices : list):
 	oin_simps = [oineus.Simplex_double(s[0], s[1]) for s in simplices]
 	return oin_simps
 
-
-#def extract_diagrams_from_dionysus(filt, m): #no longer used
-#	"""! Given a dionysus fitlration and persistent homology, extract the persistence diagrams
-#	@param filt		dionysus filtration
-#	@param m		dionysus persistent homology
-#
-#	@return dgm		nx2 numpy.array of diagram
-#	"""
-#	dionysus_diagrams= dionysus.init_diagrams(m, filt)
-#	dgms = []
-#	for i in range(len(dionysus_diagrams)):
-#		births = []
-#		deaths = []
-#		data=[]
-#		for p in dionysus_diagrams[i]:
-#			births.append(p.birth)
-#			deaths.append(p.death)
-#			data.append(p.data)
-#		dgms.append(pandas.DataFrame({"birth":births, "death":deaths,"data":data}))
-#	return dgms, dionysus_diagrams
-	
-#def persistent_homology_diagrams_from_points_dionysus(points):#extract the persistent homology of the frame 
-#	"""! Given a set of points with weights, return the persistence diagrams from dionysus.
-#	@param points	pandas.DataFrame of points, columns 'x','y','z' coordinates, and column 'w' the weights.
-#
-#	@return dgms 	dionysus persistence diagrams
-#	"""
-#	dgms = []
-#	# Calculate the alpha shape using Diode
-#	simplices = weighted_alpha_diode(points)
-#	# Generate the filtration using Dionysus
-#	filt, m = persistent_homology_filt_dionysus(simplices)
-#	# Get persistent homologypersistent_homology_dionysus(filtration)
-#	dgms = extract_diagrams_from_dionysus(filt, m)
-#	return dgms
-
-
 def oineus_compare(x, y):
 	"""! Comparison to compare list of simplicies to get them in the order for oineus
 	@param x	simplex to compare
@@ -219,6 +185,7 @@ def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
 
 	@return sub_comp	list containing the indices of the points on which we build the subcomplex
 	"""
+	print("The upper threshold is {} and the lower threshold is {}".format(z_upper, z_lower))
 	sub_comp = []
 	for i in points.index.values:
 		if (points["z"][i] >= z_upper) or (points["z"][i]    <= z_lower):
