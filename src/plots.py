@@ -146,17 +146,21 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 	max_val = -math.inf
 	if codomain:
 		codomain_pd = kicr.codomain_diagrams().in_dimension(d)
+		print("codomain diagram has {} points".format(codomain_pd.shape[0]))
 		if math.inf in codomain_pd[:,1] and max_val < max([d for d in codomain_pd[:,1] if d !=math.inf]):
 			max_val = max(codomain_pd[:,1])
 	if kernel:
 		kernel_pd = kicr.kernel_diagrams().in_dimension(d)
+		print("kernel diagram has {} points".format(kernel_pd.shape[0]))
 		if math.inf in kernel_pd[:,1] and max_val < max([d for d in kernel_pd[:,1] if d !=math.inf]):
 			max_val = max(kernel_pd[:,1])
 	if image:
 		image_pd = kicr.image_diagrams().in_dimension(d)
+		print("image diagram has {} points".format(image_pd.shape[0]))
 		if math.inf in image_pd[:,1]  and max_val < max([d for d in image_pd[:,1] if d !=math.inf]):
 			max_val = max(image_pd[:,1])
 	if cokernel:
+		print("cokernel diagram has {} points".format(cokernel_pd.shape[0]))
 		cokernel_pd = kicr.cokernel_diagrams().in_dimension(d)
 		if math.inf in cokernel_pd[:,1] and max_val < max([d for d in cokernel_pd[:,1] if d !=math.inf]):
 			max_val =  max(cokernel_pd[:,1])
