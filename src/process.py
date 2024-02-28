@@ -8,7 +8,6 @@ from ase import io, Atoms
 import numpy 
 import pandas
 import diode
-#import dionysus
 import oineus
 import math
 from colour import Color
