@@ -7,21 +7,17 @@
 # @copyright BSD
 #
 
-
 import os
- 
-# get current directory
-path = os.getcwd()
-print("Current Directory", path)
- 
-# prints parent directory
-print(os.path.abspath(os.path.join(path, os.pardir)))
 
 def license():
 	"""! obtain license information and print it
 	"""
 	license_text = ""
-	with open(os.path.abspath(os.path.join(path, os.pardir))+"/LICENSE.md", 'r') as license:
+	l_path = ""
+	for p in __file__.split("/")[1:-2]:
+		l_path = l_path+"/"+p
+	l_path = l_path + "/LICENSE.md"
+	with open(l_path, 'r') as license:
 		license_text = license_text +license.read()
 	return license_text
 	 
@@ -33,7 +29,7 @@ def name_bold():
 def copyright():
 	"""! return copyright information
 	"""	
-	return "Copyright (C) Yossi Bokor Bleile, Aalborg University\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `./TAMA.py -l`."
+	return "Copyright (C) Yossi Bokor Bleile\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `./TAMA.py -l`."
 	
 def help():
 	"""! return instructions on how to get help
