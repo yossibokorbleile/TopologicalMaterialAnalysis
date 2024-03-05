@@ -1,4 +1,5 @@
 # README
+[![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
 Quick overview: there is a python script Rasmus provided a while ago which does the persistent homology of the ZIF structures. This GUI is meant to first implement this script, and then add certain functionalities. Currently, you need the following Python packages to be installed:
 * PySimpleGUI
 * ASE
