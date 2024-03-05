@@ -3,18 +3,10 @@
 # @file plots.py
 # @brief Functions for generating plots.
 # Given persistence diagrams and accumulated persistence functions, there are functions to plot either a single persistence diagram (PD) or accumulated persistence function (APF), or plot several together.
-#import matplotlib.pyplot as plt
-#import matplotlib as mpl
+
 import math
 from colour import Color
-#from matplotlib import cmfind
-#from matplotlib.colors import LogNorm
 from scipy.interpolate import interpn
-#from matplotlib.ticker import MaxNLocator
-#from matplotlib.ticker import FuncFormatter
-#import matplotlib.colors as mcolors
-#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-#from matplotlib.widgets  import RectangleSelector
 import plotly.express as px
 import plotly.graph_objects as go
 

@@ -1,15 +1,15 @@
 #!python3
 ##
-# @mainpage Topological Amorphous Material Analysis (TAMA)
+# @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
 # @version 0.3
 # @date February 2024
 # @copyright GPL
 # 
 # @section License
-# Topological Amorphous Material Analysis (TAMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
+# Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
 # @section description_main Description
-# Topological Amorphous Material Analysis is relies on Dionysus, Oineus and (currently) Diode to handle a lot of the "under the hood" functionalities.
+# ToMA is dependent on Oineus and Diode to handle a lot of the "under the hood" functionalities.
 #
 # There are two ways you can use Amorphous Material Analysis:
 # -# Graphical User Interface (default)
@@ -20,8 +20,8 @@
 # -# multi
 # -# batch
 #
-# In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. To use `TAMA` in the CLI mode, run 
-#`./TAMA.py -i c -s $SETTINGS FILE`.
+# In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. To use `ToMA` in the CLI mode, run 
+#`./ToMA.py -i c -s $SETTINGS FILE`.
 #
 # Information about the packages required and instructions for the settings files are in the [README](README.md).
 #
@@ -33,7 +33,7 @@ import info
 import configparser
 
 
-parser = argparse.ArgumentParser(prog="Topological Amorphous Material Analysis", 
+parser = argparse.ArgumentParser(prog="Topological Material Analysis", 
 									formatter_class = argparse.RawTextHelpFormatter,       
 									usage="""This program can be used to analyse atomic figurations to understand porosity of the structures. The main tool used is persistent homology, and its varios related representations. 
 									""")

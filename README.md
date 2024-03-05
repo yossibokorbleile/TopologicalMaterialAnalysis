@@ -34,7 +34,7 @@ in `Documentation/latex`.
 ### Running the GUI:
 Once you have all the packages installed and are in your python environment of choice, navigate to the GUI directory, and from a terminal (on Mac/Linux) or Command prompt(?) (Windows), run 
 ```python
-src/TAMA.py
+src/ToMA.py
 ```
 
 You can then select from 3 different modes: `single`, `multi` and `batch`.
@@ -44,7 +44,7 @@ Using the GUI should be pretyy self-explanatory from here.
 ### Running the CLI:
 To run the CLI, use
 ```python
-src/TAMA.py -i c -s $SETTINGSFILE -n $SETTINGSNAME
+src/ToMA.py -i c -s $SETTINGSFILE -n $SETTINGSNAME
 ```
 
 The `SETTINGSFILE` should be an `.ini` file, and each `section` corresponds to a set of variables. Depending on what mode is being used, the contents of the section will differ a little bit. Each `section` needs to contain a variable `MODE` which can have values `single`, `multi`, or `batch`. All three modes also need information about the structure settings to use, which are also stored in an `.ini` file. This structure file can also be used to load structures when using the GUI. For information on formating the structure file, see [Structure files](#Structure-files)
