@@ -8,7 +8,6 @@ from ase import io, Atoms
 import numpy 
 import pandas
 import diode
-#import dionysus
 import oineus
 import math
 from colour import Color
@@ -357,5 +356,5 @@ def calculate_APF(dgm):
 			APF[i,1] = APF[i,1] + APF[i-1,1] #TODO: remove duplicates and only keep the last value of each one
 	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
 
-
+def save():
 	
