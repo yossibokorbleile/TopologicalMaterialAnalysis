@@ -8,10 +8,10 @@ import os
 import matplotlib
 
 
-def process_sample(atom_locations, sample_time : int,  repeat_x, repeat_y, repeat_z, params, upper_threshold = "Auto", lower_threshold = "Auto"):
+#def process_sample(atom_locations, sample_time : int,  repeat_x, repeat_y, repeat_z, params, upper_threshold = "Auto", lower_threshold = "Auto"):
 
 
-def single_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_time : int,  n_threads : int, kernel : bool, image : bool, cokernel : bool,upper_threshold = "Auto", lower_threshold = "Auto"):
+def single_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_time : int,  n_threads : int, save_plots : bool, kernel : bool, image : bool, cokernel : bool, upper_threshold, lower_threshold):
 	"""! Single mode for CLI usage. 
 	
 	@param structure_file	intial structure file
@@ -26,15 +26,16 @@ def single_mode(structure_file : str, file_format : str, configuration_file : st
 	@param upper_threshold	the height above which points are in the subcomplex, set to 'Auto' for automatic selection
 	@param lower_threshold	the height below which points are in the subcomplex, set to 'Auto' for automatic selection
 	"""
-	dir = os.path.dirname(structure_file)
+	dir = os.path.abspath(structure_file).split("/")[0:-1]
+	print(dir)
 	if not os.path.exists(os.path.join(dir, "PD1")):
-		os.mkdir(os.path.join(dir, "PD1"))
+		os.mkdir(os.path.join(*dir, "PD1"))
 	if not os.path.exists(os.path.join(dir, "PD2")):
-		os.mkdir(os.path.join(dir, "PD2"))
+		os.mkdir(os.path.join(*dir, "PD2"))
 	if not os.path.exists(os.path.join(dir, "APF1")):
-		os.mkdir(os.path.join(dir, "APF1"))
+		os.mkdir(os.path.join(*dir, "APF1"))
 	if not os.path.exists(os.path.join(dir, "APF2")):
-		os.mkdir(os.path.join(dir, "APF2"))
+		os.mkdir(os.path.join(*dir, "APF2"))
 	params = oineus.ReductionParams()
 	params.n_threads = n_threads
 	params.kernel = kernel
@@ -264,7 +265,7 @@ def multi_mode(structure_file : str, file_format : str, configuration_file : str
 			matplotlib.pyplot.close()
 
 
-def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool,upper_threshold = "Auto", lower_threshold = "Auto")::
+def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool,upper_threshold = "Auto", lower_threshold = "Auto"):
 	"""! Batch mode for CLI usage. 
 	
 	@param parent_dir 	base directory from which to initialise the search

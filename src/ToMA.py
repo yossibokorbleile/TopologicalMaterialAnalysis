@@ -60,6 +60,52 @@ elif args.interface == "c":
 		print("Please specify a the name of the settings to use.")
 	else:	
 		mode_config = configparser.ConfigParser()
-		mode_config.read()
+		mode_config.read(args.settings)
+		mode = mode_config.get(args.name, "MODE")
+	if mode == "SINGLE":
+		from cli import single_mode
+		structure_file = mode_config.get(args.name,"STRUCTURE_FILE")
+		file_format = mode_config.get(args.name,"FILE_FORMAT")
+		configuration_file = mode_config.get(args.name,"CONFIGURATION_FILE")
+		configuration = mode_config.get(args.name,"CONFIGURATION_NAME")
+		sample_time = mode_config.get(args.name,"SAMPLE_TIME")
+		try:
+			n_threads=mode_config.get(args.name,"N_THREADS")
+		except:
+			n_threads = 4
+		try:
+			save_plots = mode_config.get(args.name,"SAVE_PLOTS")
+		except:
+			save_plots = False
+		try:
+			kernel = mode_config.get(args.name,"KERNEL")
+		except:
+			kernel = False
+		try:
+			image = mode_config.get(args.name,"IMAGE")
+		except:
+			image = False
+		try:
+			cokernel = mode_config.get(args.name,"COKERNEL")
+		except:
+			cokernel = False
+		try:
+			upper_threshold = mode_config.get(args.name, "UPPER_THRESHOLD")
+		except:
+			upper_threshold = "Auto"
+		try:
+			lower_threshold = mode_conifg.get(args.name, "LOWER_THRESHOLD")
+		except:
+			lower_threshold = "Auto"
+		single_mode(structure_file=structure_file, file_format=file_format,configuration_file=configuration_file, configuration=configuration, sample_time=sample_time,  n_threads=n_threads, save_plots=save_plots, kernel=kernel, image=image, cokernel=cokernel,upper_threshold=upper_threshold, lower_threshold=lower_threshold)
+	elif mode == "MULTI":
+		from cli import multi_mode
+	elif mode == "BATCH":
+		from cli import batch_mode
+
+
+	# 	config.read(configuration_file) #load the file containing the structures
+	# atoms = [str(a).strip() for a in config.get(configuration, "ATOMS").split(",")]
+
 
 
