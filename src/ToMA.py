@@ -6,6 +6,7 @@
 # @date February 2024
 # @copyright GPL
 # 
+# [![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
 # @section License
 # Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
 # @section description_main Description
