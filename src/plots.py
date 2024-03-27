@@ -10,10 +10,11 @@ from scipy.interpolate import interpn
 import plotly.express as px
 import plotly.graph_objects as go
 
-import PySimpleGUI as sg	
+# import PySimpleGUI as sg	
 
 import numpy
 import pandas
+from process import calculate_APF
 
 def plot_APF(APF : numpy.array, name : str):
 	"""! Plot an accumulated persistence function
@@ -57,7 +58,10 @@ def plot_PD(dgm, name : str):
 	
 	@result a plotly.express figure
 	"""
-	max_val = max(dgm["death"][dgm["death"] != math.inf])
+	try:
+		max_val = max(dgm["death"][dgm["death"] != math.inf])
+	except:
+		max_val = max(dgm["birth"])
 	birth = []
 	death = []
 	inf_fin = []
@@ -122,7 +126,6 @@ def plot_PDs(dgms, name : str):
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
-
 
 
 def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool, image : bool, cokernel : bool, name : str):
@@ -213,3 +216,26 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
 	return fig
+
+def write_files(dgm, file_path, save_plots=False, plot_name = ""):
+	"""! Save a digram as a csv file, with the option to save a plot as well. 
+	
+	@param dgm 	the diagram to be saved, and plotted
+	@param dir 	directory in which to save the files
+	@param name	name of the structure
+	@param save_plot save the plots as well 
+	"""
+	
+	if len(dgm["birth"]) == 0:
+		print("Diagram {} is empty.".format(plot_name))
+	else:
+		dgm.to_csv(file_path+".csv")
+		APF = calculate_APF(dgm)
+		pandas.DataFrame(APF, columns=["mean age", "lifetime"]).to_csv(file_path.replace("PD","APF")+".csv")
+		if save_plots:
+			fig = plot_PD(dgm, plot_name)
+			fig.write_html(file_path+".html")
+			fig = plot_APF(APF, plot_name)
+			fig.write_html(file_path.replace("PD", "APF")+".html")
+	return True
+

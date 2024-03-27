@@ -13,6 +13,7 @@ import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
+import configparser
  
 
 def read_configuration(configuration_file : str, configuration : str):
@@ -32,7 +33,7 @@ def read_configuration(configuration_file : str, configuration : str):
 		print("{} with radius {}".format(a, radii[i])) #print atom and the radius
 	repeat_x = int(config.get(configuration, "REPEAT_X")) #read repitition in x-axis
 	print("repeating in x-axis: {}".format(repeat_x)) #print repitition in x-axis
-	repeat_y = int(config.get(sconfiguratione, "REPEAT_Y")) #read repitition in y-axis
+	repeat_y = int(config.get(configuration, "REPEAT_Y")) #read repitition in y-axis
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
