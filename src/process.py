@@ -298,11 +298,14 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 
 	@return kicr			oineus object which contains the kernel, image, cokernel persistence diagrams as required, can also calculate ones that weren't initially specificed
 	"""
+	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
 	L = oineus.list_to_filtration_float(L)
 	K = oineus.list_to_filtration_float(K)
+	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
+	print("reduced")
 	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int

@@ -11,7 +11,7 @@ import matplotlib.pyplot
 #def process_sample(atom_locations, sample_time : int,  repeat_x, repeat_y, repeat_z, params, upper_threshold = "Auto", lower_threshold = "Auto"):
 
 
-def single_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_time : int,  n_threads : int, save_plots : bool, kernel : bool, image : bool, cokernel : bool, upper_threshold, lower_threshold):
+def single_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_time : int,  n_threads : int, save_plots : bool, kernel : bool, image : bool, cokernel : bool, thickness = "Auto"): #upper_threshold, lower_threshold
 	"""! Single mode for CLI usage. 
 	
 	@param structure_file	intial structure file
@@ -48,11 +48,28 @@ def single_mode(structure_file : str, file_format : str, configuration_file : st
 	atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
 	structure_name = os.path.splitext(os.path.split(structure_file)[1])[0]
 	if params.kernel or params.image or params.cokernel:
-		if upper_threshold == "Auto":
-			upper_threshold = math.floor(max(atom_locations["z"]))
-		if lower_threshold == "Auto":
-			lower_threshold =  math.ceil(min(atom_locations["z"]))
-		kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
+		top_pt = max(atom_locations["z"])
+		bot_pt = min(atom_locations["z"])
+		height = abs(top_pt - bot_pt)
+		if thickness == "Auto":
+			ut= top_point - 0.1*height
+			lt = bot_pt + 0.1*height
+		else:
+			ut= top_point - thickness*height
+			lt = bot_pt + thickness*height
+		# if upper_threshold == "Auto":
+		# 	ut = top_pt - 0.01*height
+		# else: 
+		# 	ut = top_pt - upper_threshold*height
+		# if lower_threshold == "Auto":
+		# 	lt =  bot_pt + 0.01*height
+		# else:
+		# 	lt =  bot_pt + lower_threshold*height
+		try: 
+			kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, ut, lt)
+		except:
+			print("issues with {}".format(structure_file))
+			return False
 		if params.kernel:
 			write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=dir_path+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 kernel PD sample "+str(sample_time))
 			write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=dir_path+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 kernel PD sample "+str(sample_time))
@@ -70,7 +87,7 @@ def single_mode(structure_file : str, file_format : str, configuration_file : st
 		write_files(dgm=dgm_2, file_path=dir_path+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
 	return True
 
-def multi_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool,upper_threshold = "Auto", lower_threshold = "Auto", save_plots = False):
+def multi_mode(structure_file : str, file_format : str, configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool,  thickness = "Auto", save_plots = False): # upper_threshold = "Auto", lower_threshold = "Auto",
 	"""! Multi mode for CLI usage. 
 	
 	@param structure_file	intial structure file
@@ -107,13 +124,34 @@ def multi_mode(structure_file : str, file_format : str, configuration_file : str
 	structure_name = os.path.splitext(os.path.split(structure_file)[1])[0]
 	for sample_time in range(sample_start, sample_end, sample_step):
 		print("looking at sample {}".format(sample_time))
-		atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
+		try: 
+				atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
+		except:
+			print("issues with loading {}".format(structure_file))
+			return False
 		if params.kernel or params.image or params.cokernel:
-			if upper_threshold == "Auto":
-				upper_threshold = math.floor(max(atom_locations["z"]))
-			if lower_threshold == "Auto":
-				lower_threshold =  math.ceil(min(atom_locations["z"]))
-			kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
+			top_pt = max(atom_locations["z"])
+			bot_pt = min(atom_locations["z"])
+			height = abs(top_pt - bot_pt)
+			if thickness == "Auto":
+				ut= top_point - 0.1*height
+				lt = bot_pt + 0.1*height
+			else:
+				ut= top_point - thickness*height
+				lt = bot_pt + thickness*height
+			# if upper_threshold == "Auto":
+			# 	ut = top_pt - 0.01*height
+			# else: 
+			# 	ut = top_pt - upper_threshold*height
+			# if lower_threshold == "Auto":
+			# 	lt =  bot_pt + 0.01*height
+			# else:
+			# 	lt =  bot_pt + lower_threshold*height
+			try: 
+				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, ut, lt)
+			except:
+				print("issues with {}".format(structure_file))
+				return False
 			if params.kernel:
 				write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=dir_path+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1_upper_"+str(upper_threshold)+"_lower_"+str(lower_threshold), save_plots=save_plots, plot_name=structure_name+" dimension 1 kernel PD sample "+str(sample_time))
 				write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=dir_path+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_2_upper_"+str(upper_threshold)+"_lower_"+str(lower_threshold), save_plots=save_plots, plot_name=structure_name+" dimension 2 kernel PD sample "+str(sample_time))
@@ -131,7 +169,7 @@ def multi_mode(structure_file : str, file_format : str, configuration_file : str
 			write_files(dgm=dgm_2, file_path=dir_path+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
 	return True
 
-def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool,upper_threshold = "Auto", lower_threshold = "Auto", save_plots = False):
+def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration_file : str, configuration : str, sample_start, sample_end, sample_step,  n_threads : int, kernel : bool, image : bool, cokernel : bool, thickness = "Auto", save_plots = False):#upper_threshold = "Auto", lower_threshold = "Auto"
 	"""! Batch mode for CLI usage. 
 	
 	@param parent_dir 	base directory from which to initialise the search
@@ -180,13 +218,29 @@ def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration
 		
 		for sample_time in range(sample_start, sample_end, sample_step):
 			print("looking at sample {}".format(sample_time))
+			# try: 
 			atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
+			print("succesfully got atom locations")
 			if params.kernel or params.image or params.cokernel:
-				if upper_threshold == "Auto":
-					upper_threshold = math.floor(max(atom_locations["z"]))
-				if lower_threshold == "Auto":
-					lower_threshold =  math.ceil(min(atom_locations["z"]))
-				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, upper_threshold, lower_threshold)
+				top_pt = max(atom_locations["z"])
+				bot_pt = min(atom_locations["z"])
+				height = abs(top_pt - bot_pt)
+				if thickness == "Auto":
+					ut= top_point - 0.1*height
+					lt = bot_pt + 0.1*height
+				else:
+					ut = top_point - thickness*height
+					lt = bot_pt + thickness*height
+				# if upper_threshold == "Auto":
+				# 	ut = top_pt - 0.01*height
+				# else: 
+				# 	ut = top_pt - upper_threshold*height
+				# if lower_threshold == "Auto":
+				# 	lt =  bot_pt + 0.01*height
+				# else:
+				# 	lt =  bot_pt + lower_threshold*height
+				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, ut, lt)
+				print("got kicr for sample {} of structure {}".format(sample, structure_file))
 				if params.kernel:
 					write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 kernel PD sample "+str(sample_time))
 					write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 kernel PD sample "+str(sample_time))
@@ -202,4 +256,6 @@ def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration
 				dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
 				write_files(dgm=dgm_1, file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 PD sample "+str(sample_time))
 				write_files(dgm=dgm_2, file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
+			# except:
+			# 	print("issues with loading {}".format(structure_file))
 	return True
