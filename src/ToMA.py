@@ -24,7 +24,7 @@
 # In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. To use `ToMA` in the CLI mode, run 
 #`./ToMA.py -i c -s $SETTINGS FILE`.
 #
-# Information about the packages required and instructions for the settings files are in the [README](README.md).
+# Information about the packages required and instructions for the settings files are in the [README](md_README.html).
 #
 # Copyright (c) 2023, 2024 Yossi Bokor Bleile.  All rights reserved.    
 
