@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 ##
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
@@ -62,48 +62,76 @@ elif args.interface == "c":
 	else:	
 		mode_config = configparser.ConfigParser()
 		mode_config.read(args.settings)
+		print(args.name)
 		mode = mode_config.get(args.name, "MODE")
-	if mode == "SINGLE":
-		from cli import single_mode
-		structure_file = mode_config.get(args.name,"STRUCTURE_FILE")
-		file_format = mode_config.get(args.name,"FILE_FORMAT")
+		try:
+			file_format = mode_config.get(args.name,"FILE_FORMAT")
+		except:
+			file_format = "Auto"
 		configuration_file = mode_config.get(args.name,"CONFIGURATION_FILE")
 		configuration = mode_config.get(args.name,"CONFIGURATION_NAME")
-		sample_time = mode_config.get(args.name,"SAMPLE_TIME")
 		try:
-			n_threads=mode_config.get(args.name,"N_THREADS")
+			n_threads = int(mode_config.get(args.name,"N_THREADS"))
 		except:
 			n_threads = 4
 		try:
-			save_plots = mode_config.get(args.name,"SAVE_PLOTS")
+			save_plots = bool(mode_config.get(args.name,"SAVE_PLOTS"))
 		except:
 			save_plots = False
 		try:
-			kernel = mode_config.get(args.name,"KERNEL")
+			if mode_config.get(args.name,"KERNEL") == "TRUE" or mode_config.get(args.name,"KERNEL") == "True" or mode_config.get(args.name,"KERNEL") == "true" or mode_config.get(args.name,"KERNEL") == "t" or mode_config.get(args.name,"KERNEL") == "T":
+				kernel = True
+			else:
+				kernel = False
 		except:
 			kernel = False
 		try:
-			image = mode_config.get(args.name,"IMAGE")
+			if mode_config.get(args.name,"IMAGE") == "TRUE" or mode_config.get(args.name,"IMAGE") == "True" or mode_config.get(args.name,"IMAGE") == "true" or mode_config.get(args.name,"IMAGE") == "t" or mode_config.get(args.name,"IMAGE") == "T":
+				image = True
+			else:
+				image = False
 		except:
 			image = False
 		try:
-			cokernel = mode_config.get(args.name,"COKERNEL")
+			if mode_config.get(args.name,"COKERNEL") == "TRUE" or mode_config.get(args.name,"COKERNEL") == "True" or mode_config.get(args.name,"COKERNEL") == "true" or mode_config.get(args.name,"COKERNEL") == "t" or mode_config.get(args.name,"COKERNEL") == "T":
+				cokernel = True
+			else:
+				cokernel = False
 		except:
 			cokernel = False
 		try:
-			upper_threshold = mode_config.get(args.name, "UPPER_THRESHOLD")
+			thickness = float(mode_config.get(args.name, "THICKNESS"))
 		except:
-			upper_threshold = "Auto"
-		try:
-			lower_threshold = mode_conifg.get(args.name, "LOWER_THRESHOLD")
-		except:
-			lower_threshold = "Auto"
-		single_mode(structure_file=structure_file, file_format=file_format,configuration_file=configuration_file, configuration=configuration, sample_time=sample_time,  n_threads=n_threads, save_plots=save_plots, kernel=kernel, image=image, cokernel=cokernel,upper_threshold=upper_threshold, lower_threshold=lower_threshold)
+			thickness = "Auto"	
+		# try:
+		# 	upper_threshold = float(mode_config.get(args.name, "UPPER_THRESHOLD"))
+		# except:
+		# 	upper_threshold = "Auto"
+		# try:
+		# 	lower_threshold = float(mode_conifg.get(args.name, "LOWER_THRESHOLD"))
+		# except:
+		# 	lower_threshold = "Auto"
+	if mode == "SINGLE":
+		from cli import single_mode
+		structure_file = mode_config.get(args.name,"STRUCTURE_FILE")
+		sample_time = mode_config.get(args.name,"SAMPLE_TIME")
+		single_mode(structure_file=structure_file, file_format=file_format,configuration_file=configuration_file, configuration=configuration, sample_time=sample_time,  n_threads=n_threads, save_plots=save_plots, kernel=kernel, image=image, cokernel=cokernel, thickness=thickness)#upper_threshold=upper_threshold, lower_threshold=lower_threshold
 	elif mode == "MULTI":
 		from cli import multi_mode
+		structure_file = mode_config.get(args.name,"STRUCTURE_FILE")
+		sample_start = int(mode_config.get(args.name,"SAMPLE_START"))
+		sample_end = int(mode_config.get(args.name,"SAMPLE_END"))
+		sample_step = int(mode_config.get(args.name,"SAMPLE_STEP"))
+		multi_mode(structure_file=structure_file, file_format=file_format, configuration_file=configuration_file, configuration=configuration, sample_start=sample_start, sample_end=sample_end, sample_step=sample_step,  n_threads=n_threads, save_plots=save_plots, kernel=kernel, image=image, cokernel=cokernel, thickness=thickness)#upper_threshold=upper_threshold, lower_threshold=lower_threshold
 	elif mode == "BATCH":
 		from cli import batch_mode
-
+		parent_dir = mode_config.get(args.name, "PARENT_DIR")
+		file_ext = mode_config.get(args.name, "FILE_EXT")
+		sample_start = int(mode_config.get(args.name,"SAMPLE_START"))
+		sample_end = int(mode_config.get(args.name,"SAMPLE_END"))
+		sample_step = int(mode_config.get(args.name,"SAMPLE_STEP"))
+		print("kernel {} image {} cokernel {} thickness {}".format(kernel, image, cokernel, thickness))
+		batch_mode(parent_dir=parent_dir, file_ext=file_ext, file_format=file_format, configuration_file=configuration_file, configuration=configuration, sample_start=sample_start, sample_end=sample_end, sample_step=sample_step,  n_threads=n_threads, save_plots=save_plots, kernel=kernel, image=image, cokernel=cokernel, thickness=thickness)#upper_threshold=upper_threshold, lower_threshold=lower_threshold
 
 	# 	config.read(configuration_file) #load the file containing the structures
 	# atoms = [str(a).strip() for a in config.get(configuration, "ATOMS").split(",")]

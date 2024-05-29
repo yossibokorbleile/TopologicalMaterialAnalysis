@@ -2,7 +2,9 @@
 
 [![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
 
-Quick overview: there is a python script Rasmus provided a while ago which does the persistent homology of the ZIF structures. This GUI is meant to first implement this script, and then add certain functionalities. Currently, you need the following Python packages to be installed:
+TopologicalMaterialAnalysis is a Python application to analyse topological structures in materials. It can be used via a graphical user interface or a command line interface. It was developed in conjunction with the [Glass Structure and Mechanics Group, Aalborg Unviersity](https://sites.google.com/view/smedskjaer).
+
+Currently, you need the following Python packages to be installed:
 * PySimpleGUI
 * ASE
 * Pandas
@@ -15,9 +17,7 @@ Quick overview: there is a python script Rasmus provided a while ago which does 
 * colour
 * + any i have forgotten
 
-You will also need to ensure tkinter, cgal, tbb, +others? are installed. 
-
-The GUI currently has two modes: `-s` for looking at a single configureation at a specified time, and `-m` for looking at a single structure at multiple time samples. Functionality for looking at multiple structures at multiple time steps will be added, in particular one any bugs have been ironed out here, and other features added. Or once I come up with a good way of doing it without having to duplicate future work.
+You will also need to ensure tkinter, CGAL, oneTBB are installed. 
 
 ## Documentation
 The full documentation is built using [doxygen](https://www.doxygen.nl/), which you will need to install if you want to build the documentation locally. This README contains a quick start guide, and the documentation shouldn't be necessary unless you encounter erros, or wish to contribute to the application.

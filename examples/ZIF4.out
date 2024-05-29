@@ -1,7 +1,0 @@
-Amorphous Material Analysis Copyright (C) Yossi Bokor Bleile, Aalborg University
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome to redistribute it under certain conditions.
-To see the liencese conditions, run `AMA.py -l'.
-For help run `AMA.py -h`.
-Mac OS Version is 13.4.1 and patch enabled so applying the patch
-Applyting Mac OS 12.3+ Alpha Channel fix.  Your default Alpha Channel is now 0.99

@@ -13,6 +13,9 @@ import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
+import configparser
+
+
  
 
 def read_configuration(configuration_file : str, configuration : str):
@@ -32,7 +35,7 @@ def read_configuration(configuration_file : str, configuration : str):
 		print("{} with radius {}".format(a, radii[i])) #print atom and the radius
 	repeat_x = int(config.get(configuration, "REPEAT_X")) #read repitition in x-axis
 	print("repeating in x-axis: {}".format(repeat_x)) #print repitition in x-axis
-	repeat_y = int(config.get(sconfiguratione, "REPEAT_Y")) #read repitition in y-axis
+	repeat_y = int(config.get(configuration, "REPEAT_Y")) #read repitition in y-axis
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
@@ -297,17 +300,23 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 
 	@return kicr			oineus object which contains the kernel, image, cokernel persistence diagrams as required, can also calculate ones that weren't initially specificed
 	"""
+	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
 	L = oineus.list_to_filtration_float(L)
 	K = oineus.list_to_filtration_float(K)
+	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
+	print("reduced")
 	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	print("got dgm_1")
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
 	dgm_2 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	print("got dgm_2")
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
+	print("finished oineus_kernel_image_cokernel")
 	return kicr, dgm_1, dgm_2
 
 def calculate_APF(dgm): 
@@ -324,4 +333,4 @@ def calculate_APF(dgm):
 	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
 
 
-	
+
