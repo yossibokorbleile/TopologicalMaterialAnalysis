@@ -228,6 +228,8 @@ def write_files(dgm, file_path, save_plots=False, plot_name = ""):
 	
 	if len(dgm["birth"]) == 0:
 		print("Diagram {} is empty.".format(plot_name))
+		dgm.to_csv(file_path+".csv")
+		pandas.DataFrame([[0, 0]], columns=["mean age", "lifetime"]).to_csv(file_path.replace("PD","APF")+".csv")
 	else:
 		dgm.to_csv(file_path+".csv")
 		APF = calculate_APF(dgm)

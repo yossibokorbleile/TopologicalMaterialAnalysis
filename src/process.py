@@ -14,6 +14,8 @@ from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
 import configparser
+
+
  
 
 def read_configuration(configuration_file : str, configuration : str):
@@ -307,11 +309,14 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	print("reduced")
 	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	print("got dgm_1")
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
 	dgm_2 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	print("got dgm_2")
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
+	print("finished oineus_kernel_image_cokernel")
 	return kicr, dgm_1, dgm_2
 
 def calculate_APF(dgm): 
@@ -328,4 +333,4 @@ def calculate_APF(dgm):
 	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
 
 
-	
+

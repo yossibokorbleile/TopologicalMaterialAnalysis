@@ -200,7 +200,7 @@ def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration
 		for f in files:
 			if f.endswith(file_ext):
 				structure_files.append(os.path.join(root, f))
-	print("Have found the following configuration files:")
+	print("Have found the following structure files:")
 	for f in structure_files:
 		print(f)
 	for structure_file in structure_files:
@@ -218,44 +218,44 @@ def batch_mode(parent_dir : str, file_ext : str, file_format : str,configuration
 		
 		for sample_time in range(sample_start, sample_end, sample_step):
 			print("looking at sample {}".format(sample_time))
-			# try: 
-			atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
-			print("succesfully got atom locations")
-			if params.kernel or params.image or params.cokernel:
-				top_pt = max(atom_locations["z"])
-				bot_pt = min(atom_locations["z"])
-				height = abs(top_pt - bot_pt)
-				if thickness == "Auto":
-					ut= top_point - 0.1*height
-					lt = bot_pt + 0.1*height
+			try: 
+				atom_locations = sample_at(structure_file, file_format, sample_time, repeat_x, repeat_y, repeat_z, atoms, radii)
+				print("succesfully got atom locations")
+				if params.kernel or params.image or params.cokernel:
+					top_pt = max(atom_locations["z"])
+					bot_pt = min(atom_locations["z"])
+					height = abs(top_pt - bot_pt)
+					if thickness == "Auto":
+						ut= top_pt - 0.1*height
+						lt = bot_pt + 0.1*height
+					else:
+						ut = top_pt - thickness*height
+						lt = bot_pt + thickness*height
+					# if upper_threshold == "Auto":
+					# 	ut = top_pt - 0.01*height
+					# else: 
+					# 	ut = top_pt - upper_threshold*height
+					# if lower_threshold == "Auto":
+					# 	lt =  bot_pt + 0.01*height
+					# else:
+					# 	lt =  bot_pt + lower_threshold*height
+					kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, ut, lt)
+					print("got kicr for sample {} of structure {}".format(sample_time, structure_file))
+					if params.kernel:
+						write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 kernel PD sample "+str(sample_time))
+						write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 kernel PD sample "+str(sample_time))
+					if params.image:
+						write_files(dgm=pandas.DataFrame(kicr.image_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_image_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 image PD sample "+str(sample_time))
+						write_files(dgm=pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_image_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 image PD sample "+str(sample_time))
+					if params.cokernel:
+						write_files(dgm=pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_cokernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 cokernel PD sample "+str(sample_time))
+						write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_cokernel_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 cokernel PD sample "+str(sample_time))
+					write_files(dgm=dgm_1, file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 PD sample "+str(sample_time))
+					write_files(dgm=dgm_2, file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
 				else:
-					ut = top_point - thickness*height
-					lt = bot_pt + thickness*height
-				# if upper_threshold == "Auto":
-				# 	ut = top_pt - 0.01*height
-				# else: 
-				# 	ut = top_pt - upper_threshold*height
-				# if lower_threshold == "Auto":
-				# 	lt =  bot_pt + 0.01*height
-				# else:
-				# 	lt =  bot_pt + lower_threshold*height
-				kicr, dgm_1, dgm_2 =  oineus_kernel_image_cokernel(atom_locations, params, ut, lt)
-				print("got kicr for sample {} of structure {}".format(sample, structure_file))
-				if params.kernel:
-					write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 kernel PD sample "+str(sample_time))
-					write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_kernel_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 kernel PD sample "+str(sample_time))
-				if params.image:
-					write_files(dgm=pandas.DataFrame(kicr.image_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_image_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 image PD sample "+str(sample_time))
-					write_files(dgm=pandas.DataFrame(kicr.image_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_image_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 image PD sample "+str(sample_time))
-				if params.cokernel:
-					write_files(dgm=pandas.DataFrame(kicr.cokernel_diagrams().in_dimension(1), columns=["birth","death"]), file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_cokernel_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 cokernel PD sample "+str(sample_time))
-					write_files(dgm=pandas.DataFrame(kicr.kernel_diagrams().in_dimension(2), columns=["birth","death"]), file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_cokernel_PD_2", save_plots=save_plots, plot_name=structure_name+" dimension 2 cokernel PD sample "+str(sample_time))
-				write_files(dgm=dgm_1, file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 PD sample "+str(sample_time))
-				write_files(dgm=dgm_2, file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
-			else:
-				dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
-				write_files(dgm=dgm_1, file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 PD sample "+str(sample_time))
-				write_files(dgm=dgm_2, file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
-			# except:
-			# 	print("issues with loading {}".format(structure_file))
+					dcmp, filt, dgm_1, dgm_2 = oineus_process(atom_locations, params)
+					write_files(dgm=dgm_1, file_path=structure_folder+"/PD1/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 1 PD sample "+str(sample_time))
+					write_files(dgm=dgm_2, file_path=structure_folder+"/PD2/"+structure_name+"_sample_"+str(sample_time)+"_PD_1", save_plots=save_plots, plot_name=structure_name+" dimension 2 PD sample "+str(sample_time))
+			except:
+				print("issues with loading {}".format(structure_file))
 	return True
