@@ -8,7 +8,7 @@
 # 
 # [![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
 # @section License
-# Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
+# Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](md__l_i_c_e_n_s_e.html) of this when you downloaded this repository.
 # @section description_main Description
 # ToMA is dependent on Oineus and Diode to handle a lot of the "under the hood" functionalities.
 #
@@ -24,7 +24,7 @@
 # In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. To use `ToMA` in the CLI mode, run 
 #`./ToMA.py -i c -s $SETTINGS FILE`.
 #
-# Information about the packages required and instructions for the settings files are in the [README](md_README.html).
+# Information about the packages required and instructions for the settings files are in the [README](md__r_e_a_d_m_e.html).
 #
 # Copyright (c) 2023, 2024 Yossi Bokor Bleile.  All rights reserved.    
 
