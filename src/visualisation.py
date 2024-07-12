@@ -27,7 +27,7 @@ def get_representative_loops(dgm : pandas.DataFrame, R, filt):
 	dgm["cycle rep"] = cycle_reps
 	return dgm
 
-def get_vertices_and_edges(loop, filt):
+def get_0_and_1_cycles(loop, filt):
 	verts = []
 	edges = []
 	for x in loop:
@@ -59,33 +59,38 @@ def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types
 	#print("next")
 	#get the composition of the cycle representatives
 	comps = []
-	edges = []
-	verts = []
+	cycles_1 = []
+	cycles_0 = []
 	for i in range(dgm.shape[0]):
-		verts_i, edges_i = get_vertices_and_edges(dgm["cycle rep"].iloc[i], filt)
+		verts_i, edges_i = get_0_and_1_cycles(dgm["cycle rep"].iloc[i], filt)
 		#print("here?")
-		edges.append(edges_i)
-		verts.append(verts_i)
+		cycles_1.append(edges_i)
+		cycles_0.append(verts_i)
 		comps.append(loop_composition(verts_i, filt, points, atom_types))
 	#for each atom type we are looking at, add a column with the number of atoms of this type in the cycle representative
 	for a in atom_types:
 		dgm[a] = [c[a] for c in comps]
-	dgm["vertices"]=verts
-	dgm["edges"]=edges
+	dgm["0-cycles"]=cycles_0
+	dgm["1-cycles"]=cycles_1
+	dgm
 	return dgm
 
 def get_neighbour_cells(points : pandas.DataFrame, cycle_vertices : list, filt):
-	neighbour_vertices = []
-	neighbour_edges = []
+	neighbour_0_cells = []
+	neighbour_1_cells = []
+	neighbour_2_cells = []
 	for s in filt.simplices():
-		if len(s.vertices) == 2:#restrict to edges for the moment
+		if len(s.vertices) == 2: #restrict to edges for the moment
 			for v in s.vertices:
 				if v in cycle_vertices:
-					neighbour_vertices.append(s.vertices[0])
-					neighbour_vertices.append(s.vertices[1])
-					neighbour_edges.append(s.vertices)
+					if s.vertices[0] not in neighbour_0_cells:
+						neighbour_0_cells.append(s.vertices[0])
+					if s.vertices[1] not in neighbour_0_cells:
+						neighbour_0_cells.append(s.vertices[1])
+					if s.vertices not in neighbour_1_cells:
+						neighbour_1_cells.append(s.vertices)
 					break
-	return neighbour_vertices, neighbour_edges
+	return neighbour_0_cells, neighbour_1_cells, neighbour_2_cells
 
 def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int, filt, neighbours = False): #TODO: visualise a neighbourhood of the representative
 	"""! Display a representative of a cycle.
@@ -100,11 +105,11 @@ def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int
 	for e in dgm["edges"].loc[id]:
 		fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").update_traces(line_color='red', line_width=5).data 
 	if neighbours:
-		neighbour_vertices, neighbour_edges = get_neighbour_cells(points, [v for v in dgm["vertices"].loc[id]], filt)
-		neighbour_atoms = list(set(filt.get_id_by_sorted_id(v) for v in neighbour_vertices))
+		neighbour_0_cells, neighbour_1_cells = get_neighbour_cells(points, [v for v in dgm["vertices"].loc[id]], filt)
+		neighbour_atoms = list(set(filt.get_id_by_sorted_id(v) for v in neighbour_0_cells))
 		neighbour_atoms = points.loc[neighbour_atoms]
 		fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom").data 
-		for e in neighbour_edges:
+		for e in neighbour_1_cells:
 			fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
 			#s_cycle = list(v for v in s)
 			#s_cycle = points.loc[s_cycle]
