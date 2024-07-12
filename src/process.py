@@ -4,6 +4,7 @@
 # @brief Functions for processing the structures.
 # Various wrappers and functions for obtaining filtrations, persistent homology objects and diagrams from point configurations.
 
+import configparser
 from ase import io, Atoms
 import numpy 
 import pandas
@@ -13,7 +14,8 @@ import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
- 
+
+
 
 def read_configuration(configuration_file : str, configuration : str):
 	"""! import a specified structure from a configuration file
@@ -32,11 +34,50 @@ def read_configuration(configuration_file : str, configuration : str):
 		print("{} with radius {}".format(a, radii[i])) #print atom and the radius
 	repeat_x = int(config.get(configuration, "REPEAT_X")) #read repitition in x-axis
 	print("repeating in x-axis: {}".format(repeat_x)) #print repitition in x-axis
-	repeat_y = int(config.get(sconfiguratione, "REPEAT_Y")) #read repitition in y-axis
+	repeat_y = int(config.get(configuration, "REPEAT_Y")) #read repitition in y-axis
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
 	return atoms, radii, repeat_x, repeat_y, repeat_z
+
+def read_computation_settings(settings_file : str, settings_name):
+	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
+	config.read(settings_file) #load the file containing the structures
+	try:
+		n_threads = int(config.get(settings_name,"N_THREADS"))
+	except:
+		n_threads = 4
+	try:
+		save_plots = bool(config.get(settings_name,"SAVE_PLOTS"))
+	except:
+		save_plots = False
+	try:
+		if config.get(settings_name,"KERNEL") == "TRUE" or config.get(settings_name,"KERNEL") == "True" or config.get(settings_name,"KERNEL") == "true" or config.get(settings_name,"KERNEL") == "t" or config.get(settings_name,"KERNEL") == "T":
+			kernel = True
+		else:
+			kernel = False
+	except:
+		kernel = False
+	try:
+		if mode_config.get(settings_name,"IMAGE") == "TRUE" or mode_config.get(settings_name,"IMAGE") == "True" or mode_config.get(settings_name,"IMAGE") == "true" or mode_config.get(settings_name,"IMAGE") == "t" or mode_config.get(settings_name,"IMAGE") == "T":
+			image = True
+		else:
+			image = False
+	except:
+		image = False
+	try:
+		if mode_config.get(settings_name,"COKERNEL") == "TRUE" or mode_config.get(settings_name,"COKERNEL") == "True" or mode_config.get(settings_name,"COKERNEL") == "true" or mode_config.get(settings_name,"COKERNEL") == "t" or mode_config.get(settings_name,"COKERNEL") == "T":
+			cokernel = True
+		else:
+			cokernel = False
+	except:
+		cokernel = False
+	try:
+		thickness = float(mode_config.get(settings_name, "THICKNESS"))
+	except:
+		thickness = "Auto"
+	return n_threads, save_plots, kernel, image, cokerne, thickness
+
 
 def read_sample(structure_file : str, configuration : str):
 	"""! import a specified sample range from a configuration file

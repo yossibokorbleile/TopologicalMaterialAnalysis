@@ -5,7 +5,11 @@
 from process import *
 from plots import *
 import os
+<<<<<<< Updated upstream
 import matplotlib
+=======
+# import matplotlib.pyplot
+>>>>>>> Stashed changes
 
 
 def process_sample(atom_locations, sample_time : int,  repeat_x, repeat_y, repeat_z, params, upper_threshold = "Auto", lower_threshold = "Auto"):

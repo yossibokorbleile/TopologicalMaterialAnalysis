@@ -51,7 +51,7 @@ if args.license:
 elif args.interface == "g":
 	if args.settings != None:
 		print("Settings file ignored when using the GUI.")
-	from gui import entry_window
+	from niceguigui import entry_window
 	entry_window()
 elif args.interface == "c":
 	if args.settings == None:
