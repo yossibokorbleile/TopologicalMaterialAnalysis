@@ -6,3 +6,7 @@ docs
 *.out
 APF*/
 PD*/
+.python-version
+pyproject.toml
+*.lock
+
