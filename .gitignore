@@ -8,4 +8,5 @@ APF*/
 PD*/
 .python-version
 pyproject.toml
->>>>>>> Stashed changes
+*.lock
+

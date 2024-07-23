@@ -60,6 +60,8 @@ cycler==0.12.1
 docutils==0.19
     # via nicegui
     # via readme-renderer
+eagerpy==0.30.0
+    # via toma
 fastapi==0.109.2
     # via justpy
     # via nicegui
@@ -147,6 +149,7 @@ numpy==2.0.0
     # via altair
     # via ase
     # via contourpy
+    # via eagerpy
     # via matplotlib
     # via pandas
     # via pyarrow
@@ -269,6 +272,7 @@ trame-vuetify==2.6.1
 twine==5.1.1
     # via justpy
 typing-extensions==4.12.2
+    # via eagerpy
     # via fastapi
     # via nicegui
     # via pydantic
