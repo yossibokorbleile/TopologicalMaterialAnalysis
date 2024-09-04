@@ -5,7 +5,7 @@
 TopologicalMaterialAnalysis is a Python application to analyse topological structures in materials. It can be used via a graphical user interface or a command line interface. It was developed in conjunction with the [Glass Structure and Mechanics Group, Aalborg Unviersity](https://sites.google.com/view/smedskjaer).
 
 Currently, you need the following Python packages to be installed:
-* PySimpleGUI
+* streamlit
 * ASE
 * Pandas
 * Numpy
