@@ -5,7 +5,7 @@
 TopologicalMaterialAnalysis is a Python application to analyse topological structures in materials. It can be used via a graphical user interface or a command line interface. It was developed in conjunction with the [Glass Structure and Mechanics Group, Aalborg Unviersity](https://sites.google.com/view/smedskjaer).
 
 Currently, you need the following Python packages to be installed:
-* PySimpleGUI
+* Streamlit
 * ASE
 * Pandas
 * Numpy
@@ -35,16 +35,16 @@ make
 in `Documentation/latex`.
 
 ### Running the GUI:
-Once you have all the packages installed and are in your python environment of choice, navigate to the GUI directory, and from a terminal (on Mac/Linux) or Command prompt(?) (Windows), run 
+Once you have all the packages installed and are in your python environment of choice, and from a terminal (on Mac/Linux) or Command prompt(?) (Windows), run 
 ```python
-src/ToMA.py
+streamlit run src/ToMA.py
 ```
 
 You can then select from 3 different modes: `single`, `multi` and `batch`.
 Using the GUI should be pretyy self-explanatory from here.
 
 
-### Running the CLI:
+### Running the CLI: (deprecated)
 To run the CLI, use
 ```python
 src/ToMA.py -i c -s $SETTINGSFILE -n $SETTINGSNAME

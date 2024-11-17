@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, '..')
 import streamlit as st
 import oineus
 import numpy as np

@@ -1,11 +1,13 @@
 ##
 # @internal
-# @file batch_mode.py
-# @brief Streamlit page for analysing a batch of files.
+# @file multi_mode.py
+# @brief Streamlit page for analysing a multiple samples.
 # @version 0.1
 # @date July 2024
 
 
+import sys
+sys.path.insert(0, '..')
 import streamlit as st
 import oineus
 import numpy
@@ -13,7 +15,7 @@ import pandas
 import os
 import process
 import streamlit_functions
-import plots
+# import plots
 import visualisation
 from ase import io
 import sys
@@ -21,7 +23,7 @@ import sys
 st.header("Multi Mode")
 comp_tab, plot_tab, vis_tab = st.tabs(["Computation", "Plots", "Visuatlisation"]) #create tabs for the various parts
 st.session_state.mode = "multi"
-st.session_state.params = oineus.ReductionParams()
+
 
 ###define various functions needed for later
 def test():
@@ -45,6 +47,7 @@ def test():
 
 # Function to compute the persistent homology 
 def compute():
+	st.session_state.params = oineus.ReductionParams()
 	if not st.session_state["manual_config"]:
 		streamlit_functions.load_configuration_settings()
 	if not st.session_state["maual_comp_config"]:
@@ -56,16 +59,23 @@ def compute():
 	st.session_state.APFs_0 = []
 	st.session_state.APFs_1 = []
 	st.session_state.APFs_2 = []
+	st.session_state.atom_locations_list = []
+	st.session_state.dcmps = [] 
+	st.session_state.filts = []
 	if "kernel" not in st.session_state:
 		st.session_state.kernel = False
+		st.session_state.params.kernel = False
 	else:
+		print("KERNEL is ", st.session_state.kernel)
 		st.session_state.params.kernel = st.session_state.kernel
 	if "image" not in st.session_state:
 		st.session_state.image = False
+		st.session_state.params.image = False
 	else:
 		st.session_state.params.image= st.session_state.image
 	if "cokernel" not in st.session_state:
 		st.session_state.cokernel = False
+		st.session_state.params.cokernel = False
 	else:
 		st.session_state.params.cokernel = st.session_state.cokernel
 	if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
@@ -97,6 +107,7 @@ def compute():
 		st.session_state.sample_index = s
 		st.session_state.sample_indices.append(s)
 		st.session_state.atom_locations = process.sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
+		st.session_state.atom_locations_list.append(st.session_state.atom_locations)
 		if st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
 			top_pt = max(st.session_state.atom_locations["z"])
 			bot_pt = min(st.session_state.atom_locations["z"])
@@ -157,6 +168,9 @@ def compute():
 			st.session_state.APFs_0.append(process.calculate_APF(st.session_state.dgm_0))
 			st.session_state.APFs_1.append(process.calculate_APF(st.session_state.dgm_1))
 			st.session_state.APFs_2.append(process.calculate_APF(st.session_state.dgm_2))
+			st.session_state.dcmps.append(st.session_state.dcmp) 
+			st.session_state.filts.append(st.session_state.filt)
+
 	if len(st.session_state.sample_indices) != len(st.session_state.dgms_0) or len(st.session_state.sample_indices) != len(st.session_state.dgms_1) or len(st.session_state.sample_indices) != len(st.session_state.dgms_2) or len(st.session_state.sample_indices) != len(st.session_state.APFs_0) or len(st.session_state.sample_indices) != len(st.session_state.APFs_1) or len(st.session_state.sample_indices) != len(st.session_state.APFs_2):
 		st.markdown("*WARNING* something went wrong, the number of diagrams/APFs calcualted does not match the number expected.")
 	if "kernel_dgms_0" in st.session_state:
@@ -518,9 +532,9 @@ else:
 	st.session_state.repeat_x = comp_tab.text_input("Repitition in x-axis:", key="repeat_x_input")
 	st.session_state.repeat_y = comp_tab.text_input("Repitition in y-axis:", key="repeat_y_input")
 	st.session_state.repeat_z = comp_tab.text_input("Repitition in z-axis:", key="repeat_z_input")
-	st.session_state.params.kernel = comp_tab.checkbox("Compute kernel persistence", key="kernel_check")
-	st.session_state.params.image = comp_tab.checkbox("Compute image persistence", key="image_check")
-	st.session_state.params.cokernel = comp_tab.checkbox("Compute cokernel persistence", key="cokernel_check")
+	st.session_state.kernel = comp_tab.checkbox("Compute kernel persistence", key="kernel_check")
+	st.session_state.image = comp_tab.checkbox("Compute image persistence", key="image_check")
+	st.session_state.cokernel = comp_tab.checkbox("Compute cokernel persistence", key="cokernel_check")
 	st.session_state.thickness = comp_tab.text_input("Select thickness of top and bottom layer:", key="thickness_input", placeholder="Automatic detection")
 	st.session_state.n_threads = comp_tab.text_input("Select number of threads to use:", key="n_threads_input", placeholder="4")
 	if st.session_state.n_threads == "":
@@ -574,25 +588,29 @@ with plot_buttons[1]:
 with plot_buttons[2]:
 	st.button("Save plots", key="save_Plots", on_click=save_plots)
 
-
 ###Set up visualisation tab
 vis_tab.markdown("In this tab, you can select *representatives* of homology classes to visualise.")	
 vis_tab.checkbox("Visualisation", key="visualisation")
 if 'selected_row' not in st.session_state:
 	st.session_state.selected_row = None
-if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"]:
+if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"] and not st.session_state.params.kernel and not st.session_state.params.image and not st.session_state.params.cokernel:
+	vis_tab.write(st.session_state.params)
+	vis_tab.write(st.session_state.dcmps)
+	selected_sample = vis_tab.radio("Selection which sample you want to explore", st.session_state.sample_indices)
+	st.session_state.selected_sample_index = st.session_state.sample_indices.index(selected_sample)
+	vis_tab.write(st.session_state.selected_sample_index)
 	# st.session_state.dimension = vis_tab.radio("What dimension cycles do you want to visualise:", [1, 2])
 	st.session_state.dimension = 1
 	vis_tab.checkbox("Display neighbouring atoms.", key="neighbours")
 	if st.session_state.dimension == 1:
 		vis_tab.markdown("Visulisation of representative 1-cycles.")
-		st.session_state.vis_dgm = st.session_state.dgm_1
+		st.session_state.vis_dgm = st.session_state.dgms_1[st.session_state.selected_sample_index]
 	elif st.session_state.dimension == 2:
 		vis_tab.markdown("Visualising representatives of 2-cycles is still underdevelopment, reverting to visualisation 1-cycles.")
 		st.session_state.dimension = 1
 		# vis_tab.markdown("Visulisation of representative 2-cycles.")
 		# st.session_state.vis_dgm = st.session_state.dgm_2
-	st.session_state.dfVis = visualisation.generate_visulisation_df(st.session_state.vis_dgm, st.session_state.dcmp.r_data, st.session_state.filt, st.session_state.atom_locations, st.session_state.atoms)
+	st.session_state.dfVis = visualisation.generate_visulisation_df(st.session_state.vis_dgm, st.session_state.dcmps[st.session_state.selected_sample_index].r_data, st.session_state.filts[st.session_state.selected_sample_index], st.session_state.atom_locations_list[st.session_state.selected_sample_index], st.session_state.atoms)
 	to_display = ["birth", "death", "lifetime"]
 	for a in st.session_state.atoms:
 		to_display.append(a)
@@ -606,27 +624,13 @@ if "processed" in st.session_state and st.session_state["processed"] and st.sess
 	if st.session_state.selected_row != None:
 		for cycle_id in st.session_state.selected_row:
 			vis_tab.plotly_chart(visualisation.generate_display(st.session_state.atom_locations, st.session_state.dgm_1, cycle_id, st.session_state.filt, neighbours = st.session_state["neighbours"]))
-	
+elif st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
+	vis_tab.markdown("Visulation of kernel/image/cokernel persistent homology is not yet available.")
 else:
 	vis_tab.markdown("Persistent homology has not been computed, so representative cycles are unknow. Please proces the file, and then return to this tab.")
 
 st.button("test", key="test", on_click=test)
 
+if "params" in st.session_state:
+	print(st.session_state.params)
 
-# 			processed = True
-# 		if event_main == "Exit" or event_main == sg.WIN_CLOSED:
-# 			window_main.close()
-# 			entry_window()
-# 			break
-# 		if event_main == "Single":
-# 			window_main.close()
-# 			single_mode()
-# 			break
-# 		if event_main == "Multi":
-# 			window_main.close()
-# 			multi_mode()
-# 			break
-# 		if event_main == "Quit":
-# 			window_main.close()
-# 			break
- 
