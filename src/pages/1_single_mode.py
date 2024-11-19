@@ -37,7 +37,9 @@ def read_configuration(configuration_file : str, configuration : str):
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
-	return atoms, radii, repeat_x, repeat_y, repeat_z
+	sample_index = int(config.get(configuration, "SAMPLE_INDEX")) #read repitition in z-axis
+	print("sampling at index: {}".format(sample_index)) #print repitition in z-axis
+	return atoms, radii, repeat_x, repeat_y, repeat_z, sample_index
 
 def read_computation_settings(settings_file : str, settings_name):
 	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
@@ -58,24 +60,29 @@ def read_computation_settings(settings_file : str, settings_name):
 	except:
 		kernel = False
 	try:
-		if mode_config.get(settings_name,"IMAGE") == "TRUE" or mode_config.get(settings_name,"IMAGE") == "True" or mode_config.get(settings_name,"IMAGE") == "true" or mode_config.get(settings_name,"IMAGE") == "t" or mode_config.get(settings_name,"IMAGE") == "T":
+		if config.get(settings_name,"IMAGE") == "TRUE" or config.get(settings_name,"IMAGE") == "True" or config.get(settings_name,"IMAGE") == "true" or config.get(settings_name,"IMAGE") == "t" or config.get(settings_name,"IMAGE") == "T":
 			image = True
 		else:
 			image = False
 	except:
 		image = False
 	try:
-		if mode_config.get(settings_name,"COKERNEL") == "TRUE" or mode_config.get(settings_name,"COKERNEL") == "True" or mode_config.get(settings_name,"COKERNEL") == "true" or mode_config.get(settings_name,"COKERNEL") == "t" or mode_config.get(settings_name,"COKERNEL") == "T":
+		if config.get(settings_name,"COKERNEL") == "TRUE" or config.get(settings_name,"COKERNEL") == "True" or config.get(settings_name,"COKERNEL") == "true" or config.get(settings_name,"COKERNEL") == "t" or config.get(settings_name,"COKERNEL") == "T":
 			cokernel = True
 		else:
 			cokernel = False
 	except:
 		cokernel = False
 	try:
-		thickness = float(mode_config.get(settings_name, "THICKNESS"))
+		thickness = float(config.get(settings_name, "THICKNESS"))
 	except:
 		thickness = "Auto"
-	return n_threads, save_plots, kernel, image, cokerne, thickness
+	try:
+		lower_threshold = float(config.get(settings_name, "LOWER_THRESHOLD"))
+	except:
+		lower_threshold = 1 # DONT KNOW A GOOD DEFAULT
+	
+	return n_threads, save_plots, kernel, image, cokernel, thickness, lower_threshold
 
 
 def read_sample(structure_file : str, configuration : str):
@@ -173,7 +180,7 @@ def weighted_alpha_diode(points):
 
 	@return weighted alpha shape from diode.
 	"""
-	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
 #def persistent_homology_filt_dionysus(simplices : list): #no longer needed
 #	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
@@ -241,7 +248,7 @@ def oineus_filtration(points : pd.DataFrame, params : oineus.ReductionParams):
  
 	@return K			oineus.filtration
   	"""
-	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
@@ -261,7 +268,7 @@ def oineus_pair(points : pd.DataFrame, sub : list):
 	"""
 	points["sub"]=sub
 	points.sort_values(by="sub", ascending=False)
-	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
@@ -340,8 +347,8 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration_float(L)
-	K = oineus.list_to_filtration_float(K)
+	L = oineus.list_to_filtration(L)
+	K = oineus.list_to_filtration(K)
 	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	print("reduced")
@@ -370,10 +377,10 @@ def calculate_APF(dgm):
 	return pd.DataFrame(APF, columns = ["mean age", "lifetime"])
 # import streamlit_functions
 def load_configuration_settings():
-	st.session_state.atoms, st.session_state.radii, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z = process.read_configuration(st.session_state["config_file"], st.session_state["config_name"])
+	st.session_state.atoms, st.session_state.radii, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.sample_index = read_configuration(st.session_state["config_file"], st.session_state["config_name"])
 
 def load_computation_settings():
-	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = process.load_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
+	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness, st.session_state.lower_threshold = read_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
 
 
 
@@ -409,7 +416,7 @@ if not manual_compute:
 		st.session_state.comp_file = st.text_input("Configuration file:", key="comp_config_file")
 	else:
 		st.session_state.comp_file = st.session_state.config_file
-	config_name = st.text_input("Configuration name:", key="comp_config_name")
+	st.session_state.comp_name = st.text_input("Configuration name:", key="comp_config_name")
 else:
 	st.session_state.params.kernel = st.checkbox("Compute kernel persistence", key="kernel_check")
 	st.session_state.params.image = st.checkbox("Compute image persistence", key="image_check")
@@ -459,11 +466,11 @@ else:
 
 	
 def compute():
-	if st.session_state["manual_config"]:
-		load_configuration_file()
-	if st.session_state["maual_comp_config"]:
+	if not st.session_state["manual_config"]:
+		load_configuration_settings()
+	if not st.session_state["maual_comp_config"]:
 		load_computation_settings()
-	st.session_state.atom_locations  = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, rst.session_state.epeat_z, st.session_state.atoms, st.session_state.radii)
+	st.session_state.atom_locations  = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
 	st.session_state.processed=True
 	top_pt = max(st.session_state.atom_locations["z"])
 	bot_pt = min(st.session_state.atom_locations["z"])
@@ -472,14 +479,12 @@ def compute():
 		ut= top_pt - 0.1*height
 		lt = bot_pt + 0.1*height
 	else:
-		ut = top_pt - thickness*height
-	st.session_state.kicr, st.session_state.dgm_1, st.session_state.dgm_2 =  oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, st.session_state.thickness)
+		ut = top_pt - st.session_state.thickness*height
+	st.session_state.kicr, st.session_state.dgm_1, st.session_state.dgm_2 =  oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, st.session_state.thickness, st.session_state.lower_threshold)
 		
 st.button("Process", key="process", on_click=compute)
 if st.session_state.processed:
 	st.write("DONE")
-
-
 
 
 # 			params.n_threads = int(values_main["n_threads"])
