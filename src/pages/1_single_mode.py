@@ -347,8 +347,8 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration(L)
-	K = oineus.list_to_filtration(K)
+	L = oineus.list_to_filtration_float(L)
+	K = oineus.list_to_filtration_float(K)
 	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	print("reduced")
@@ -485,6 +485,8 @@ def compute():
 st.button("Process", key="process", on_click=compute)
 if st.session_state.processed:
 	st.write("DONE")
+
+
 
 
 # 			params.n_threads = int(values_main["n_threads"])
