@@ -20,8 +20,14 @@ import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
+from scipy.interpolate import interpn
+import plotly.express as px
+import plotly.graph_objects as go
 
 
+
+
+st.session_state.params = oineus.ReductionParams()
 
 def read_configuration(configuration_file : str, configuration : str):
 	"""! import a specified structure from a configuration file
@@ -82,7 +88,7 @@ def read_computation_settings(settings_file : str, settings_name):
 		thickness = float(mode_config.get(settings_name, "THICKNESS"))
 	except:
 		thickness = "Auto"
-	return n_threads, save_plots, kernel, image, cokerne, thickness
+	return n_threads, save_plots, kernel, image, cokernel, thickness
 
 
 def read_sample(structure_file : str, configuration : str):
@@ -180,7 +186,7 @@ def weighted_alpha_diode(points):
 
 	@return weighted alpha shape from diode.
 	"""
-	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 
 #def persistent_homology_filt_dionysus(simplices : list): #no longer needed
 #	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
@@ -248,7 +254,7 @@ def oineus_filtration(points : pd.DataFrame, params : oineus.ReductionParams):
  
 	@return K			oineus.filtration
   	"""
-	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
@@ -268,7 +274,7 @@ def oineus_pair(points : pd.DataFrame, sub : list):
 	"""
 	points["sub"]=sub
 	points.sort_values(by="sub", ascending=False)
-	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_np())
+	simplices = diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
 	for i in range(len(simplices)):
 		simplices[i] = [sorted(simplices[i][0]), simplices[i][1]]
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
@@ -352,6 +358,10 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	print("reduced")
+	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
+	print("got dgm_0")
+	dgm_0["birth simplex"]=dgm_0["birth simplex"].astype(int) #convert indices to int
+	dgm_0["death simplex"]=dgm_0["death simplex"].astype(int) #convert indices to int
 	dgm_1 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	print("got dgm_1")
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
@@ -361,7 +371,7 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	print("finished oineus_kernel_image_cokernel")
-	return kicr, dgm_1, dgm_2
+	return kicr, dgm_0, dgm_1, dgm_2
 
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 
@@ -377,10 +387,237 @@ def calculate_APF(dgm):
 	return pd.DataFrame(APF, columns = ["mean age", "lifetime"])
 # import streamlit_functions
 def load_configuration_settings():
-	st.session_state.atoms, st.session_state.radii, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z = process.read_configuration(st.session_state["config_file"], st.session_state["config_name"])
+	st.session_state.atoms, st.session_state.radii, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z = read_configuration(st.session_state["config_file"], st.session_state["config_name"])
 
 def load_computation_settings():
-	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = process.load_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
+	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = load_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
+
+
+
+def plot_APF(APF : np.array, name : str):
+	"""! Plot an accumulated persistence function
+	
+	@param APF - np.array with 2 columns of coordinates which define the APF
+	@param name - title for the plot
+	
+	@result a plotly.express figure
+	"""
+	
+	fig = px.line(x=APF["mean age"], y=APF["lifetime"], labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
+	return fig
+
+def plot_APFs(APFs : list, APF_names : list, fig_name : str):#, APF_colour, APF_label):
+	"""! Plot a set accumulated persistence function, with automatic colour differentiation.
+	
+	@param APFs - accumlated persistence functions to plot
+	
+	@result a matplotlib figure
+	"""
+	assert len(APFs) == len(APF_names)
+	fig = go.Figure(labels={'x':'m (Å$^2$)', 'y':'APF (Å$^2$)'}, title=fig_name)
+	last_pt = math.ceil(max([APFs[i][-1,0] for i in range(len(APFs))])*1.1)
+	for i in range(len(APFs)):
+		APFs[i] = np.vstack([APFs[i], [last_pt, APFs[i][-1,1]]])
+	for i in range(len(APFs)):
+		fig.add_trace(go.Scatter(x=APFs[i][:,0], y=APFs[i][:,1], mode="lines", name=APF_names[i]))
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
+	return fig
+
+def plot_PD(dgm, name : str):
+	"""! Plot a persistence diagram, with a specific colour
+	
+	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
+	
+	@param dgm 	- 	pandas.DataFrame of the diagram
+	@param name    - name to use as title of the plot
+	
+	@result a plotly.express figure
+	"""
+	try:
+		max_val = max(dgm["death"][dgm["death"] != math.inf])
+	except:
+		max_val = max(dgm["birth"])
+	birth = []
+	death = []
+	inf_fin = []
+	fig = go.Figure()
+	for i in range(dgm.shape[0]):
+		if dgm["death"].iloc[i] == math.inf:
+			birth.append(dgm["birth"].iloc[i])
+			death.append(max_val*1.1)
+			inf_fin.append("inf")
+		else:
+			birth.append(dgm["birth"].iloc[i])
+			death.append(dgm["death"].iloc[i])
+			inf_fin.append("fin")
+	to_plot = pd.DataFrame({"birth":birth, "death":death, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="inf_fin", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
+	return fig
+
+
+def plot_PDs(dgms, name : str):
+	"""! Plot several persistence diagrams, with  automatic colour choices
+	
+	Points at infinity are plotted at a height of 1.1 times the last finite point to die.
+
+	@param dgms - list of diagrams
+	@param name - title to use for the plot
+
+	@results a plotly.express figure
+	"""
+	birth = []
+	death = []
+	samp = []
+	inf_fin = []
+	vals = []
+	for dgm in dgms:
+		dgm_vals = []
+		for d in dgm["death"]:
+			if d != math.inf:
+				dgm_vals.append(d)
+		if len(dgm_vals) !=0:
+			vals.append(max(dgm_vals))
+	if len(vals) != 0:
+		max_val = max(vals)
+	else:
+		max_val = max([max(b) for b in dgm["birth"] for dgm in dmgs])
+	fig = go.Figure()
+	for i in range(len(dgms)):
+		for j in range(len(dgms[i]["death"])):
+			if dgms[i]["death"].iloc[j] == math.inf:
+				birth.append(dgs[i]["birth"].iloc[j])
+				death.append(max_val*1.1)
+				samp.append(str(i))
+				inf_fin.append("inf")
+			else:
+				birth.append(dgms[i]["birth"].iloc[j])
+				death.append(dgms[i]["death"].iloc[j])
+				samp.append(str(i))
+				inf_fin.append("fin")
+	to_plot = pd.DataFrame({"birth":birth, "death":death, "sample":samp, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", color="sample", symbol="inf_fin", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
+	return fig
+
+
+def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool, image : bool, cokernel : bool, name : str):
+	"""! Plot kernel, image, cokernel on same figure
+	@param kicr 	oineus::KerImCokReduced 
+	@param d	 	the dimension to extract (either 1 or 2)
+	@param kernel	bool to plot kernel
+	@param image	bool to plot image
+	@param cokernel	bool to plot cokernel
+	@return figu	figure with the chosen PD diagrams
+	"""
+	fig = go.Figure()
+	max_val = -math.inf
+	if codomain:
+		codomain_pd = kicr.codomain_diagrams().in_dimension(d)
+		print("codomain diagram has {} points".format(codomain_pd.shape[0]))
+		if math.inf in codomain_pd[:,1] and max_val < max([d for d in codomain_pd[:,1] if d !=math.inf]):
+			max_val = max(codomain_pd[:,1])
+	if kernel:
+		kernel_pd = kicr.kernel_diagrams().in_dimension(d)
+		print("kernel diagram has {} points".format(kernel_pd.shape[0]))
+		if math.inf in kernel_pd[:,1] and max_val < max([d for d in kernel_pd[:,1] if d !=math.inf]):
+			max_val = max(kernel_pd[:,1])
+	if image:
+		image_pd = kicr.image_diagrams().in_dimension(d)
+		print("image diagram has {} points".format(image_pd.shape[0]))
+		if math.inf in image_pd[:,1]  and max_val < max([d for d in image_pd[:,1] if d !=math.inf]):
+			max_val = max(image_pd[:,1])
+	if cokernel:
+		print("cokernel diagram has {} points".format(cokernel_pd.shape[0]))
+		cokernel_pd = kicr.cokernel_diagrams().in_dimension(d)
+		if math.inf in cokernel_pd[:,1] and max_val < max([d for d in cokernel_pd[:,1] if d !=math.inf]):
+			max_val =  max(cokernel_pd[:,1])
+	birth = []
+	death = []
+	pt_type = []
+	inf_fin = []
+	if codomain:
+		for i in range(codomain_pd.shape[0]):
+			if codomain_pd[i,1] == math.inf:
+				birth.append(codomain_pd[i,0])
+				death.append(max_val*1.1)
+				pt_type.append("codomain")
+				inf_fin.append("inf")
+			else:
+				birth.append(codomain_pd[i,0])
+				death.append(codomain_pd[i,1])
+				pt_type.append("codomain")
+				inf_fin.append("fin")
+	if kernel:
+		for i in range(kernel_pd.shape[0]):
+			if kernel_pd[i,1] == math.inf:
+				birth.append(kernel_pd[i,0])
+				death.append(max_val*1.1)
+				pt_type.append("kernel")
+				inf_fin.append("inf")
+			else:
+				birth.append(kernel_pd[i,0])
+				death.append(kernel_pd[i,1])
+				pt_type.append("kernel")
+				inf_fin.append("fin")
+	if image:
+		for i in range(image_pd.shape[0]):
+			if image_pd[i,1] == math.inf:
+				birth.append(image_pd[i,0])
+				death.append(max_val*1.1)
+				pt_type.append("image")
+				inf_fin.append("inf")
+			else:
+				birth.append(image_pd[i,0])
+				death.append(image_pd[i,1])
+				pt_type.append("image")
+				inf_fin.append("fin")
+	if cokernel:
+		for i in range(cokernel_pd.shape[0]):
+			if cokernel_pd[i,1] == math.inf:
+				birth.append(cokernel_pd[i,0])
+				death.append(max_val*1.1)
+				pt_type.append("cokernel")
+				inf_fin.append("inf")
+			else:
+				birth.append(cokernel_pd[i,0])
+				death.append(cokernel_pd[i,1])
+				pt_type.append("cokernel")
+				inf_fin.append("fin")
+	to_plot = pd.DataFrame({"birth":birth, "death":death, "pt_type":pt_type, "inf_fin":inf_fin})
+	fig = px.scatter(to_plot, x="birth", y="death", symbol="inf_fin", color="pt_type", title=name)
+	fig.update_xaxes(rangemode="tozero")
+	fig.update_yaxes(rangemode="tozero")
+	return fig
+
+def write_files(dgm, file_path, save_plots=False, plot_name = ""):
+	"""! Save a digram as a csv file, with the option to save a plot as well. 
+	
+	@param dgm 	the diagram to be saved, and plotted
+	@param dir 	directory in which to save the files
+	@param name	name of the structure
+	@param save_plot save the plots as well 
+	"""
+	
+	if len(dgm["birth"]) == 0:
+		print("Diagram {} is empty.".format(plot_name))
+		dgm.to_csv(file_path+".csv")
+		pd.DataFrame([[0, 0]], columns=["mean age", "lifetime"]).to_csv(file_path.replace("PD","APF")+".csv")
+	else:
+		dgm.to_csv(file_path+".csv")
+		APF = calculate_APF(dgm)
+		pd.DataFrame(APF, columns=["mean age", "lifetime"]).to_csv(file_path.replace("PD","APF")+".csv")
+		if save_plots:
+			fig = plot_PD(dgm, plot_name)
+			fig.write_html(file_path+".html")
+			fig = plot_APF(APF, plot_name)
+			fig.write_html(file_path.replace("PD", "APF")+".html")
+	return True
 
 
 st.header("Multi Mode")
@@ -390,12 +627,13 @@ st.session_state.mode = "multi"
 
 ###define various functions needed for later
 def test():
+	print(os.getcwd())
 	st.session_state["maual_comp_config"] = True
 	st.session_state.processed=True
 	st.session_state.config_file = "../examples/structure-types.ini"
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
 	st.session_state.config_name = "ZIF-TEST"
-	st.session_state.comp_name = "ZIF-test"
+	st.session_state.comp_name = "ZIF-TEST"
 	st.session_state.sample_start = 0
 	st.session_state.sample_end = 2
 	st.session_state.sample_step = 1
@@ -412,9 +650,9 @@ def test():
 def compute():
 	st.session_state.params = oineus.ReductionParams()
 	if not st.session_state["manual_config"]:
-		streamlit_functions.load_configuration_settings()
+		load_configuration_settings()#streamlit_functions.load_configuration_settings()
 	if not st.session_state["maual_comp_config"]:
-		streamlit_functions.load_computation_settings()
+		load_computation_settings()#streamlit_functions.load_computation_settings()
 	st.session_state.sample_indices = []
 	st.session_state.dgms_0 = []
 	st.session_state.dgms_1 = []
@@ -469,7 +707,7 @@ def compute():
 	for s in range(st.session_state.sample_start, st.session_state.sample_end, st.session_state.sample_step):
 		st.session_state.sample_index = s
 		st.session_state.sample_indices.append(s)
-		st.session_state.atom_locations = process.sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
+		st.session_state.atom_locations = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
 		st.session_state.atom_locations_list.append(st.session_state.atom_locations)
 		if st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
 			top_pt = max(st.session_state.atom_locations["z"])
@@ -481,14 +719,14 @@ def compute():
 			else:
 				ut = top_pt - st.session_state.thickness*height
 				lt = bot_pt + st.session_state.thickness*height
-			st.session_state.kicr, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = process.oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, ut, lt)
+			st.session_state.kicr, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, ut, lt)
 			st.session_state.kicrs.append(st.session_state.kicr)
 			st.session_state.dgms_0.append(st.session_state.dgm_0)
 			st.session_state.dgms_1.append(st.session_state.dgm_1)
 			st.session_state.dgms_2.append(st.session_state.dgm_2)
-			st.session_state.APFs_0.append(process.calculate_APF(st.session_state.dgm_0))
-			st.session_state.APFs_1.append(process.calculate_APF(st.session_state.dgm_1))
-			st.session_state.APFs_2.append(process.calculate_APF(st.session_state.dgm_2))
+			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
+			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
+			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				st.session_state.kicrs.append(st.session_state.kicr)
 			if st.session_state["kernel"]:
@@ -500,9 +738,9 @@ def compute():
 				st.session_state.kernel_dgms_0.append(kernel_dgm_0)
 				st.session_state.kernel_dgms_1.append(kernel_dgm_1)
 				st.session_state.kernel_dgms_2.append(kernel_dgm_2)
-				st.session_state.kernel_APFs_0.append(process.calculate_APF(kernel_dgm_0))
-				st.session_state.kernel_APFs_1.append(process.calculate_APF(kernel_dgm_1))
-				st.session_state.kernel_APFs_2.append(process.calculate_APF(kernel_dgm_2))
+				st.session_state.kernel_APFs_0.append(calculate_APF(kernel_dgm_0))#process.calculate_APF(kernel_dgm_0))
+				st.session_state.kernel_APFs_1.append(calculate_APF(kernel_dgm_1))#process.calculate_APF(kernel_dgm_1))
+				st.session_state.kernel_APFs_2.append(calculate_APF(kernel_dgm_2))#process.calculate_APF(kernel_dgm_2))
 			if st.session_state["image"]:
 				image_dgm_0 = pd.DataFrame(st.session_state.kicr.image_diagrams().in_dimension(0), columns=["birth", "death"])
 				image_dgm_1 = pd.DataFrame(st.session_state.kicr.image_diagrams().in_dimension(1), columns=["birth", "death"])
@@ -510,9 +748,9 @@ def compute():
 				st.session_state.image_dgms_0.append(image_dgm_0)
 				st.session_state.image_dgms_1.append(image_dgm_1)
 				st.session_state.image_dgms_2.append(image_dgm_2)
-				st.session_state.image_APFs_0.append(process.calculate_APF(image_dgm_0))
-				st.session_state.image_APFs_1.append(process.calculate_APF(image_dgm_1))
-				st.session_state.image_APFs_2.append(process.calculate_APF(image_dgm_2))
+				st.session_state.image_APFs_0.append(calculate_APF(image_dgm_0))#	process.calculate_APF(image_dgm_0))
+				st.session_state.image_APFs_1.append(calculate_APF(image_dgm_1))#process.calculate_APF(image_dgm_1))
+				st.session_state.image_APFs_2.append(calculate_APF(image_dgm_2))#process.calculate_APF(image_dgm_2))
 			if st.session_state["cokernel"]:
 				cokernel_dgm_0 = pd.DataFrame(st.session_state.kicr.cokernel_diagrams().in_dimension(0), columns=["birth", "death"])
 				cokernel_dgm_1 = pd.DataFrame(st.session_state.kicr.cokernel_diagrams().in_dimension(0), columns=["birth", "death"])
@@ -520,17 +758,17 @@ def compute():
 				st.session_state.cokernel_dgms_0.append(cokernel_dgm_0)
 				st.session_state.cokernel_dgms_1.append(cokernel_dgm_1)
 				st.session_state.cokernel_dgms_2.append(cokernel_dgm_2)
-				st.session_state.cokernel_APFs_0.append(process.calculate_APF(cokernel_dgm_0))
-				st.session_state.cokernel_APFs_1.append(process.calculate_APF(cokernel_dgm_1))
-				st.session_state.cokernel_APFs_2.append(process.calculate_APF(cokernel_dgm_2))
+				st.session_state.cokernel_APFs_0.append(calculate_APF(cokernel_dgm_0))#process.calculate_APF(cokernel_dgm_0))
+				st.session_state.cokernel_APFs_1.append(calculate_APF(cokernel_dgm_1))#process.calculate_APF(cokernel_dgm_1))
+				st.session_state.cokernel_APFs_2.append(calculate_APF(cokernel_dgm_2))#process.calculate_APF(cokernel_dgm_2))
 		else:
-			st.session_state.dcmp, st.session_state.filt, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = process.oineus_process(st.session_state.atom_locations, st.session_state.params)
+			st.session_state.dcmp, st.session_state.filt, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = 	oineus_process(st.session_state.atom_locations, st.session_state.params)
 			st.session_state.dgms_0.append(st.session_state.dgm_0)
 			st.session_state.dgms_1.append(st.session_state.dgm_1)
 			st.session_state.dgms_2.append(st.session_state.dgm_2)
-			st.session_state.APFs_0.append(process.calculate_APF(st.session_state.dgm_0))
-			st.session_state.APFs_1.append(process.calculate_APF(st.session_state.dgm_1))
-			st.session_state.APFs_2.append(process.calculate_APF(st.session_state.dgm_2))
+			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
+			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
+			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
 			st.session_state.dcmps.append(st.session_state.dcmp) 
 			st.session_state.filts.append(st.session_state.filt)
 
@@ -587,75 +825,75 @@ def generate_plots():
 		if st.session_state["pd0"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_kic_pds_0.append(plots.plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 0, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 0 sample "+str(s)))
+					st.session_state.fig_kic_pds_0.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 0, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 0 sample "+str(s)))
 				except:
 					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 0.")
-			st.session_state.fig_pds_0.append(plots.plot_PD(st.session_state.dgms_0[i], st.session_state.file_path+" PD0 sample "+str(s)))
+			st.session_state.fig_pds_0.append(plot_PD(st.session_state.dgms_0[i], st.session_state.file_path+" PD0 sample "+str(s)))
 		if st.session_state["pd1"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_kic_pds_1.append(plots.plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 1, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 1 sample "+str(s)))
+					st.session_state.fig_kic_pds_1.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 1, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 1 sample "+str(s)))
 				except:
 					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 1.")
-			st.session_state.fig_pds_1.append(plots.plot_PD(st.session_state.dgms_1[i], st.session_state.file_path+" PD1 sample "+str(s)))
+			st.session_state.fig_pds_1.append(plot_PD(st.session_state.dgms_1[i], st.session_state.file_path+" PD1 sample "+str(s)))
 		if st.session_state["pd2"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_kic_pds_2.append(plots.plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 2, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 2 sample "+str(s)))
+					st.session_state.fig_kic_pds_2.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 2, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 2 sample "+str(s)))
 				except:
 					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 2.")
-			st.session_state.fig_pds_2.append(plots.plot_PD(st.session_state.dgms_2[i], st.session_state.file_path+" PD2 sample "+str(s)))
+			st.session_state.fig_pds_2.append(plot_PD(st.session_state.dgms_2[i], st.session_state.file_path+" PD2 sample "+str(s)))
 		if st.session_state["apf0"]:
 			if st.session_state["kernel"]:
 				try:
-					st.session_state.fig_kernel_apfs_0.append(plots.plot_APF(st.session_state.kernel_APFs_0[i], file_path+" kernel APF0 sample "+str(s)))
+					st.session_state.fig_kernel_apfs_0.append(plot_APF(st.session_state.kernel_APFs_0[i], file_path+" kernel APF0 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute kernel APF in dimension 0.")
 			if st.session_state["image"]:
 				try:
-					st.session_state.fig_image_apfs_0.append(plots.plot_APF(st.session_state.image_APFs_0[i], file_path+" image APF0 sample "+str(s)))
+					st.session_state.fig_image_apfs_0.append(plot_APF(st.session_state.image_APFs_0[i], file_path+" image APF0 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute image APF in dimension 0.")
 			if st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_cokernel_apfs_0.append(plots.plot_APF(st.session_state.cokernel_APFs_0[i], file_path+" cokernel APF0 sample "+str(s)))
+					st.session_state.fig_cokernel_apfs_0.append(plot_APF(st.session_state.cokernel_APFs_0[i], file_path+" cokernel APF0 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute cokernel APF in dimension 0.")
-			st.session_state.fig_apfs_0.append(plots.plot_APF(st.session_state.APFs_0[i], file_path+" APF1 sample "+str(s)))
+			st.session_state.fig_apfs_0.append(plot_APF(st.session_state.APFs_0[i], file_path+" APF1 sample "+str(s)))
 		if st.session_state["apf1"]:
 			if st.session_state["kernel"]:
 				try:
-					st.session_state.fig_kernel_apfs_1.append(plots.plot_APF(st.session_state.kernel_APFs_1[i], file_path+" kernel APF1 sample "+str(s)))
+					st.session_state.fig_kernel_apfs_1.append(plot_APF(st.session_state.kernel_APFs_1[i], file_path+" kernel APF1 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute kernel APF in dimension 1.")
 			if st.session_state["image"]:
 				try:
-					st.session_state.fig_image_apfs_1.append(plots.plot_APF(st.session_state.image_APFs_1[i], file_path+" image APF1 sample "+str(s)))
+					st.session_state.fig_image_apfs_1.append(plot_APF(st.session_state.image_APFs_1[i], file_path+" image APF1 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute image APF in dimension 1.")
 			if st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_cokernel_apfs_1.append(plots.plot_APF(st.session_state.cokernel_APFs_1[i], file_path+" cokernel APF1 sample "+str(s)))
+					st.session_state.fig_cokernel_apfs_1.append(plot_APF(st.session_state.cokernel_APFs_1[i], file_path+" cokernel APF1 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute cokernel APF in dimension 1.")
-			st.session_state.fig_apfs_1.append(plots.plot_APF(st.session_state.APFs_1[i], file_path+" APF1 sample "+str(s)))
+			st.session_state.fig_apfs_1.append(plot_APF(st.session_state.APFs_1[i], file_path+" APF1 sample "+str(s)))
 		if st.session_state["apf2"]:
 			if st.session_state["kernel"]:
 				try:
-					st.session_state.fig_kernel_apfs_2.append(plots.plot_APF(st.session_state.kernel_APFs_2[i], file_path+" kernel APF2 sample "+str(s)))
+					st.session_state.fig_kernel_apfs_2.append(plot_APF(st.session_state.kernel_APFs_2[i], file_path+" kernel APF2 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute kernel APF in dimension 2.")
 			if st.session_state["image"]:
 				try:
-					st.session_state.fig_image_apfs_2.append(plots.plot_APF(st.session_state.image_APFs_2[i], file_path+" image APF2 sample "+str(s)))
+					st.session_state.fig_image_apfs_2.append(plot_APF(st.session_state.image_APFs_2[i], file_path+" image APF2 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute image APF in dimension 2.")
 			if st.session_state["cokernel"]:
 				try:
-					st.session_state.fig_cokernel_apfs_2.append(plots.plot_APF(st.session_state.cokernel_APFs_2[i], file_path+" cokernel APF2 sample "+str(s)))
+					st.session_state.fig_cokernel_apfs_2.append(plot_APF(st.session_state.cokernel_APFs_2[i], file_path+" cokernel APF2 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute cokernel APF in dimension 2.")
-			st.session_state.fig_apfs_2.append(plots.plot_APF(st.session_state.APFs_2[i], file_path+" APF2 sample "+str(s)))
+			st.session_state.fig_apfs_2.append(plot_APF(st.session_state.APFs_2[i], file_path+" APF2 sample "+str(s)))
 	st.session_state.plots_generated = True
 
 #function to display plots
@@ -736,6 +974,8 @@ def display_plots():
 def save_plots():
 	dir_name = os.path.dirname(file_path)
 	file_name = os.path.splitext(os.path.split(file_path)[1])[0]
+	print(dir_name)
+	print(file_name)
 	if "plots_generated" not in st.session_state or not st.session_state["plots_generated"]:
 		generate_plots()
 	for i, s in enumerate(st.session_state.sample_indices):

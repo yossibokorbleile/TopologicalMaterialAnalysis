@@ -14,7 +14,7 @@ from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
 
-
+st.session_state.params = oineus.ReductionParams()
 
 def read_configuration(configuration_file : str, configuration : str):
 	"""! import a specified structure from a configuration file
@@ -352,6 +352,10 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	print("about to reduce")
 	kicr = oineus.KerImCokReduced_float(K,L,params,False)
 	print("reduced")
+	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
+	print("got dgm_0")
+	dgm_0["birth simplex"]=dgm_0["birth simplex"].astype(int) #convert indices to int
+	dgm_0["death simplex"]=dgm_0["death simplex"].astype(int) #convert indices to int
 	dgm_1 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	print("got dgm_1")
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
@@ -361,7 +365,7 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	print("finished oineus_kernel_image_cokernel")
-	return kicr, dgm_1, dgm_2
+	return kicr, dgm_0,dgm_1, dgm_2
 
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 
