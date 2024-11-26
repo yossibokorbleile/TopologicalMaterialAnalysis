@@ -29,6 +29,7 @@ import plotly.graph_objects as go
 
 st.session_state.params = oineus.ReductionParams()
 
+
 def read_configuration(configuration_file : str, configuration : str):
 	"""! import a specified structure from a configuration file
 	
@@ -53,6 +54,13 @@ def read_configuration(configuration_file : str, configuration : str):
 	return atoms, radii, repeat_x, repeat_y, repeat_z
 
 def read_computation_settings(settings_file : str, settings_name):
+	"""! import a specified settings from a file
+	
+	@param settings_file    path to the file to use for configurations
+	@param settings_name    name of the structure to use
+	
+	@result n_threads, save_plots, kernel, image, cokernel, thickness  the number of threads for Oineus to use, wether plots should be saved, compute kernel persistence, compute image persistence, compute cokernel persistence, thickness settings
+	"""
 	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
 	config.read(settings_file) #load the file containing the structures
 	try:
@@ -620,7 +628,7 @@ def write_files(dgm, file_path, save_plots=False, plot_name = ""):
 	return True
 
 
-st.header("Multi Mode")
+st.header("Single Configuration Mode")
 comp_tab, plot_tab, vis_tab = st.tabs(["Computation", "Plots", "Visuatlisation"]) #create tabs for the various parts
 st.session_state.mode = "multi"
 
@@ -859,7 +867,7 @@ def generate_plots():
 					st.session_state.fig_cokernel_apfs_0.append(plot_APF(st.session_state.cokernel_APFs_0[i], file_path+" cokernel APF0 sample "+str(s)))
 				except:
 					plot_tab.markdown("Can't compute cokernel APF in dimension 0.")
-			st.session_state.fig_apfs_0.append(plot_APF(st.session_state.APFs_0[i], file_path+" APF1 sample "+str(s)))
+			st.session_state.fig_apfs_0.append(plot_APF(st.session_state.APFs_0[i], file_path+" APF0 sample "+str(s)))
 		if st.session_state["apf1"]:
 			if st.session_state["kernel"]:
 				try:
@@ -934,6 +942,7 @@ def display_plots():
 					plot_tab.plotly_chart(st.session_state.fig_cokernel_apfs_0[i])
 				except:
 					print("No cokernel APF in dimension 0 to plot for sample index ", s)
+			plot_tab.plotly_chart(st.session_state.fig_apfs_0[i])
 		if st.session_state["apf1"]:
 			if st.session_state["kernel"]:
 				try:
