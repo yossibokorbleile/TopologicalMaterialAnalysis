@@ -361,10 +361,10 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration_float(L)
-	K = oineus.list_to_filtration_float(K)
+	L = oineus.list_to_filtration_double(L)
+	K = oineus.list_to_filtration_double(K)
 	print("about to reduce")
-	kicr = oineus.KerImCokReduced_float(K,L,params,False)
+	kicr = oineus.KerImCokReduced_double(K,L,params,False)
 	print("reduced")
 	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
 	print("got dgm_0")
