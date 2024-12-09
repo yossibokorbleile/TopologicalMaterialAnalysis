@@ -2,7 +2,7 @@
 # @internal
 # @file io.py
 # @brief functions to read configuration and computation settings, load atoms as well as save outputs.
-# @version 0.1
+# @version 0.5
 # @date December 2024
 
 import streamlit as st
