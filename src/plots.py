@@ -2,7 +2,7 @@
 # @internal
 # @file plots.py
 # @brief functions to generate plots of the summaries
-# @version 0.1
+# @version 0.5
 # @date December 2024
 
 import streamlit as st

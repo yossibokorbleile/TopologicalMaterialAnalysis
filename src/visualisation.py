@@ -2,6 +2,9 @@
 # @internal
 # @file visualisation.py
 # @brief Look for represetnatives of the cycles.
+# @author Yossi Bokor Bleile
+# @version 0.5
+# @date December 2024
 
 import streamlit as st
 import numpy

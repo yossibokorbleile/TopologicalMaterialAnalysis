@@ -2,8 +2,8 @@
 # @internal
 # @file multi_mode.py
 # @brief Streamlit page for analysing a multiple samples.
-# @version 0.1
-# @date July 2024
+# @version 0.5
+# @date December 2024
 
 # import sys
 # sys.path.insert(0, '..')

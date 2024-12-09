@@ -2,8 +2,8 @@
 # @internal
 # @file info.py
 # @authors Yossi Bokor Bleile
-# @version 0.1
-# @date April 2023
+# @version 0.5
+# @date December 2024
 # @copyright BSD
 #
 
@@ -31,7 +31,3 @@ def copyright():
 	"""	
 	return "Copyright (C) Yossi Bokor Bleile\nThis program comes with ABSOLUTELY NO WARRANTY.\nThis is free software, and you are welcome to redistribute it under certain conditions.\nTo see the liencese conditions, run `./TAMA.py -l`."
 	
-def help():
-	"""! return instructions on how to get help
-	"""	
-	return "For help run `./TAMA.py -h`."

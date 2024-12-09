@@ -2,8 +2,8 @@
 ##
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
-# @version 1
-# @date July 2024
+# @version 0.5
+# @date December 2024
 # @copyright GPL
 # 
 # [![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
