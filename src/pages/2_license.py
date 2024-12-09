@@ -1,10 +1,14 @@
-import sys
-sys.path.insert(0, '..')
+##
+# @internal
+# @file 2_License.py
+# @brief Streamlit page for displaying the license information.
+# @version 0.1
+# @date December 2024
+# @author Yossi Bokor Bleile
 
 import streamlit as st
 
 import os
-
 
 
 def license():

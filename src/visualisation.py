@@ -3,6 +3,7 @@
 # @file visualisation.py
 # @brief Look for represetnatives of the cycles.
 
+import streamlit as st
 import numpy
 import pandas
 import math
@@ -28,6 +29,12 @@ def get_representative_loops(dgm : pandas.DataFrame, R, filt):
 	return dgm
 
 def get_0_and_1_cycles(loop, filt):
+	"""! Get the vertices and edges of a loop
+	@param loop		list containing the ids of the edges in the loop
+	@param filt		oineus filtration
+	
+	@return verts, edges	lists of vertices and edges in the loop
+	"""	
 	verts = []
 	edges = []
 	for x in loop:
@@ -76,6 +83,13 @@ def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types
 	return dgm
 
 def get_neighbour_cells(points : pandas.DataFrame, cycle_vertices : list, filt):
+	"""! Get the neighbouring cells of a given cycle
+	@param points		pandas.DataFrame of the points (atoms) in the structure
+	@param cycle_vertices	list of the vertices in the cycle
+	@param filt			oineus filtration
+	
+	@return neighbour_0_cells, neighbour_1_cells, neighbour_2_cells	lists of neighbouring 0, 1 and 2-cells
+	"""
 	neighbour_0_cells = []
 	neighbour_1_cells = []
 	neighbour_2_cells = []
