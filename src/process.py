@@ -1,82 +1,28 @@
 ##
 # @internal
 # @file process.py
-# @brief Functions for processing the structures.
-# Various wrappers and functions for obtaining filtrations, persistent homology objects and diagrams from point configurations.
+# @brief functions to process the data using oineus and diode.
+# @version 0.1
+# @date December 2024
+
+import streamlit as st
+import oineus
+import numpy as np
+import pandas as pd
+import os
 
 import configparser
 from ase import io, Atoms
-import numpy 
-import pandas
 import diode
-import oineus
 import math
 from colour import Color
 from scipy.interpolate import interpn
 from functools import cmp_to_key
+from scipy.interpolate import interpn
+import plotly.express as px
+import plotly.graph_objects as go
 
-
-
-def read_configuration(configuration_file : str, configuration : str):
-	"""! import a specified structure from a configuration file
-	
-	@param configuration_file    path to the file to use for configurations
-	@param configuration    name of the structure to use
-	
-	@result atoms, radii, repeat_x, repeat_y, repeat_z  the atom symbols, radii to use for the atoms, repetition in x-axis, repetition in y-axis, repetition in z-axis
-	"""
-	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
-	config.read(configuration_file) #load the file containing the structures
-	atoms = [str(a).strip() for a in config.get(configuration, "ATOMS").split(",")] #read the atoms in the selected structure
-	radii = [float (r) for r in config.get(configuration, "RADII").split(",")] #get the radii to use for the atoms
-	print("Proceeding with the following:\nAtoms:") #print what has been loaded into the program, should probably display this in the GUI so that it can be confirmed
-	for i, a in enumerate(atoms):
-		print("{} with radius {}".format(a, radii[i])) #print atom and the radius
-	repeat_x = int(config.get(configuration, "REPEAT_X")) #read repitition in x-axis
-	print("repeating in x-axis: {}".format(repeat_x)) #print repitition in x-axis
-	repeat_y = int(config.get(configuration, "REPEAT_Y")) #read repitition in y-axis
-	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
-	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
-	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
-	return atoms, radii, repeat_x, repeat_y, repeat_z
-
-def read_computation_settings(settings_file : str, settings_name):
-	config = configparser.ConfigParser() #to be able to read the configuration file we need a parse
-	config.read(settings_file) #load the file containing the structures
-	try:
-		n_threads = int(config.get(settings_name,"N_THREADS"))
-	except:
-		n_threads = 4
-	try:
-		save_plots = bool(config.get(settings_name,"SAVE_PLOTS"))
-	except:
-		save_plots = False
-	try:
-		if config.get(settings_name,"KERNEL") == "TRUE" or config.get(settings_name,"KERNEL") == "True" or config.get(settings_name,"KERNEL") == "true" or config.get(settings_name,"KERNEL") == "t" or config.get(settings_name,"KERNEL") == "T":
-			kernel = True
-		else:
-			kernel = False
-	except:
-		kernel = False
-	try:
-		if mode_config.get(settings_name,"IMAGE") == "TRUE" or mode_config.get(settings_name,"IMAGE") == "True" or mode_config.get(settings_name,"IMAGE") == "true" or mode_config.get(settings_name,"IMAGE") == "t" or mode_config.get(settings_name,"IMAGE") == "T":
-			image = True
-		else:
-			image = False
-	except:
-		image = False
-	try:
-		if mode_config.get(settings_name,"COKERNEL") == "TRUE" or mode_config.get(settings_name,"COKERNEL") == "True" or mode_config.get(settings_name,"COKERNEL") == "true" or mode_config.get(settings_name,"COKERNEL") == "t" or mode_config.get(settings_name,"COKERNEL") == "T":
-			cokernel = True
-		else:
-			cokernel = False
-	except:
-		cokernel = False
-	try:
-		thickness = float(mode_config.get(settings_name, "THICKNESS"))
-	except:
-		thickness = "Auto"
-	return n_threads, save_plots, kernel, image, cokerne, thickness
+from toma_io import *
 
 
 def read_sample(structure_file : str, configuration : str):
@@ -148,7 +94,7 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 	#sample = atoms[sample_index].repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
 	coord = sample.get_positions() #get the coordinates of the atoms once repeated
 	cell = sample.get_cell() #get the cell size
-	dfpoints = pandas.DataFrame(numpy.column_stack([sample.get_chemical_symbols(), coord]), columns=["Atom", "x", "y", "z"]) #combine the atomic symbols with their location into a pandas.DataFrame
+	dfpoints = pd.DataFrame(np.column_stack([sample.get_chemical_symbols(), coord]), columns=["Atom", "x", "y", "z"]) #combine the atomic symbols with their location into a pd.DataFrame
 	atoms_found = dfpoints["Atom"].unique() #get a list of all the atoms found in the structure
 	remove = [] #any atoms in the sample which were not in the atoms list are removed 
 	print("Found atoms of the following types: ", atoms_found, " and atom list is ", atom_list) #print all of the ones we found
@@ -161,34 +107,20 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 	conditions = [(dfpoints["Atom"]==atom_list[i]) for i in range(len(atom_list))] #set conditions to select the radius  by atom type
 	choice_weights = [radius_list[i]**2 for i in range(len(radius_list))] #the weights are the radius squared 
 	print("Conditions are size ", len(conditions), " and choice weights are ", choice_weights)
-	dfpoints["w"] = numpy.select(conditions, choice_weights) #set the weights in the dataframe
-	dfpoints["x"] = pandas.to_numeric(dfpoints["x"]) #ensure that everything is numeric and not string
-	dfpoints["y"] = pandas.to_numeric(dfpoints["y"]) #ensure that everything is numeric and not string
-	dfpoints["z"] = pandas.to_numeric(dfpoints["z"]) #ensure that everything is numeric and not string
+	dfpoints["w"] = np.select(conditions, choice_weights) #set the weights in the dataframe
+	dfpoints["x"] = pd.to_numeric(dfpoints["x"]) #ensure that everything is numeric and not string
+	dfpoints["y"] = pd.to_numeric(dfpoints["y"]) #ensure that everything is numeric and not string
+	dfpoints["z"] = pd.to_numeric(dfpoints["z"]) #ensure that everything is numeric and not string
 	return dfpoints #return the dataframe of points
 
 
 def weighted_alpha_diode(points):
 	"""! Use diode to fill the weighted alpha shapes
-	@param points 	pandas.DataFrame with columns 'x', 'y', 'z' for coordinates, and column 'w' with the weights.
+	@param points 	pd.DataFrame with columns 'x', 'y', 'z' for coordinates, and column 'w' with the weights.
 
 	@return weighted alpha shape from diode.
 	"""
 	return diode.fill_weighted_alpha_shapes(points[["x","y","z","w"]].to_numpy())
-
-#def persistent_homology_filt_dionysus(simplices : list): #no longer needed
-#	"""! Get the filtration and persistence module from a list of simplices (using dionysus), and remove any simplicies in dimensions above 3.
-#	@param simplices 	list of simplices from dionysus
-#
-#	@return filt, m 	the dionysus filtration, dionysus persistent homology
-#	"""
-#	restricted_simps = []
-#	for s in simplices:
-#		if len(s[0]) <= 4:
-#			restricted_simps.append(s)
-#	filt = dionysus.Filtration(restricted_simps)
-#	m = dionysus.homology_persistence(filt, progress = True)
-#	return filt, m
 
 def convert_simps_to_oineus(simplices : list): 
 	"""! Diode is set to create simplices for dionysus, so we need to convert them to the correct type for oineus.
@@ -216,10 +148,10 @@ def oineus_compare(x, y):
 	else:
 		return 1
 
-def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
+def sub_complex(points : pd.DataFrame, z_upper : float, z_lower : float):
 	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
 
-	@param points		pandas.DataFrame containing of the points.
+	@param points		pd.DataFrame containing of the points.
 	@param z_upper		float giving the upper threshold, any point above this is in the subcomplex
 	@param z_lower		float giving the lower threshold, any point below this is in the subcomplex
 
@@ -234,10 +166,10 @@ def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
 			sub_comp.append(False)
 	return sub_comp     
 
-def oineus_filtration(points : pandas.DataFrame, params : oineus.ReductionParams):
+def oineus_filtration(points : pd.DataFrame, params : oineus.ReductionParams):
 	"""! Given a set of points, compute the oineus.filtration of the alpha complex
  	
-	@param points		pandas.DataFrame containing points and their weights
+	@param points		pd.DataFrame containing points and their weights
 	@param params		oineus.ReductionParams which contains the settings for oineus
  
 	@return K			oineus.filtration
@@ -250,10 +182,10 @@ def oineus_filtration(points : pandas.DataFrame, params : oineus.ReductionParams
 	K = oineus.list_to_filtration(K)
 	return K
 		
-def oineus_pair(points : pandas.DataFrame, sub : list):
+def oineus_pair(points : pd.DataFrame, sub : list):
 	"""! Given a set of points, and the points that are in the subset L, construct the complexes and map between them. The subcomplex L will consists of all simplices whose vertex are in the subset.
 
-	@param points		pandas.DataFrame containing the points and their weights
+	@param points		pd.DataFrame containing the points and their weights
 	@param sub			a list containing the indices of the points on which we construct the subcomplex
 
 	@return K			list of simplices for the entire complex, as needed by oineus
@@ -268,16 +200,10 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	simplices = sorted(simplices, key=cmp_to_key(oineus_compare))
 	L = []
 	not_L = []
-	#L_to_K = []
-	#id_L = 0
-	#K_to_L = [-1 for i in range(len(simplices))]
 	for i,s in enumerate(simplices):
 		if len(s[0])==1:
 			if sub[s[0][0]]==True:
-				#K_to_L[i]= id_L            
 				L.append([s[0], s[1]])
-				#L_to_K.append(i)
-				#id_L +=1
 			else:
 				not_L.append([s[0],s[1]])
 		else:
@@ -287,11 +213,7 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 					sub_complex=False
 					break
 			if sub_complex == True:
-				#verts = [K_to_L[v] for v in s[0]]
 				L.append([s[0], s[1]])
-				#L_to_K.append(i)
-			  	#K_to_L[i] = id_L
-				#id_L +=1
 			else:
 				not_L.append([s[0],s[1]])
 	K = []
@@ -303,31 +225,31 @@ def oineus_pair(points : pandas.DataFrame, sub : list):
 	K = [[i,s[0],s[1]] for i, s in enumerate(K)]
 	return K, L#, L_to_K
  
-def oineus_process(points : pandas.DataFrame, params : oineus.ReductionParams):
+def oineus_process(points : pd.DataFrame, params : oineus.ReductionParams):
 	"""! Given some points with weights, and the number of threads to use, obtain the persistent homology of the weighted alpha complex of these points, using oineus.
 	
-	@param points		pandas.DataFrame of the points, with colums 'x','y','z','w'
+	@param points		pd.DataFrame of the points, with colums 'x','y','z','w'
 	@param params		oineus.ReudctionParams
 	
-	@return dgm_1 		pandas.DataFrame of the indexed dimension 1 diagram
-	@return dgm_2		pandas.DataFrame of the indexed dimension 2 diagram
+	@return dgm_1 		pd.DataFrame of the indexed dimension 1 diagram
+	@return dgm_2		pd.DataFrame of the indexed dimension 2 diagram
 	"""
 	filt = oineus_filtration(points, params) #get the filtration for oineus
 	dcmp =  oineus.Decomposition(filt, False) #initialise the decomposition without cohomology
 	dcmp.reduce(params) #reduce the matrix
 	dgms = dcmp.diagram(filt) #initialise the diagrams
-	dgm_1 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_1 = pd.DataFrame(np.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
+	dgm_2 = pd.DataFrame(np.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	return dcmp, filt, dgm_1, dgm_2
 	
-def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.ReductionParams, upper_threshold : float, lower_threshold : float):
+def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.ReductionParams, upper_threshold : float, lower_threshold : float):
 	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.
 
-	@param points			pandas.DataFrame of the points, with columns 'x','y','z','w' corresponding to the coordinates and weights respectively
+	@param points			pd.DataFrame of the points, with columns 'x','y','z','w' corresponding to the coordinates and weights respectively
 	@param kernel 			boolean parameter to set if kernel persistence is calculated
 	@param image 			boolean parameter to set if image persistence is calculated
 	@param cokernel 		boolean parameter to set if cokernel persistence is calculated
@@ -341,21 +263,25 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	print("started oineus_kernel_image_cokernel")
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration_float(L)
-	K = oineus.list_to_filtration_float(K)
+	L = oineus.list_to_filtration_double(L)
+	K = oineus.list_to_filtration_double(K)
 	print("about to reduce")
-	kicr = oineus.KerImCokReduced_float(K,L,params,False)
+	kicr = oineus.KerImCokReduced_double(K,L,params,False)
 	print("reduced")
-	dgm_1 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
+	print("got dgm_0")
+	dgm_0["birth simplex"]=dgm_0["birth simplex"].astype(int) #convert indices to int
+	dgm_0["death simplex"]=dgm_0["death simplex"].astype(int) #convert indices to int
+	dgm_1 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(1), kicr.codomain_diagrams().index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	print("got dgm_1")
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
-	dgm_2 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
+	dgm_2 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(2), kicr.codomain_diagrams().index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	print("got dgm_2")
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
 	print("finished oineus_kernel_image_cokernel")
-	return kicr, dgm_1, dgm_2
+	return kicr, dgm_0, dgm_1, dgm_2
 
 def calculate_APF(dgm): 
 	"""! Calcualte the APF from a diagram 
@@ -364,11 +290,173 @@ def calculate_APF(dgm):
 	"""
 	lifetime = abs(dgm["death"] - dgm["birth"]) #get the lifetime of each point
 	mean_age = (dgm["death"] + dgm["birth"])/2 #get the mean age
-	APF = numpy.transpose(numpy.vstack([mean_age, lifetime])) #numpy array of the mean age and lifetime
-	APF = APF[APF[:,0].argsort()] #sort the numpy array by ascending mean age
-	for i in range(1, numpy.shape(APF)[0], 1):
+	APF = np.transpose(np.vstack([mean_age, lifetime])) #np array of the mean age and lifetime
+	APF = APF[APF[:,0].argsort()] #sort the np array by ascending mean age
+	for i in range(1, np.shape(APF)[0], 1):
 			APF[i,1] = APF[i,1] + APF[i-1,1] #TODO: remove duplicates and only keep the last value of each one
-	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
+	return pd.DataFrame(APF, columns = ["mean age", "lifetime"])
+
+# Function to compute the persistent homology 
+def compute():
+	st.session_state.params = oineus.ReductionParams()
+	if not st.session_state["manual_config"]:
+		load_configuration_settings()#streamlit_functions.load_configuration_settings()
+	if not st.session_state["maual_comp_config"]:
+		load_computation_settings()#streamlit_functions.load_computation_settings()
+	st.session_state.sample_indices = []
+	st.session_state.dgms_0 = []
+	st.session_state.dgms_1 = []
+	st.session_state.dgms_2 = []
+	st.session_state.APFs_0 = []
+	st.session_state.APFs_1 = []
+	st.session_state.APFs_2 = []
+	st.session_state.atom_locations_list = []
+	st.session_state.dcmps = [] 
+	st.session_state.filts = []
+	if "kernel" not in st.session_state:
+		st.session_state.kernel = False
+		st.session_state.params.kernel = False
+	else:
+		print("KERNEL is ", st.session_state.kernel)
+		st.session_state.params.kernel = st.session_state.kernel
+	if "image" not in st.session_state:
+		st.session_state.image = False
+		st.session_state.params.image = False
+	else:
+		st.session_state.params.image= st.session_state.image
+	if "cokernel" not in st.session_state:
+		st.session_state.cokernel = False
+		st.session_state.params.cokernel = False
+	else:
+		st.session_state.params.cokernel = st.session_state.cokernel
+	if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
+		st.session_state.kicrs = []
+	if st.session_state["kernel"]:
+		st.session_state.kernel_dgms_0 = []
+		st.session_state.kernel_dgms_1 = []
+		st.session_state.kernel_dgms_2 = []
+		st.session_state.kernel_APFs_0 = []
+		st.session_state.kernel_APFs_1 = []
+		st.session_state.kernel_APFs_2 = []
+	if st.session_state["image"]:
+		st.session_state.image_dgms_0 = []
+		st.session_state.image_dgms_1 = []
+		st.session_state.image_dgms_2 = []
+		st.session_state.image_APFs_0 = []
+		st.session_state.image_APFs_1 = []
+		st.session_state.image_APFs_2 = []
+	if st.session_state["cokernel"]:
+		st.session_state.cokernel_dgms_0 = []
+		st.session_state.cokernel_dgms_1 = []
+		st.session_state.cokernel_dgms_2 = []
+		st.session_state.cokernel_APFs_0 = []
+		st.session_state.cokernel_APFs_1 = []
+		st.session_state.cokernel_APFs_2 = []
+	if st.session_state.sample_end == "Auto":
+		st.session_state.sample_end = 1
+	for s in range(st.session_state.sample_start, st.session_state.sample_end, st.session_state.sample_step):
+		st.session_state.sample_index = s
+		st.session_state.sample_indices.append(s)
+		st.session_state.atom_locations = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
+		st.session_state.atom_locations_list.append(st.session_state.atom_locations)
+		if st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
+			top_pt = max(st.session_state.atom_locations["z"])
+			bot_pt = min(st.session_state.atom_locations["z"])
+			height = abs(top_pt - bot_pt)
+			if st.session_state.thickness == "Auto":
+				ut= top_pt - 0.1*height
+				lt = bot_pt + 0.1*height
+			else:
+				ut = top_pt - st.session_state.thickness*height
+				lt = bot_pt + st.session_state.thickness*height
+			st.session_state.kicr, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, ut, lt)
+			st.session_state.kicrs.append(st.session_state.kicr)
+			st.session_state.dgms_0.append(st.session_state.dgm_0)
+			st.session_state.dgms_1.append(st.session_state.dgm_1)
+			st.session_state.dgms_2.append(st.session_state.dgm_2)
+			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
+			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
+			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
+			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
+				st.session_state.kicrs.append(st.session_state.kicr)
+			if st.session_state["kernel"]:
+				kernel_dgm_0 = pd.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(0), columns=["birth", "death"])
+				kernel_dgm_1 = pd.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"])
+				kernel_dgm_2 = pd.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(2), columns=["birth", "death"])
+				print("kernel_dgm_2 is:")
+				print(kernel_dgm_2)
+				st.session_state.kernel_dgms_0.append(kernel_dgm_0)
+				st.session_state.kernel_dgms_1.append(kernel_dgm_1)
+				st.session_state.kernel_dgms_2.append(kernel_dgm_2)
+				st.session_state.kernel_APFs_0.append(calculate_APF(kernel_dgm_0))#process.calculate_APF(kernel_dgm_0))
+				st.session_state.kernel_APFs_1.append(calculate_APF(kernel_dgm_1))#process.calculate_APF(kernel_dgm_1))
+				st.session_state.kernel_APFs_2.append(calculate_APF(kernel_dgm_2))#process.calculate_APF(kernel_dgm_2))
+			if st.session_state["image"]:
+				image_dgm_0 = pd.DataFrame(st.session_state.kicr.image_diagrams().in_dimension(0), columns=["birth", "death"])
+				image_dgm_1 = pd.DataFrame(st.session_state.kicr.image_diagrams().in_dimension(1), columns=["birth", "death"])
+				image_dgm_2 = pd.DataFrame(st.session_state.kicr.image_diagrams().in_dimension(2), columns=["birth", "death"])
+				st.session_state.image_dgms_0.append(image_dgm_0)
+				st.session_state.image_dgms_1.append(image_dgm_1)
+				st.session_state.image_dgms_2.append(image_dgm_2)
+				st.session_state.image_APFs_0.append(calculate_APF(image_dgm_0))#	process.calculate_APF(image_dgm_0))
+				st.session_state.image_APFs_1.append(calculate_APF(image_dgm_1))#process.calculate_APF(image_dgm_1))
+				st.session_state.image_APFs_2.append(calculate_APF(image_dgm_2))#process.calculate_APF(image_dgm_2))
+			if st.session_state["cokernel"]:
+				cokernel_dgm_0 = pd.DataFrame(st.session_state.kicr.cokernel_diagrams().in_dimension(0), columns=["birth", "death"])
+				cokernel_dgm_1 = pd.DataFrame(st.session_state.kicr.cokernel_diagrams().in_dimension(0), columns=["birth", "death"])
+				cokernel_dgm_2 = pd.DataFrame(st.session_state.kicr.cokernel_diagrams().in_dimension(0), columns=["birth", "death"])
+				st.session_state.cokernel_dgms_0.append(cokernel_dgm_0)
+				st.session_state.cokernel_dgms_1.append(cokernel_dgm_1)
+				st.session_state.cokernel_dgms_2.append(cokernel_dgm_2)
+				st.session_state.cokernel_APFs_0.append(calculate_APF(cokernel_dgm_0))#process.calculate_APF(cokernel_dgm_0))
+				st.session_state.cokernel_APFs_1.append(calculate_APF(cokernel_dgm_1))#process.calculate_APF(cokernel_dgm_1))
+				st.session_state.cokernel_APFs_2.append(calculate_APF(cokernel_dgm_2))#process.calculate_APF(cokernel_dgm_2))
+		else:
+			st.session_state.dcmp, st.session_state.filt, st.session_state.dgm_0, st.session_state.dgm_1, st.session_state.dgm_2 = 	oineus_process(st.session_state.atom_locations, st.session_state.params)
+			st.session_state.dgms_0.append(st.session_state.dgm_0)
+			st.session_state.dgms_1.append(st.session_state.dgm_1)
+			st.session_state.dgms_2.append(st.session_state.dgm_2)
+			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
+			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
+			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
+			st.session_state.dcmps.append(st.session_state.dcmp) 
+			st.session_state.filts.append(st.session_state.filt)
+
+	if len(st.session_state.sample_indices) != len(st.session_state.dgms_0) or len(st.session_state.sample_indices) != len(st.session_state.dgms_1) or len(st.session_state.sample_indices) != len(st.session_state.dgms_2) or len(st.session_state.sample_indices) != len(st.session_state.APFs_0) or len(st.session_state.sample_indices) != len(st.session_state.APFs_1) or len(st.session_state.sample_indices) != len(st.session_state.APFs_2):
+		st.markdown("*WARNING* something went wrong, the number of diagrams/APFs calcualted does not match the number expected.")
+	if "kernel_dgms_0" in st.session_state:
+		if len(st.session_state.sample_indices) != len(st.session_state.kernel_dgms_0) or len(st.session_state.sample_indices) != len(st.session_state.kernel_dgms_1) or len(st.session_state.sample_indices) != len(st.session_state.kernel_dgms_2) or len(st.session_state.sample_indices) != len(st.session_state.kernel_APFs_0) or len(st.session_state.sample_indices) != len(st.session_state.kernel_APFs_1) or len(st.session_state.sample_indices) != len(st.session_state.kernel_APFs_2):
+			st.markdown("KERNEL *WARNING* something went wrong, the number of diagrams/APFs calcualted does not match the number expected.")
+			st.write(len(st.session_state.kernel_dgms_0))
+			st.write(len(st.session_state.sample_indices))
+	if "image_dgms_0" in st.session_state:
+		if len(st.session_state.sample_indices) != len(st.session_state.image_dgms_0) or len(st.session_state.sample_indices) != len(st.session_state.image_dgms_1) or len(st.session_state.sample_indices) != len(st.session_state.image_dgms_2) or len(st.session_state.sample_indices) != len(st.session_state.image_APFs_0) or len(st.session_state.sample_indices) != len(st.session_state.image_APFs_1) or len(st.session_state.sample_indices) != len(st.session_state.image_APFs_2):
+			st.markdown("IMAGE *WARNING* something went wrong, the number of diagrams/APFs calcualted does not match the number expected.") 
+	if "cokernel_dgms_0" in st.session_state:
+		if len(st.session_state.sample_indices) != len(st.session_state.cokernel_dgms_0) or len(st.session_state.sample_indices) != len(st.session_state.cokernel_dgms_1) or len(st.session_state.sample_indices) != len(st.session_state.cokernel_dgms_2) or len(st.session_state.sample_indices) != len(st.session_state.cokernel_APFs_0) or len(st.session_state.sample_indices) != len(st.session_state.cokernel_APFs_1) or len(st.session_state.sample_indices) != len(st.session_state.cokernel_APFs_2):
+			st.markdown("COKERNEL *WARNING* something went wrong, the number of diagrams/APFs calcualted does not match the number expected.")
+	st.session_state["processed_file"] =  st.session_state.file_path
+	st.session_state.processed = True
+	# print("Finished!")
 
 
-
+###define various functions needed for later
+def test():
+	print(os.getcwd())
+	st.session_state["maual_comp_config"] = True
+	st.session_state.processed=True
+	st.session_state.config_file = "../examples/structure-types.ini"
+	st.session_state.file_path = "../examples/ZIF_test.xyz"
+	st.session_state.config_name = "ZIF-TEST"
+	st.session_state.comp_name = "ZIF-TEST"
+	st.session_state.sample_start = 0
+	st.session_state.sample_end = 2
+	st.session_state.sample_step = 1
+	st.session_state.repeat_x = 1
+	st.session_state.repeat_y = 1
+	st.session_state.repeat_z = 1
+	st.session_state.thickness=0.1
+	st.session_state.kernel = True
+	st.session_state.image = True
+	st.session_state.cokernel = True
+	compute()
