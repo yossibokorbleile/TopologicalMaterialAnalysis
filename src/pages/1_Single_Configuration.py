@@ -29,6 +29,9 @@ from process import *
 from plots import *
 from visualisation import *
 
+if "params" not in st.session_state:
+	st.session_state.params = oineus.ReductionParams()	
+
 #function to display plots
 def display_plots():
 	"""! Display plots for a single configuration
@@ -122,13 +125,12 @@ st.header("Single Configuration Mode")
 comp_tab, plot_tab, vis_tab = st.tabs(["Computation", "Plots", "Visuatlisation"]) #create tabs for the various parts
 st.session_state.mode = "multi"
 
-st.session_state.params = oineus.ReductionParams()
-
+#initialize the reduction parameters
 
 
 ### lets set up the computation tab
-file_path = comp_tab.text_input("Initial structure file:",key="file_path") #specify initial structure file 
-file_format = comp_tab.text_input("File format:", key="file_format",placeholder="Auto") #specify format of the initial strutcure file
+file_path = comp_tab.text_input("Initial structure file (this should be plain text containing the path to the initial structure file):",key="file_path", placeholder="path/to/file.xyz") #specify initial structure file 
+file_format = comp_tab.text_input("File format (this should be plain text containing the format of the initial structure file):", key="file_format",placeholder="Auto") #specify format of the initial strutcure file
 if "processed_file" in st.session_state:
 	if st.session_state.file_path != st.session_state["processed_file"]:
 		st.session_state.processed = False
@@ -136,34 +138,34 @@ if "processed_file" in st.session_state:
 comp_tab.header("Configuration settings")
 manual_config = comp_tab.checkbox("Manually specify configuration", key="manual_config")#manually set configuration
 if not manual_config:
-	st.session_state.config_file = comp_tab.text_input("Configuration file:", key="configuration_file")
-	st.session_state.config_name = comp_tab.text_input("Configuration name:", key="configuration_name")
+	st.session_state.config_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="configuration_file", placeholder="path/to/config.ini")
+	st.session_state.config_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="configuration_name", placeholder="config")
 else:
-	st.session_state.atoms = comp_tab.text_input("Atoms:", key="atoms_input")
-	st.session_state.radii = comp_tab.text_input("Radii:", key="radii_input")
+	st.session_state.atoms = comp_tab.text_input("Atoms (this should be plain text of the atomic symbols in the structure separated by commas):", key="atoms_input", placeholder="H,C,N,O")
+	st.session_state.radii = comp_tab.text_input("Radii (this should be plain text of the atomic radii to use for the computation, separated by commas, in the same order as the atoms):", key="radii_input", placeholder="0.3,0.7,1.0,1.2")
 
 
 comp_tab.markdown("Computation settings")
 manual_compute = comp_tab.checkbox("Manually specify settings for the computations (i.e number of threds, and if you want to compute kernel/image/cokernel)", key="maual_comp_config")
 if not manual_compute:
-	same_config_file = comp_tab.checkbox("The computation settings are in the same configuration file.", key="same_config_file")
-	if not same_config_file:
-		st.session_state.comp_file = comp_tab.text_input("Configuration file:", key="comp_config_file")
+	not_same_config_file = comp_tab.checkbox("The computation settings are in a different configuration file.", key="not_same_config_file")
+	if not_same_config_file:
+		st.session_state.comp_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="comp_config_file", placeholder="path/to/config.ini")
 	else:
 		st.session_state.comp_file = st.session_state.config_file
-	st.session_state.comp_name = comp_tab.text_input("Configuration name:", key="comp_config_name")
+	st.session_state.comp_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="comp_config_name", placeholder="comp")
 else:
-	st.session_state.sample_start = comp_tab.text_input("Sample start", key="sample_start_input")
-	st.session_state.sample_end = comp_tab.text_input("Sample end", key="sample_end_input")
-	st.session_state.sample_step = comp_tab.text_input("Sample step", key="sample_step_input")
-	st.session_state.repeat_x = comp_tab.text_input("Repitition in x-axis:", key="repeat_x_input")
-	st.session_state.repeat_y = comp_tab.text_input("Repitition in y-axis:", key="repeat_y_input")
-	st.session_state.repeat_z = comp_tab.text_input("Repitition in z-axis:", key="repeat_z_input")
+	st.session_state.sample_start = comp_tab.text_input("Sample start (this should be plain text containing the start index of the samples to process):", key="sample_start_input", placeholder="0")
+	st.session_state.sample_end = comp_tab.text_input("Sample end (this should be plain text containing the end index of the samples to process):", key="sample_end_input", placeholder="10")
+	st.session_state.sample_step = comp_tab.text_input("Sample step (this should be plain text containing the step between samples to process):", key="sample_step_input", placeholder="1")
+	st.session_state.repeat_x = comp_tab.text_input("Repitition in x-axis (this should be plain text containing the number of times to repeat the structure in the x-axis):", key="repeat_x_input", placeholder="1")
+	st.session_state.repeat_y = comp_tab.text_input("Repitition in y-axis (this should be plain text containing the number of times to repeat the structure in the y-axis):", key="repeat_y_input", placeholder="1")
+	st.session_state.repeat_z = comp_tab.text_input("Repitition in z-axis (this should be plain text containing the number of times to repeat the structure in the z-axis):", key="repeat_z_input", placeholder="1"	)
 	st.session_state.kernel = comp_tab.checkbox("Compute kernel persistence", key="kernel_check")
 	st.session_state.image = comp_tab.checkbox("Compute image persistence", key="image_check")
 	st.session_state.cokernel = comp_tab.checkbox("Compute cokernel persistence", key="cokernel_check")
-	st.session_state.thickness = comp_tab.text_input("Select thickness of top and bottom layer:", key="thickness_input", placeholder="Automatic detection")
-	st.session_state.n_threads = comp_tab.text_input("Select number of threads to use:", key="n_threads_input", placeholder="4")
+	st.session_state.thickness = comp_tab.text_input("Select thickness of top and bottom layer (this should be plain text containing the thickness of the top and bottom layer):", key="thickness_input", placeholder="Automatic detection")
+	st.session_state.n_threads = comp_tab.text_input("Select number of threads to use (this should be plain text containing the number of threads to use):", key="n_threads_input", placeholder="4")
 	if st.session_state.n_threads == "":
 		st.session_state.params.n_threads = 4
 	else:
@@ -180,15 +182,6 @@ if file_format == "":
 	comp_tab.markdown("File format will automatically detected.")
 else:
 	comp_tab.markdown("File format is", file_format)
-
-
-def save_dgms_as_csv():
-	dir_name = os.path.dirname(st.session_state.file_path)
-	file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
-	for i, s in enumerate(st.session_state.sample_indices):
-		write_dgm_csv(st.session_state.dgms_0[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_0")
-		write_dgm_csv(st.session_state.dgms_1[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_1")
-		write_dgm_csv(st.session_state.dgms_2[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_2")
 
 comp_buttons = comp_tab.columns(2)
 with comp_buttons[0]:
@@ -232,9 +225,8 @@ vis_tab.markdown("In this tab, you can select *representatives* of homology clas
 vis_tab.checkbox("Visualisation", key="visualisation")
 if 'selected_row' not in st.session_state:
 	st.session_state.selected_row = None
-if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"] and not st.session_state.params.kernel and not st.session_state.params.image and not st.session_state.params.cokernel:
+if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"]:# and not st.session_state.params.kernel and not st.session_state.params.image and not st.session_state.params.cokernel:
 	vis_tab.write(st.session_state.params)
-	vis_tab.write(st.session_state.dcmps)
 	selected_sample = vis_tab.radio("Selection which sample you want to explore", st.session_state.sample_indices)
 	st.session_state.selected_sample_index = st.session_state.sample_indices.index(selected_sample)
 	vis_tab.write(st.session_state.selected_sample_index)
@@ -249,7 +241,7 @@ if "processed" in st.session_state and st.session_state["processed"] and st.sess
 		st.session_state.dimension = 1
 		# vis_tab.markdown("Visulisation of representative 2-cycles.")
 		# st.session_state.vis_dgm = st.session_state.dgm_2
-	st.session_state.dfVis = visualisation.generate_visulisation_df(st.session_state.vis_dgm, st.session_state.dcmps[st.session_state.selected_sample_index].r_data, st.session_state.filts[st.session_state.selected_sample_index], st.session_state.atom_locations_list[st.session_state.selected_sample_index], st.session_state.atoms)
+	st.session_state.dfVis = generate_visulisation_df(st.session_state.vis_dgm, st.session_state.dcmps[st.session_state.selected_sample_index].r_data, st.session_state.filts[st.session_state.selected_sample_index], st.session_state.atom_locations_list[st.session_state.selected_sample_index], st.session_state.atoms)
 	to_display = ["birth", "death", "lifetime"]
 	for a in st.session_state.atoms:
 		to_display.append(a)
@@ -258,11 +250,11 @@ if "processed" in st.session_state and st.session_state["processed"] and st.sess
 		st.session_state.selected_row = None
 	else:
 		st.session_state.selected_row = viz.selection.rows
-	# vis_tab.write("Selected Row:")
-	# vis_tab.write(st.session_state.selected_row)
+	vis_tab.write("Selected Row:")
+	vis_tab.write(st.session_state.selected_row)
 	if st.session_state.selected_row != None:
 		for cycle_id in st.session_state.selected_row:
-			vis_tab.plotly_chart(visualisation.generate_display(st.session_state.atom_locations, st.session_state.dgm_1, cycle_id, st.session_state.filt, neighbours = st.session_state["neighbours"]))
+			vis_tab.plotly_chart(generate_display(st.session_state.atom_locations, st.session_state.dfVis, cycle_id, st.session_state.filts[st.session_state.selected_sample_index], neighbours = st.session_state["neighbours"]))
 elif st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
 	vis_tab.markdown("Visulation of kernel/image/cokernel persistent homology is not yet available.")
 else:

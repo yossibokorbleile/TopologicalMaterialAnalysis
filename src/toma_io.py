@@ -125,7 +125,7 @@ def load_computation_settings():
 	- cokernel: Whether to compute cokernel persistence
 	- thickness: Thickness settings
 	"""
-	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = process.load_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
+	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = read_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
 
 
 def write_dgm_csv(dgm, file_path,  plot_name = ""):
@@ -285,3 +285,13 @@ def save_plots():
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_cokernel_APF_0.png")
 
+def save_dgms_as_csv():
+	"""! Save the persistence diagrams as csv files
+	@brief Save the persistence diagrams as csv files, reading the file path from the session state.
+	"""	
+	dir_name = os.path.dirname(st.session_state.file_path)
+	file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
+	for i, s in enumerate(st.session_state.sample_indices):
+		write_dgm_csv(st.session_state.dgms_0[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_0")
+		write_dgm_csv(st.session_state.dgms_1[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_1")
+		write_dgm_csv(st.session_state.dgms_2[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_2")
