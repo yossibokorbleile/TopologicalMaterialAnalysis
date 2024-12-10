@@ -374,6 +374,8 @@ def compute():
 			st.session_state.dgms_0.append(st.session_state.dgm_0)
 			st.session_state.dgms_1.append(st.session_state.dgm_1)
 			st.session_state.dgms_2.append(st.session_state.dgm_2)
+			st.session_state.dcmps.append(st.session_state.kicr.decomposition_f)
+			st.session_state.filts.append(st.session_state.kicr.fil_K)
 			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
 			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
 			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
@@ -443,7 +445,7 @@ def compute():
 ###define various functions needed for later
 def test():
 	print(os.getcwd())
-	st.session_state["maual_comp_config"] = True
+	st.session_state["manual_comp_config"] = True
 	st.session_state.processed=True
 	st.session_state.config_file = "../examples/structure-types.ini"
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
