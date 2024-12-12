@@ -305,8 +305,6 @@ def compute():
 	st.session_state.params = oineus.ReductionParams()
 	if not st.session_state["manual_config"]:
 		load_configuration_settings()#streamlit_functions.load_configuration_settings()
-	if not st.session_state["maual_comp_config"]:
-		load_computation_settings()#streamlit_functions.load_computation_settings()
 	st.session_state.sample_indices = []
 	st.session_state.dgms_0 = []
 	st.session_state.dgms_1 = []
