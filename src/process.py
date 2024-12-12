@@ -270,7 +270,7 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	L = oineus.list_to_filtration_double(L)
 	K = oineus.list_to_filtration_double(K)
 	print("about to reduce")
-	kicr = oineus.KerImCokReduced(K,L,params,False)
+	kicr = oineus.KerImCokReduced_double(K,L,st.session_state.kicr_params)
 	print("reduced")
 	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
 	print("got dgm_0")
@@ -453,7 +453,7 @@ def test():
 	print(os.getcwd())
 	st.session_state["manual_comp_config"] = True
 	st.session_state.processed=True
-	st.session_state.config_file = "../examples/structure-types.ini"
+	st.session_state.config_file = "../examples/settings.ini"
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
 	st.session_state.config_name = "ZIF-TEST"
 	st.session_state.comp_name = "ZIF-TEST"
@@ -464,7 +464,7 @@ def test():
 	st.session_state.repeat_y = 1
 	st.session_state.repeat_z = 1
 	st.session_state.thickness=0.1
-	st.session_state.kernel = True
-	st.session_state.image = True
-	st.session_state.cokernel = True
+	st.session_state.kernel = False
+	st.session_state.image = False
+	st.session_state.cokernel = False
 	compute()
