@@ -484,12 +484,66 @@ def compute():
 		lt = bot_pt + 0.1*height
 	else:
 		ut = top_pt - st.session_state.thickness*height
-	st.session_state.kicr, st.session_state.dgm_1, st.session_state.dgm_2 =  oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, st.session_state.thickness, st.session_state.lower_threshold)
-		
+		lt = bot_pt + st.session_state.thickness*height
+	st.session_state.kicr, st.session_state.dgm_1, st.session_state.dgm_2 =  oineus_kernel_image_cokernel(st.session_state.atom_locations, st.session_state.params, ut, lt)
+	st.session_state.processed = True
+
+def save():
+	print("saving")
+	if st.session_state.processed:
+		# Standard persistence diagrams
+		if pd0:
+			fig_pd_0 = plot_PD(st.session_state.dgm_0, st.session_state.file_path+" PD0")
+			fig_pd_0.write_image("PD0.png")
+		if pd1:
+			fig_pd_1 = plot_PD(st.session_state.dgm_1, st.session_state.file_path+" PD1") 
+			fig_pd_1.write_image("PD1.png")
+			# Kernel/Image/Cokernel diagrams if they were computed
+			if st.session_state.kernel or st.session_state.image or st.session_state.cokernel:
+				fig_kic_pd_1 = plot_kernel_image_cokernel_PD(
+					st.session_state.kicr, 
+					1, 
+					True,
+					st.session_state.kernel,
+					st.session_state.image, 
+					st.session_state.cokernel,
+					st.session_state.file_path+" codomain/kernel/image/cokernel dimension 1"
+				)
+				fig_kic_pd_1.write_image("KIC_PD1.png")
+		if pd2:
+			fig_pd_2 = plot_PD(st.session_state.dgm_2, st.session_state.file_path+" PD2")
+			fig_pd_2.write_image("PD2.png")
+			# Kernel/Image/Cokernel diagrams if they were computed
+			if st.session_state.kernel or st.session_state.image or st.session_state.cokernel:
+				fig_kic_pd_2 = plot_kernel_image_cokernel_PD(
+					st.session_state.kicr,
+					2,
+					True, 
+					st.session_state.kernel,
+					st.session_state.image,
+					st.session_state.cokernel,
+					st.session_state.file_path+" codomain/kernel/image/cokernel dimension 2"
+				)
+				fig_kic_pd_2.write_image("KIC_PD2.png")
+		# Accumulated persistence functions
+		if apf0:
+			apf_0 = calculate_APF(st.session_state.dgm_0)
+			fig_apf_0 = plot_APF(apf_0, st.session_state.file_path+" APF0")
+			fig_apf_0.write_image("APF0.png")
+		if apf1:
+			apf_1 = calculate_APF(st.session_state.dgm_1)
+			fig_apf_1 = plot_APF(apf_1, st.session_state.file_path+" APF1")
+			fig_apf_1.write_image("APF1.png")
+		if apf2:
+			apf_2 = calculate_APF(st.session_state.dgm_2)
+			fig_apf_2 = plot_APF(apf_2, st.session_state.file_path+" APF2")
+			fig_apf_2.write_image("APF2.png")
+
 st.button("Process", key="process", on_click=compute)
+st.button("Save", key="save", on_click=save)
+
 if st.session_state.processed:
 	st.write("DONE")
-
 
 
 
