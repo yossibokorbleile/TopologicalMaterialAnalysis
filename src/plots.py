@@ -277,7 +277,7 @@ def generate_plots():
 				try:
 					st.session_state.fig_kic_pds_0.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 0, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 0 sample "+str(s)))
 				except:
-					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 0.")
+					markdown("Encountered issues with kernel/image/cokernel diagram in dimension 0.")
 			st.session_state.fig_pds_0.append(plot_PD(st.session_state.dgms_0[i], st.session_state.file_path+" PD0 sample "+str(s)))
 		if st.session_state["pd1"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:

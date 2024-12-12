@@ -44,7 +44,25 @@ def read_configuration(configuration_file : str, configuration : str):
 	print("repeating in y-axis: {}".format(repeat_x)) #print repitition in y-axis
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
-	return atoms, radii, repeat_x, repeat_y, repeat_z
+	try:
+		if config.get(settings_name,"SAMPLE_START"):
+			sample_start = int(config.get(settings_name,"SAMPLE_START"))
+		else:
+			sample_start = 0
+	except:
+		sample_start = 0
+	try:
+		if config.get(settings_name,"SAMPLE_END") == "":
+			sample_end = 1
+		else:
+			sample_end = int(config.get(settings_name,"SAMPLE_END"))
+	except:
+		sample_end = 1
+	try:
+		sample_step = int(config.get(settings_name,"SAMPLE_STEP"))
+	except:
+		sample_step = 1
+	return atoms, radii, sample_start, sample_end, sample_step, repeat_x, repeat_y, repeat_z
 
 def read_computation_settings(settings_file : str, settings_name):
 	"""! import a specified settings from a file
@@ -72,14 +90,14 @@ def read_computation_settings(settings_file : str, settings_name):
 	except:
 		kernel = False
 	try:
-		if mode_config.get(settings_name,"IMAGE") == "TRUE" or mode_config.get(settings_name,"IMAGE") == "True" or mode_config.get(settings_name,"IMAGE") == "true" or mode_config.get(settings_name,"IMAGE") == "t" or mode_config.get(settings_name,"IMAGE") == "T":
+		if config.get(settings_name,"IMAGE") == "TRUE" or config.get(settings_name,"IMAGE") == "True" or config.get(settings_name,"IMAGE") == "true" or config.get(settings_name,"IMAGE") == "t" or config.get(settings_name,"IMAGE") == "T":
 			image = True
 		else:
 			image = False
 	except:
 		image = False
 	try:
-		if mode_config.get(settings_name,"COKERNEL") == "TRUE" or mode_config.get(settings_name,"COKERNEL") == "True" or mode_config.get(settings_name,"COKERNEL") == "true" or mode_config.get(settings_name,"COKERNEL") == "t" or mode_config.get(settings_name,"COKERNEL") == "T":
+		if config.get(settings_name,"COKERNEL") == "TRUE" or config.get(settings_name,"COKERNEL") == "True" or config.get(settings_name,"COKERNEL") == "true" or config.get(settings_name,"COKERNEL") == "t" or config.get(settings_name,"COKERNEL") == "T":
 			cokernel = True
 		else:
 			cokernel = False
@@ -110,7 +128,7 @@ def load_configuration_settings():
 	- st.session_state.radii  
 	- st.session_state.repeat_x/y/z
 	"""	
-	st.session_state.atoms, st.session_state.radii, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z = read_configuration(st.session_state["config_file"], st.session_state["config_name"])
+	st.session_state.atoms, st.session_state.radii, st.session_state.sample_start, st.session_state.sample_end, st.session_state.sample_step, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z = read_configuration(st.session_state["config_file"], st.session_state["config_name"])
 
 def load_computation_settings():
 	"""! Load the computation settings
@@ -125,7 +143,7 @@ def load_computation_settings():
 	- cokernel: Whether to compute cokernel persistence
 	- thickness: Thickness settings
 	"""
-	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kernel, image, st.session_state.cokernel, st.session_state.thickness = process.load_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
+	st.session_state.n_threads, st.session_state.save_plots, st.session_state.kicr_params.kernel, st.session_state.kicr_params.image, st.session_state.kicr_params.cokernel, st.session_state.thickness = read_computation_settings(st.session_state["comp_file"], st.session_state["comp_name"])
 
 
 def write_dgm_csv(dgm, file_path,  plot_name = ""):
@@ -155,6 +173,7 @@ def save_plots():
 	- st.session_state.file_path: Path to the file containing the data
 	- st.session_state.sample_indices: Indices of samples to process
 	- st.session_state.params: Computation settings
+	- st.session_state.kicr_params: KICRcomputation settings
 	"""	
 	dir_name = os.path.dirname(st.session_state.file_path)
 	file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
@@ -169,17 +188,17 @@ def save_plots():
 				st.session_state.fig_pds_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_0.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_PD_0.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_pds_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_PD_0.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_PD_0.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_pds_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_PD_0.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_PD_0.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_pds_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_PD_0.png")
 				except:
@@ -189,17 +208,17 @@ def save_plots():
 				st.session_state.fig_pds_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_1.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_PD_1.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_pds_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_PD_1.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_PD_1.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_pds_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_PD_1.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_PD_1.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_pds_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_PD_1.png")
 				except:
@@ -209,17 +228,17 @@ def save_plots():
 				st.session_state.fig_pds_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_2.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_PD_2.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_pds_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_PD_2.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_PD_2.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_pds_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_PD_2.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_PD_2.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_pds_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_PD_0.png")
 				except:
@@ -229,17 +248,17 @@ def save_plots():
 				st.session_state.fig_apfs_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_APF_0.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_APF_0.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_apfs_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_APF_0.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_APF_0.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_apfs_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_APF_0.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_APF_0.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_apfs_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_APF_0.png")
 				except:
@@ -249,17 +268,17 @@ def save_plots():
 				st.session_state.fig_apfs_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_APF_1.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_APF_1.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_apfs_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_APF_1.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_APF_1.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_apfs_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_APF_1.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_APF_1.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_apfs_1[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_APF_1.png")
 				except:
@@ -269,19 +288,29 @@ def save_plots():
 				st.session_state.fig_apfs_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_APF_2.png")
 			except:
 				print("Error saving "+file_name+"_sample_"+str(s)+"_APF_2.png")
-			if st.session_state.params.kernel:
+			if st.session_state.kicr_params.kernel:
 				try:
 					st.session_state.fig_kernel_apfs_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_kernel_APF_2.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_kernel_APF_2.png")
-			if st.session_state.params.image:
+			if st.session_state.kicr_params.image:
 				try:
 					st.session_state.fig_image_apfs_2[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_image_APF_2.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_image_APF_2.png")
-			if st.session_state.params.cokernel:
+			if st.session_state.kicr_params.cokernel:
 				try:
 					st.session_state.fig_cokernel_apfs_0[i].write_image(dir_name+"/"+file_name+"_sample_"+str(s)+"_cokernel_APF_0.png")
 				except:
 					print("Error saving "+file_name+"_sample_"+str(s)+"_cokernel_APF_0.png")
 
+def save_dgms_as_csv():
+	"""! Save the persistence diagrams as csv files
+	@brief Save the persistence diagrams as csv files, reading the file path from the session state.
+	"""	
+	dir_name = os.path.dirname(st.session_state.file_path)
+	file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
+	for i, s in enumerate(st.session_state.sample_indices):
+		write_dgm_csv(st.session_state.dgms_0[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_0")
+		write_dgm_csv(st.session_state.dgms_1[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_1")
+		write_dgm_csv(st.session_state.dgms_2[i], dir_name+"/"+file_name+"_sample_"+str(s)+"_PD_2")

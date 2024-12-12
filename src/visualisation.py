@@ -57,7 +57,7 @@ def loop_composition(verts, filt, points, atom_types):
 	"""
 	comp = dict([(a, 0) for a in atom_types])
 	for v in verts:
-		comp[points["Atom"].iloc[filt.get_id_by_sorted_id(v)]] += 1
+		comp[points["Atom"].iloc[v]] += 1
 	return comp
 
 def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types):  
@@ -71,18 +71,20 @@ def generate_visulisation_df(dgm : pandas.DataFrame, R, filt, points, atom_types
 	comps = []
 	cycles_1 = []
 	cycles_0 = []
+	lifetimes = []
 	for i in range(dgm.shape[0]):
 		verts_i, edges_i = get_0_and_1_cycles(dgm["cycle rep"].iloc[i], filt)
 		#print("here?")
 		cycles_1.append(edges_i)
 		cycles_0.append(verts_i)
 		comps.append(loop_composition(verts_i, filt, points, atom_types))
+		lifetimes.append(dgm["death"].iloc[i] - dgm["birth"].iloc[i])
 	#for each atom type we are looking at, add a column with the number of atoms of this type in the cycle representative
 	for a in atom_types:
 		dgm[a] = [c[a] for c in comps]
 	dgm["0-cycles"]=cycles_0
 	dgm["1-cycles"]=cycles_1
-	dgm
+	dgm["lifetime"] = lifetimes
 	return dgm
 
 def get_neighbour_cells(points : pandas.DataFrame, cycle_vertices : list, filt):
@@ -117,17 +119,17 @@ def generate_display(points : pandas.DataFrame, dgm : pandas.DataFrame, id : int
 
 	@return fig		plotly.express figure displaying the ring
 	"""
-	cycle = points.iloc[[filt.get_id_by_sorted_id(v) for v in dgm["vertices"].loc[id]]]
+	cycle = points.iloc[[v for v in dgm["0-cycles"].loc[id]]]
 	fig_data = px.scatter_3d(cycle, x="x", y="y", z="z", size="w", color="Atom", hover_data=["Atom",cycle.index]).data
-	for e in dgm["edges"].loc[id]:
-		fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").update_traces(line_color='red', line_width=5).data 
+	for e in dgm["1-cycles"].loc[id]:
+		fig_data = fig_data+px.line_3d(points.iloc[[e[0],e[1]]],x="x", y="y", z="z").update_traces(line_color='red', line_width=5).data 
 	if neighbours:
 		neighbour_0_cells, neighbour_1_cells = get_neighbour_cells(points, [v for v in dgm["vertices"].loc[id]], filt)
-		neighbour_atoms = list(set(filt.get_id_by_sorted_id(v) for v in neighbour_0_cells))
+		neighbour_atoms = list(set(v for v in neighbour_0_cells))
 		neighbour_atoms = points.loc[neighbour_atoms]
 		fig_data = fig_data+px.scatter_3d(neighbour_atoms, x="x", y="y", z="z", size="w", color="Atom").data 
 		for e in neighbour_1_cells:
-			fig_data = fig_data+px.line_3d(points.iloc[[filt.get_id_by_sorted_id(e[0]),filt.get_id_by_sorted_id(e[1])]],x="x", y="y", z="z").data 
+			fig_data = fig_data+px.line_3d(points.iloc[[e[0],e[1]]],x="x", y="y", z="z").data 
 			#s_cycle = list(v for v in s)
 			#s_cycle = points.loc[s_cycle]
 			#fig_data = fig_data+go.Figure(go.Mesh3d(x=s_cycle["x"], y=s_cycle["y"],   z=s_cycle["z"],  color="blue",  opacity=.01, alphahull=0)).data

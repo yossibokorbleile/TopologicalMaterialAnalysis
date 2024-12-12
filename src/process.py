@@ -88,6 +88,7 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 	"""
 	print("Repeating as follows: ",repeat_x, repeat_y, repeat_z)
 	if format == "Auto":
+		print("format is auto, sampling at ", sample_index)
 		sample = io.read(file_path, index=sample_index).repeat((repeat_x, repeat_y, repeat_z))
 	else:
 		sample = io.read(file_path, format=format, index=sample_index).repeat((repeat_x, repeat_y, repeat_z)) #get the sample of the atomic structure at sample_index and repeat it as apprpriate
@@ -238,13 +239,16 @@ def oineus_process(points : pd.DataFrame, params : oineus.ReductionParams):
 	dcmp =  oineus.Decomposition(filt, False) #initialise the decomposition without cohomology
 	dcmp.reduce(params) #reduce the matrix
 	dgms = dcmp.diagram(filt) #initialise the diagrams
+	dgm_0 = pd.DataFrame(np.hstack([dgms.in_dimension(0), dgms.index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
+	dgm_0["birth simplex"]=dgm_0["birth simplex"].astype(int) #convert indices to int
+	dgm_0["death simplex"]=dgm_0["death simplex"].astype(int) #convert indices to int
 	dgm_1 = pd.DataFrame(np.hstack([dgms.in_dimension(1), dgms.index_diagram_in_dimension(1)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 1 diagram
 	dgm_1["birth simplex"]=dgm_1["birth simplex"].astype(int) #convert indices to int
 	dgm_1["death simplex"]=dgm_1["death simplex"].astype(int) #convert indices to int
 	dgm_2 = pd.DataFrame(np.hstack([dgms.in_dimension(2), dgms.index_diagram_in_dimension(2)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 2 diagram
 	dgm_2["birth simplex"]=dgm_2["birth simplex"].astype(int) #convert indices to int
 	dgm_2["death simplex"]=dgm_2["death simplex"].astype(int) #convert indices to int
-	return dcmp, filt, dgm_1, dgm_2
+	return dcmp, filt, dgm_0, dgm_1, dgm_2
 	
 def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.ReductionParams, upper_threshold : float, lower_threshold : float):
 	"""! Given points, and parameters for oineus, calculate the kernel/image/cokernel persistence as desired.
@@ -266,7 +270,7 @@ def oineus_kernel_image_cokernel(points : pd.DataFrame, params : oineus.Reductio
 	L = oineus.list_to_filtration_double(L)
 	K = oineus.list_to_filtration_double(K)
 	print("about to reduce")
-	kicr = oineus.KerImCokReduced_double(K,L,params,False)
+	kicr = oineus.KerImCokReduced_double(K,L,st.session_state.kicr_params)
 	print("reduced")
 	dgm_0 = pd.DataFrame(np.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
 	print("got dgm_0")
@@ -301,8 +305,6 @@ def compute():
 	st.session_state.params = oineus.ReductionParams()
 	if not st.session_state["manual_config"]:
 		load_configuration_settings()#streamlit_functions.load_configuration_settings()
-	if not st.session_state["maual_comp_config"]:
-		load_computation_settings()#streamlit_functions.load_computation_settings()
 	st.session_state.sample_indices = []
 	st.session_state.dgms_0 = []
 	st.session_state.dgms_1 = []
@@ -315,20 +317,20 @@ def compute():
 	st.session_state.filts = []
 	if "kernel" not in st.session_state:
 		st.session_state.kernel = False
-		st.session_state.params.kernel = False
+		st.session_state.kicr_params.kernel = False
 	else:
 		print("KERNEL is ", st.session_state.kernel)
-		st.session_state.params.kernel = st.session_state.kernel
+		st.session_state.kicr_params.kernel = st.session_state.kernel
 	if "image" not in st.session_state:
 		st.session_state.image = False
-		st.session_state.params.image = False
+		st.session_state.kicr_params.image = False
 	else:
-		st.session_state.params.image= st.session_state.image
+		st.session_state.kicr_params.image= st.session_state.image
 	if "cokernel" not in st.session_state:
 		st.session_state.cokernel = False
-		st.session_state.params.cokernel = False
+		st.session_state.kicr_params.cokernel = False
 	else:
-		st.session_state.params.cokernel = st.session_state.cokernel
+		st.session_state.kicr_params.cokernel = st.session_state.cokernel
 	if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 		st.session_state.kicrs = []
 	if st.session_state["kernel"]:
@@ -358,8 +360,10 @@ def compute():
 		st.session_state.sample_index = s
 		st.session_state.sample_indices.append(s)
 		st.session_state.atom_locations = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
+		print("atom_locations for index ", s, " are:")
+		print(st.session_state.atom_locations)
 		st.session_state.atom_locations_list.append(st.session_state.atom_locations)
-		if st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
+		if st.session_state.kicr_params.kernel or st.session_state.kicr_params.image or st.session_state.kicr_params.cokernel:
 			top_pt = max(st.session_state.atom_locations["z"])
 			bot_pt = min(st.session_state.atom_locations["z"])
 			height = abs(top_pt - bot_pt)
@@ -374,6 +378,8 @@ def compute():
 			st.session_state.dgms_0.append(st.session_state.dgm_0)
 			st.session_state.dgms_1.append(st.session_state.dgm_1)
 			st.session_state.dgms_2.append(st.session_state.dgm_2)
+			st.session_state.dcmps.append(st.session_state.kicr.decomposition_f)
+			st.session_state.filts.append(st.session_state.kicr.fil_K)
 			st.session_state.APFs_0.append(calculate_APF(st.session_state.dgm_0))#process.calculate_APF(st.session_state.dgm_0))
 			st.session_state.APFs_1.append(calculate_APF(st.session_state.dgm_1))#process.calculate_APF(st.session_state.dgm_1))
 			st.session_state.APFs_2.append(calculate_APF(st.session_state.dgm_2))#process.calculate_APF(st.session_state.dgm_2))
@@ -443,9 +449,9 @@ def compute():
 ###define various functions needed for later
 def test():
 	print(os.getcwd())
-	st.session_state["maual_comp_config"] = True
+	st.session_state["manual_comp_config"] = True
 	st.session_state.processed=True
-	st.session_state.config_file = "../examples/structure-types.ini"
+	st.session_state.config_file = "../examples/settings.ini"
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
 	st.session_state.config_name = "ZIF-TEST"
 	st.session_state.comp_name = "ZIF-TEST"
@@ -456,7 +462,7 @@ def test():
 	st.session_state.repeat_y = 1
 	st.session_state.repeat_z = 1
 	st.session_state.thickness=0.1
-	st.session_state.kernel = True
-	st.session_state.image = True
-	st.session_state.cokernel = True
+	st.session_state.kernel = False
+	st.session_state.image = False
+	st.session_state.cokernel = False
 	compute()
