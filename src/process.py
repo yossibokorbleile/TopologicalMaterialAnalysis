@@ -302,7 +302,10 @@ def calculate_APF(dgm):
 
 # Function to compute the persistent homology 
 def compute():
-	st.session_state.params = oineus.ReductionParams()
+	if 'params' not in st.session_state:
+		st.session_state.params = oineus.ReductionParams()
+	if "kicr_params" not in st.session_state:
+		st.session_state.kicr_params = oineus.KerImCokReducedParams()
 	if not st.session_state["manual_config"]:
 		load_configuration_settings()#streamlit_functions.load_configuration_settings()
 	st.session_state.sample_indices = []
@@ -449,20 +452,20 @@ def compute():
 ###define various functions needed for later
 def test():
 	print(os.getcwd())
-	st.session_state["manual_comp_config"] = True
+	st.session_state["manual_comp_config"] = False
 	st.session_state.processed=True
 	st.session_state.config_file = "../examples/settings.ini"
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
 	st.session_state.config_name = "ZIF-TEST"
 	st.session_state.comp_name = "ZIF-TEST"
-	st.session_state.sample_start = 0
-	st.session_state.sample_end = 2
-	st.session_state.sample_step = 1
-	st.session_state.repeat_x = 1
-	st.session_state.repeat_y = 1
-	st.session_state.repeat_z = 1
-	st.session_state.thickness=0.1
-	st.session_state.kernel = False
-	st.session_state.image = False
-	st.session_state.cokernel = False
+	# st.session_state.sample_start = 0
+	# st.session_state.sample_end = 2
+	# st.session_state.sample_step = 1
+	# st.session_state.repeat_x = 1
+	# st.session_state.repeat_y = 1
+	# st.session_state.repeat_z = 1
+	# st.session_state.thickness=0.1
+	# st.session_state.kernel = False
+	# st.session_state.image = False
+	# st.session_state.cokernel = False
 	compute()

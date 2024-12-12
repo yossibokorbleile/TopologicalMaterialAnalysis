@@ -140,8 +140,10 @@ if "processed_file" in st.session_state:
 comp_tab.header("Configuration settings")
 manual_config = comp_tab.checkbox("Manually specify configuration", key="manual_config")#manually set configuration
 if not manual_config:
-	st.session_state.config_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="configuration_file", placeholder="path/to/config.ini")
+	st.session_state.config_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="configuration_file_input", placeholder="path/to/config.ini")
+	st.write("You have selected to use the configuration file: ", st.session_state.config_file)
 	st.session_state.config_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="configuration_name", placeholder="config")
+	st.write("You have selected to use the configuration name: ", st.session_state.config_name)
 else:
 	try:
 		st.session_state.atoms = [str(a).strip() for a in comp_tab.text_input("Atoms (this should be plain text of the atomic symbols in the structure separated by commas):", key="atoms_input", placeholder="H,C,N,O").split(",")]
@@ -194,9 +196,10 @@ else:
 	st.session_state.n_threads = comp_tab.text_input("Select number of threads to use (this should be plain text containing the number of threads to use):", key="n_threads_input", placeholder="4")
 	if st.session_state.n_threads == "":
 		st.session_state.params.n_threads = 4
+		# comp_tab.write("Number of threads is "+str(st.session_state.params.n_threads))
 	else:
 		st.session_state.params.n_threads = int(st.session_state.n_threads)
-	comp_tab.markdown(f"Number of threads is".format(st.session_state.params.n_threads))
+	comp_tab.write("Number of threads is "+str(st.session_state.params.n_threads))
 
 	if st.session_state["thickness_input"] == "":
 		st.session_state.thickness = "Auto"
