@@ -2,7 +2,7 @@
 ##
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
-# @version 0.5
+# @version 0.6
 # @date December 2024
 # @copyright GPL
 # 
@@ -10,18 +10,6 @@
 # Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
 
 # ToMA is dependent on Oineus and Diode to handle a lot of the "under the hood" functionalities.
-#
-# There are two ways you can use Amorphous Material Analysis:
-# -# Graphical User Interface (default)
-# -# Command Line Interface
-#    
-# both of which have several different modes:
-# -# single
-# -# multi
-# -# batch
-#
-# In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. To use `ToMA` in the CLI mode, run 
-#`./ToMA.py -i c -s $SETTINGS FILE`.
 #
 # Information about the packages required and instructions for the settings files are in the [README](README.md).
 #
