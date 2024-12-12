@@ -358,6 +358,8 @@ def compute():
 		st.session_state.sample_index = s
 		st.session_state.sample_indices.append(s)
 		st.session_state.atom_locations = sample_at(st.session_state.file_path, st.session_state.file_format, st.session_state.sample_index, st.session_state.repeat_x, st.session_state.repeat_y, st.session_state.repeat_z, st.session_state.atoms, st.session_state.radii)
+		print("atom_locations is:")
+		print(st.session_state.atom_locations)
 		st.session_state.atom_locations_list.append(st.session_state.atom_locations)
 		if st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
 			top_pt = max(st.session_state.atom_locations["z"])
