@@ -31,6 +31,8 @@ from visualisation import *
 
 if "params" not in st.session_state:
 	st.session_state.params = oineus.ReductionParams()	
+if "kicr_params" not in st.session_state:
+	st.session_state.kicr_params = oineus.KICRParams()
 
 #function to display plots
 def display_plots():
@@ -225,7 +227,7 @@ vis_tab.markdown("In this tab, you can select *representatives* of homology clas
 vis_tab.checkbox("Visualisation", key="visualisation")
 if 'selected_row' not in st.session_state:
 	st.session_state.selected_row = None
-if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"]:# and not st.session_state.params.kernel and not st.session_state.params.image and not st.session_state.params.cokernel:
+if "processed" in st.session_state and st.session_state["processed"] and st.session_state["visualisation"]:# and not st.session_state.kicr_params.kernel and not st.session_state.kicr_params.image and not st.session_state.kicr_params.cokernel:
 	vis_tab.write(st.session_state.params)
 	selected_sample = vis_tab.radio("Selection which sample you want to explore", st.session_state.sample_indices)
 	st.session_state.selected_sample_index = st.session_state.sample_indices.index(selected_sample)
@@ -255,7 +257,7 @@ if "processed" in st.session_state and st.session_state["processed"] and st.sess
 	if st.session_state.selected_row != None:
 		for cycle_id in st.session_state.selected_row:
 			vis_tab.plotly_chart(generate_display(st.session_state.atom_locations, st.session_state.dfVis, cycle_id, st.session_state.filts[st.session_state.selected_sample_index], neighbours = st.session_state["neighbours"]))
-elif st.session_state.params.kernel or st.session_state.params.image or st.session_state.params.cokernel:
+elif st.session_state.kicr_params.kernel or st.session_state.kicr_params.image or st.session_state.kicr_params.cokernel:
 	vis_tab.markdown("Visulation of kernel/image/cokernel persistent homology is not yet available.")
 else:
 	vis_tab.markdown("Persistent homology has not been computed, so representative cycles are unknow. Please proces the file, and then return to this tab.")
