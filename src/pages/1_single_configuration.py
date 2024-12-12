@@ -143,8 +143,14 @@ if not manual_config:
 	st.session_state.config_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="configuration_file", placeholder="path/to/config.ini")
 	st.session_state.config_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="configuration_name", placeholder="config")
 else:
-	st.session_state.atoms = comp_tab.text_input("Atoms (this should be plain text of the atomic symbols in the structure separated by commas):", key="atoms_input", placeholder="H,C,N,O")
-	st.session_state.radii = comp_tab.text_input("Radii (this should be plain text of the atomic radii to use for the computation, separated by commas, in the same order as the atoms):", key="radii_input", placeholder="0.3,0.7,1.0,1.2")
+	try:
+		st.session_state.atoms = [str(a).strip() for a in comp_tab.text_input("Atoms (this should be plain text of the atomic symbols in the structure separated by commas):", key="atoms_input", placeholder="H,C,N,O").split(",")]
+	except:
+		st.session_state.atoms = ["H","C","N","O"]
+	try:
+		st.session_state.radii = [float(r) for r in comp_tab.text_input("Radii (this should be plain text of the atomic radii to use for the computation, separated by commas, in the same order as the atoms):", key="radii_input", placeholder="0.3,0.7,1.0,1.2").split(",")]
+	except:
+		st.session_state.radii = [0.3,0.7,1.0,1.2]
 
 
 comp_tab.markdown("Computation settings")
@@ -157,12 +163,30 @@ if not manual_compute:
 		st.session_state.comp_file = st.session_state.config_file
 	st.session_state.comp_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="comp_config_name", placeholder="comp")
 else:
-	st.session_state.sample_start = comp_tab.text_input("Sample start (this should be plain text containing the start index of the samples to process):", key="sample_start_input", placeholder="0")
-	st.session_state.sample_end = comp_tab.text_input("Sample end (this should be plain text containing the end index of the samples to process):", key="sample_end_input", placeholder="10")
-	st.session_state.sample_step = comp_tab.text_input("Sample step (this should be plain text containing the step between samples to process):", key="sample_step_input", placeholder="1")
-	st.session_state.repeat_x = comp_tab.text_input("Repitition in x-axis (this should be plain text containing the number of times to repeat the structure in the x-axis):", key="repeat_x_input", placeholder="1")
-	st.session_state.repeat_y = comp_tab.text_input("Repitition in y-axis (this should be plain text containing the number of times to repeat the structure in the y-axis):", key="repeat_y_input", placeholder="1")
-	st.session_state.repeat_z = comp_tab.text_input("Repitition in z-axis (this should be plain text containing the number of times to repeat the structure in the z-axis):", key="repeat_z_input", placeholder="1"	)
+	try:
+		st.session_state.sample_start = int(comp_tab.text_input("Sample start (this should be plain text containing the start index of the samples to process):", key="sample_start_input", placeholder="0"))
+	except:
+		st.session_state.sample_start = 0
+	try:
+		st.session_state.sample_end = int(comp_tab.text_input("Sample end (this should be plain text containing the end index of the samples to process):", key="sample_end_input", placeholder="10"))
+	except:
+		st.session_state.sample_end = 1
+	try:
+		st.session_state.sample_step = int(comp_tab.text_input("Sample step (this should be plain text containing the step between samples to process):", key="sample_step_input", placeholder="1"))
+	except:
+		st.session_state.sample_step = 1
+	try:
+		st.session_state.repeat_x = int(comp_tab.text_input("Repitition in x-axis (this should be plain text containing the number of times to repeat the structure in the x-axis):", key="repeat_x_input", placeholder="1"))
+	except:
+		st.session_state.repeat_x = 1
+	try:
+		st.session_state.repeat_y = int(comp_tab.text_input("Repitition in y-axis (this should be plain text containing the number of times to repeat the structure in the y-axis):", key="repeat_y_input", placeholder="1"))
+	except:
+		st.session_state.repeat_y = 1
+	try:
+		st.session_state.repeat_z = int(comp_tab.text_input("Repitition in z-axis (this should be plain text containing the number of times to repeat the structure in the z-axis):", key="repeat_z_input", placeholder="1"))
+	except:
+		st.session_state.repeat_z = 1
 	st.session_state.kernel = comp_tab.checkbox("Compute kernel persistence", key="kernel_check")
 	st.session_state.image = comp_tab.checkbox("Compute image persistence", key="image_check")
 	st.session_state.cokernel = comp_tab.checkbox("Compute cokernel persistence", key="cokernel_check")
