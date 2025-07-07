@@ -1,18 +1,16 @@
 ##
 # @internal
-# @file multi_mode.py
-# @brief Streamlit page for analysing a multiple samples.
-# @version 0.5
+# @file Single_Configuration.py
+# @brief Streamlit page for analysing a single configuration.
+# @version 0.6
 # @date December 2024
+# @author: Yossi Bokor Bleile
 
-# import sys
-# sys.path.insert(0, '..')
 import streamlit as st
-import oineus
+# import oineus
 import numpy as np
 import pandas as pd
 import os
-
 import configparser
 from ase import io, Atoms
 import diode
@@ -24,15 +22,11 @@ from scipy.interpolate import interpn
 import plotly.express as px
 import plotly.graph_objects as go
 
-from toma_io import *
-from process import *
-from plots import *
-from visualisation import *
+from toma_functions import *
 
-if "params" not in st.session_state:
-	st.session_state.params = oineus.ReductionParams()	
-if "kicr_params" not in st.session_state:
-	st.session_state.kicr_params = oineus.KICRParams()
+check_params()
+
+
 
 #function to display plots
 def display_plots():
@@ -124,8 +118,17 @@ def display_plots():
 			plot_tab.plotly_chart(st.session_state.fig_apfs_2[i])
 
 st.header("Single Configuration Mode")
+st.checkbox("Specify directory and file prefix for saving plots", key="custom_save")
+if st.session_state.custom_save:
+	st.session_state.save_directory = st.text_input("Save directory (this should be plain text containing the path to the directory to save the files):", key="save_directory_input", placeholder="path/to/save/directory")
+	st.session_state.save_file_name = st.text_input("File name to use when saving the files (this should be plain text containing the prefix for the files):", key="save_file_name_input", placeholder="save_file_name")
 comp_tab, plot_tab, vis_tab = st.tabs(["Computation", "Plots", "Visuatlisation"]) #create tabs for the various parts
 st.session_state.mode = "multi"
+
+
+# else:
+# 	st.session_state.save_directory = os.path.dirname(st.session_state.file_path)
+# 	st.session_state.save_file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
 
 #initialize the reduction parameters
 
@@ -141,9 +144,7 @@ comp_tab.header("Configuration settings")
 manual_config = comp_tab.checkbox("Manually specify configuration", key="manual_config")#manually set configuration
 if not manual_config:
 	st.session_state.config_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="configuration_file_input", placeholder="path/to/config.ini")
-	st.write("You have selected to use the configuration file: ", st.session_state.config_file)
-	st.session_state.config_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="configuration_name", placeholder="config")
-	st.write("You have selected to use the configuration name: ", st.session_state.config_name)
+	st.session_state.config_name = comp_tab.text_input("Section name (this should be plain text containing the name of the section in the file):", key="configuration_name", placeholder="config")
 else:
 	try:
 		st.session_state.atoms = [str(a).strip() for a in comp_tab.text_input("Atoms (this should be plain text of the atomic symbols in the structure separated by commas):", key="atoms_input", placeholder="H,C,N,O").split(",")]
@@ -163,7 +164,7 @@ if not manual_compute:
 		st.session_state.comp_file = comp_tab.text_input("Configuration file (this should be plain text containing the path to the configuration ini file):", key="comp_config_file", placeholder="path/to/config.ini")
 	else:
 		st.session_state.comp_file = st.session_state.config_file
-	st.session_state.comp_name = comp_tab.text_input("Configuration name (this should be plain text containing the name of the configuration):", key="comp_config_name", placeholder="comp")
+	st.session_state.comp_name = comp_tab.text_input("Section name (this should be plain text containing the name of the section in the file):", key="comp_config_name", placeholder="comp")
 else:
 	try:
 		st.session_state.sample_start = int(comp_tab.text_input("Sample start (this should be plain text containing the start index of the samples to process):", key="sample_start_input", placeholder="0"))
@@ -207,14 +208,22 @@ else:
 		st.session_state.thickness= float(st.session_state["thickness_input"])
 
 comp_tab.markdown(f"The file selected to analyse is "+file_path)	
+settings_into = "<span style='color:#2E86C1'>You have selected to process the file:</span> " + str(st.session_state.file_path) + "<br><span style='color:#28B463'>You have selected to use the `.ini` file:</span> " + str(st.session_state.config_file) + "<br><span style='color:#D35400'>You have selected to use the configuration:</span> " + str(st.session_state.config_name) + "<br><span style='color:#8E44AD'>You have selected to use the computation settings file:</span> " + str(st.session_state.comp_file) + "<br><span style='color:#C0392B'>You have selected to use the computation settings section:</span> " + str(st.session_state.comp_name)
+# comp_tab.write("You have selected to use the computation settings file: ", st.session_state.comp_file)
+# comp_tab.write("You have selected to use the computation settings section: ", st.session_state.comp_name)
 if file_format == "":
-	comp_tab.markdown("File format will automatically detected.")
+	comp_tab.html(settings_into + "<br><span style='color:#2E86C1'>File format will automatically detected.</span>")
 else:
-	comp_tab.markdown("File format is", file_format)
+	comp_tab.html(settings_into + "<br><span style='color:#2E86C1'>File format is:</span> " + file_format)
+
+if not st.session_state.custom_save:
+	st.session_state.save_directory = os.path.dirname(st.session_state.file_path)
+	st.session_state.save_file_name = os.path.splitext(os.path.split(st.session_state.file_path)[1])[0]
 
 comp_buttons = comp_tab.columns(2)
 with comp_buttons[0]:
 	st.button("Process", key="process", on_click=compute)
+
 with comp_buttons[1]:
 	st.button("Save .csv files", key="save_csv_files", on_click=save_dgms_as_csv)
 

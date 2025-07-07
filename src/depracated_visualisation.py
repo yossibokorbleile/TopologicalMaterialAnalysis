@@ -26,7 +26,7 @@ def get_representative_loops(dgm : pandas.DataFrame, R, filt):
 		idx = dgm["death simplex"].iloc[i]
 		rep = []
 		for v in R[idx]:
-			rep.append(filt.get_cell(v))
+			rep.append(filt.simplex(v))
 		cycle_reps.append(rep)
 	dgm["cycle rep"] = cycle_reps
 	return dgm
