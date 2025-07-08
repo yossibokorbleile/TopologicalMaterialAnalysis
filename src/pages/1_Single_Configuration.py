@@ -9,7 +9,7 @@
 import streamlit as st
 # import oineus
 import numpy as np
-import pandas as pd
+import pandas
 import os
 import configparser
 from ase import io, Atoms
