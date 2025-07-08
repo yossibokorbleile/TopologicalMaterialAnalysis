@@ -50,22 +50,24 @@ def display_plots():
 	plot_tab.write(st.session_state.sample_end)
 	plot_tab.write(st.session_state.sample_indices)
 	for i,s in enumerate(st.session_state.sample_indices):
-		if st.session_state["pd0"] == True:
+		print(i)
+		print(st.session_state.fig_kic_pds_0)
+		if "pd0" in st.session_state and st.session_state["pd0"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				plot_tab.plotly_chart(st.session_state.fig_kic_pds_0[i])
 			# else: 
 			plot_tab.plotly_chart(st.session_state.fig_pds_0[i])
-		if st.session_state["pd1"] == True:
+		if "pd1" in st.session_state and st.session_state["pd1"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				plot_tab.plotly_chart(st.session_state.fig_kic_pds_1[i])
 			# else:
 			plot_tab.plotly_chart(st.session_state.fig_pds_1[i])
-		if st.session_state["pd2"] == True:
+		if "pd2" in st.session_state and st.session_state["pd2"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				plot_tab.plotly_chart(st.session_state.fig_kic_pds_2[i])
 			# else:
 			plot_tab.plotly_chart(st.session_state.fig_pds_2[i])
-		if st.session_state["apf0"]:
+		if "apf0" in st.session_state and st.session_state["apf0"] == True:
 			if st.session_state["kernel"]:
 				try:
 					plot_tab.plotly_chart(st.session_state.fig_kernel_apfs_0[i])
@@ -82,7 +84,7 @@ def display_plots():
 				except:
 					print("No cokernel APF in dimension 0 to plot for sample index ", s)
 			plot_tab.plotly_chart(st.session_state.fig_apfs_0[i])
-		if st.session_state["apf1"]:
+		if "apf1" in st.session_state and st.session_state["apf1"] == True:
 			if st.session_state["kernel"]:
 				try:
 					plot_tab.plotly_chart(st.session_state.fig_kernel_apfs_1[i])
@@ -99,7 +101,7 @@ def display_plots():
 				except:
 					print("No cokernel APF in dimension 1 to plot for sample index ", s)
 			plot_tab.plotly_chart(st.session_state.fig_apfs_1[i])
-		if st.session_state["apf2"]:
+		if "apf2" in st.session_state and st.session_state["apf2"] == True:
 			if st.session_state["kernel"]:
 				try:
 					plot_tab.plotly_chart(st.session_state.fig_kernel_apfs_2[i])

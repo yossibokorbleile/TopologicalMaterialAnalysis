@@ -435,7 +435,7 @@ def convert_simps_to_oineus(simplices : list):
 	
 	@return oin_simps	a list of oineus simplices
 	"""
-	oin_simps = [oineus.Simplex_double(s[0], s[1]) for s in simplices]
+	oin_simps = [oineus.Simplex(s[0], s[1]) for s in simplices]
 	return oin_simps
 
 def oineus_compare(x, y):
@@ -571,12 +571,15 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	@return kicr			oineus object which contains the kernel, image, cokernel persistence diagrams as required, can also calculate ones that weren't initially specificed
 	"""
 	print("started oineus_kernel_image_cokernel")
+	print(params)
 	sub = sub_complex(points, upper_threshold, lower_threshold)
 	K, L = oineus_pair(points, sub)
-	L = oineus.list_to_filtration_double(L)
-	K = oineus.list_to_filtration_double(K)
+	L = oineus.list_to_filtration(L)
+	K = oineus.list_to_filtration(K)
+	st.session_state.kicr_params.codomain = True
 	print("about to reduce")
-	kicr = oineus.KerImCokReduced_double(K,L,st.session_state.kicr_params)
+	print(st.session_state.kicr_params)
+	kicr = oineus.compute_kernel_image_cokernel_reduction(K,L,st.session_state.kicr_params)
 	print("reduced")
 	dgm_0 = pandas.DataFrame(numpy.hstack([kicr.codomain_diagrams().in_dimension(0), kicr.codomain_diagrams().index_diagram_in_dimension(0)]), columns = ["birth", "death", "birth simplex", "death simplex"]) #get the indexed dimension 0 diagram
 	print("got dgm_0")
@@ -698,6 +701,10 @@ def compute():
 				kernel_dgm_0 = pandas.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(0), columns=["birth", "death"])
 				kernel_dgm_1 = pandas.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(1), columns=["birth", "death"])
 				kernel_dgm_2 = pandas.DataFrame(st.session_state.kicr.kernel_diagrams().in_dimension(2), columns=["birth", "death"])
+				print("kernel_dgm_0 is:")
+				print(kernel_dgm_0)
+				print("kernel_dgm_1 is:")
+				print(kernel_dgm_1)
 				print("kernel_dgm_2 is:")
 				print(kernel_dgm_2)
 				st.session_state.kernel_dgms_0.append(kernel_dgm_0)
@@ -764,16 +771,16 @@ def test():
 	st.session_state.file_path = "../examples/ZIF_test.xyz"
 	st.session_state.config_name = "ZIF-TEST"
 	st.session_state.comp_name = "ZIF-TEST"
-	# st.session_state.sample_start = 0
-	# st.session_state.sample_end = 2
-	# st.session_state.sample_step = 1
-	# st.session_state.repeat_x = 1
-	# st.session_state.repeat_y = 1
-	# st.session_state.repeat_z = 1
-	# st.session_state.thickness=0.1
-	# st.session_state.kernel = False
-	# st.session_state.image = False
-	# st.session_state.cokernel = False
+	st.session_state.sample_start = 0
+	st.session_state.sample_end = 1
+	st.session_state.sample_step = 1
+	st.session_state.repeat_x = 1
+	st.session_state.repeat_y = 1
+	st.session_state.repeat_z = 1
+	st.session_state.thickness=0.25
+	st.session_state.kernel = True
+	st.session_state.image = True
+	st.session_state.cokernel = True
 	compute()
 
 def plot_APF(APF : numpy.array, name : str):
@@ -899,24 +906,32 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 	"""
 	fig = go.Figure()
 	max_val = -math.inf
+	print("codomain is:")
+	print(codomain)
+	print("kernel is:")
+	print(kernel)
+	print("image is:")
+	print(image)
+	print("cokernel is:")
+	print(cokernel)
 	if codomain:
 		codomain_pd = kicr.codomain_diagrams().in_dimension(d)
-		print("codomain diagram has {} points".format(codomain_pandas.shape[0]))
+		print("codomain diagram has {} points".format(codomain_pd.shape[0]))
 		if math.inf in codomain_pd[:,1] and max_val < max([d for d in codomain_pd[:,1] if d !=math.inf]):
 			max_val = max(codomain_pd[:,1])
 	if kernel:
 		kernel_pd = kicr.kernel_diagrams().in_dimension(d)
-		print("kernel diagram has {} points".format(kernel_pandas.shape[0]))
+		print("kernel diagram has {} points".format(kernel_pd.shape[0]))
 		if math.inf in kernel_pd[:,1] and max_val < max([d for d in kernel_pd[:,1] if d !=math.inf]):
 			max_val = max(kernel_pd[:,1])
 	if image:
 		image_pd = kicr.image_diagrams().in_dimension(d)
-		print("image diagram has {} points".format(image_pandas.shape[0]))
+		print("image diagram has {} points".format(image_pd.shape[0]))
 		if math.inf in image_pd[:,1]  and max_val < max([d for d in image_pd[:,1] if d !=math.inf]):
 			max_val = max(image_pd[:,1])
 	if cokernel:
-		print("cokernel diagram has {} points".format(cokernel_pandas.shape[0]))
 		cokernel_pd = kicr.cokernel_diagrams().in_dimension(d)
+		print("cokernel diagram has {} points".format(cokernel_pd.shape[0]))
 		if math.inf in cokernel_pd[:,1] and max_val < max([d for d in cokernel_pd[:,1] if d !=math.inf]):
 			max_val =  max(cokernel_pd[:,1])
 	birth = []
@@ -924,7 +939,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 	pt_type = []
 	inf_fin = []
 	if codomain:
-		for i in range(codomain_pandas.shape[0]):
+		for i in range(codomain_pd.shape[0]):
 			if codomain_pd[i,1] == math.inf:
 				birth.append(codomain_pd[i,0])
 				death.append(max_val*1.1)
@@ -936,7 +951,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 				pt_type.append("codomain")
 				inf_fin.append("fin")
 	if kernel:
-		for i in range(kernel_pandas.shape[0]):
+		for i in range(kernel_pd.shape[0]):
 			if kernel_pd[i,1] == math.inf:
 				birth.append(kernel_pd[i,0])
 				death.append(max_val*1.1)
@@ -948,7 +963,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 				pt_type.append("kernel")
 				inf_fin.append("fin")
 	if image:
-		for i in range(image_pandas.shape[0]):
+		for i in range(image_pd.shape[0]):
 			if image_pd[i,1] == math.inf:
 				birth.append(image_pd[i,0])
 				death.append(max_val*1.1)
@@ -960,7 +975,7 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 				pt_type.append("image")
 				inf_fin.append("fin")
 	if cokernel:
-		for i in range(cokernel_pandas.shape[0]):
+		for i in range(cokernel_pd.shape[0]):
 			if cokernel_pd[i,1] == math.inf:
 				birth.append(cokernel_pd[i,0])
 				death.append(max_val*1.1)
@@ -975,6 +990,8 @@ def plot_kernel_image_cokernel_PD(kicr, d : int, codomain : bool, kernel : bool,
 	fig = px.scatter(to_plot, x="birth", y="death", symbol="inf_fin", color="pt_type", title=name)
 	fig.update_xaxes(rangemode="tozero")
 	fig.update_yaxes(rangemode="tozero")
+	print("fig is:")
+	print(fig)
 	return fig
 
 # function to generate plots
@@ -1027,76 +1044,79 @@ def generate_plots():
 		st.session_state["cokernel"] = False
 	for i,s in enumerate(st.session_state.sample_indices):
 		if st.session_state["pd0"] == True:
+			print("pd0")
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
+				print("kernel or image or cokernel")
 				try:
 					st.session_state.fig_kic_pds_0.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 0, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 0 sample "+str(s)))
+					print("appended")
 				except:
-					markdown("Encountered issues with kernel/image/cokernel diagram in dimension 0.")
+					print("Encountered issues with kernel/image/cokernel diagram in dimension 0.")
 			st.session_state.fig_pds_0.append(plot_PD(st.session_state.dgms_0[i], st.session_state.file_path+" PD0 sample "+str(s)))
 		if st.session_state["pd1"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				try:
 					st.session_state.fig_kic_pds_1.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 1, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 1 sample "+str(s)))
 				except:
-					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 1.")
+					st.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 1.")
 			st.session_state.fig_pds_1.append(plot_PD(st.session_state.dgms_1[i], st.session_state.file_path+" PD1 sample "+str(s)))
 		if st.session_state["pd2"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				try:
 					st.session_state.fig_kic_pds_2.append(plot_kernel_image_cokernel_PD(st.session_state.kicrs[i], 2, True, st.session_state["kernel"], st.session_state["image"], st.session_state["cokernel"], st.session_state.file_path+" codmain/kernel/image/cokernel dimension 2 sample "+str(s)))
 				except:
-					plot_tab.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 2.")
+					st.markdown("Encountered issues with kernel/image/cokernel diagram in dimension 2.")
 			st.session_state.fig_pds_2.append(plot_PD(st.session_state.dgms_2[i], st.session_state.file_path+" PD2 sample "+str(s)))
 		if st.session_state["apf0"]:
 			if st.session_state["kernel"]:
 				try:
 					st.session_state.fig_kernel_apfs_0.append(plot_APF(st.session_state.kernel_APFs_0[i], st.session_state.file_path+" kernel APF0 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute kernel APF in dimension 0.")
+					st.markdown("Can't compute kernel APF in dimension 0.")
 			if st.session_state["image"]:
 				try:
 					st.session_state.fig_image_apfs_0.append(plot_APF(st.session_state.image_APFs_0[i], st.session_state.file_path+" image APF0 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute image APF in dimension 0.")
+					st.markdown("Can't compute image APF in dimension 0.")
 			if st.session_state["cokernel"]:
 				try:
 					st.session_state.fig_cokernel_apfs_0.append(plot_APF(st.session_state.cokernel_APFs_0[i], st.session_state.file_path+" cokernel APF0 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute cokernel APF in dimension 0.")
+					st.markdown("Can't compute cokernel APF in dimension 0.")
 			st.session_state.fig_apfs_0.append(plot_APF(st.session_state.APFs_0[i], st.session_state.file_path+" APF0 sample "+str(s)))
 		if st.session_state["apf1"]:
 			if st.session_state["kernel"]:
 				try:
 					st.session_state.fig_kernel_apfs_1.append(plot_APF(st.session_state.kernel_APFs_1[i], st.session_state.file_path+" kernel APF1 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute kernel APF in dimension 1.")
+					st.markdown("Can't compute kernel APF in dimension 1.")
 			if st.session_state["image"]:
 				try:
 					st.session_state.fig_image_apfs_1.append(plot_APF(st.session_state.image_APFs_1[i], st.session_state.file_path+" image APF1 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute image APF in dimension 1.")
+					st.markdown("Can't compute image APF in dimension 1.")
 			if st.session_state["cokernel"]:
 				try:
 					st.session_state.fig_cokernel_apfs_1.append(plot_APF(st.session_state.cokernel_APFs_1[i], st.session_state.file_path+" cokernel APF1 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute cokernel APF in dimension 1.")
+					st.markdown("Can't compute cokernel APF in dimension 1.")
 			st.session_state.fig_apfs_1.append(plot_APF(st.session_state.APFs_1[i], st.session_state.file_path+" APF1 sample "+str(s)))
 		if st.session_state["apf2"]:
 			if st.session_state["kernel"]:
 				try:
 					st.session_state.fig_kernel_apfs_2.append(plot_APF(st.session_state.kernel_APFs_2[i], st.session_state.file_path+" kernel APF2 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute kernel APF in dimension 2.")
+					st.markdown("Can't compute kernel APF in dimension 2.")
 			if st.session_state["image"]:
 				try:
 					st.session_state.fig_image_apfs_2.append(plot_APF(st.session_state.image_APFs_2[i], st.session_state.file_path+" image APF2 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute image APF in dimension 2.")
+					st.markdown("Can't compute image APF in dimension 2.")
 			if st.session_state["cokernel"]:
 				try:
 					st.session_state.fig_cokernel_apfs_2.append(plot_APF(st.session_state.cokernel_APFs_2[i], st.session_state.file_path+" cokernel APF2 sample "+str(s)))
 				except:
-					plot_tab.markdown("Can't compute cokernel APF in dimension 2.")
+					st.markdown("Can't compute cokernel APF in dimension 2.")
 			st.session_state.fig_apfs_2.append(plot_APF(st.session_state.APFs_2[i], st.session_state.file_path+" APF2 sample "+str(s)))
 	st.session_state.plots_generated = True
 
