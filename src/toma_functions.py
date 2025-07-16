@@ -55,21 +55,18 @@ def read_configuration(configuration_file : str, configuration : str):
 	repeat_z = int(config.get(configuration, "REPEAT_Z")) #read repitition in z-axis
 	print("repeating in z-axis: {}".format(repeat_z)) #print repitition in z-axis
 	try:
-		if config.get(settings_name,"SAMPLE_START"):
-			sample_start = int(config.get(settings_name,"SAMPLE_START"))
-		else:
-			sample_start = 0
+		sample_start = int(config.get(configuration,"SAMPLE_START"))
+		print("readsample_start is ", sample_start)
 	except:
 		sample_start = 0
 	try:
-		if config.get(settings_name,"SAMPLE_END") == "":
-			sample_end = 1
-		else:
-			sample_end = int(config.get(settings_name,"SAMPLE_END"))
+		sample_end = int(config.get(configuration,"SAMPLE_END"))
+		print("read sample_end is ", sample_end)
 	except:
 		sample_end = 1
 	try:
-		sample_step = int(config.get(settings_name,"SAMPLE_STEP"))
+		sample_step = int(config.get(configuration,"SAMPLE_STEP"))
+		print("read sample_step is ", sample_step)
 	except:
 		sample_step = 1
 	return atoms, radii, sample_start, sample_end, sample_step, repeat_x, repeat_y, repeat_z
@@ -611,11 +608,13 @@ def calculate_APF(dgm):
 
 # Function to compute the persistent homology 
 def compute():
+
 	if 'params' not in st.session_state:
 		st.session_state.params = oineus.ReductionParams()
 	if "kicr_params" not in st.session_state:
 		st.session_state.kicr_params = oineus.KerImCokReducedParams()
 	if not st.session_state["manual_config"]:
+		print("loading configuration settings")
 		load_configuration_settings()#streamlit_functions.load_configuration_settings()
 	st.session_state.sample_indices = []
 	st.session_state.dgms_0 = []
@@ -668,6 +667,9 @@ def compute():
 		st.session_state.cokernel_APFs_2 = []
 	if st.session_state.sample_end == "Auto":
 		st.session_state.sample_end = 1
+	print("sample_start is ", st.session_state.sample_start)
+	print("sample_end is ", st.session_state.sample_end)
+	print("sample_step is ", st.session_state.sample_step)
 	for s in range(st.session_state.sample_start, st.session_state.sample_end, st.session_state.sample_step):
 		st.session_state.sample_index = s
 		st.session_state.sample_indices.append(s)

@@ -51,7 +51,6 @@ def display_plots():
 	plot_tab.write(st.session_state.sample_indices)
 	for i,s in enumerate(st.session_state.sample_indices):
 		print(i)
-		print(st.session_state.fig_kic_pds_0)
 		if "pd0" in st.session_state and st.session_state["pd0"] == True:
 			if st.session_state["kernel"] or st.session_state["image"] or st.session_state["cokernel"]:
 				plot_tab.plotly_chart(st.session_state.fig_kic_pds_0[i])
