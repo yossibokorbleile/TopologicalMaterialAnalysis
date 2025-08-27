@@ -31,26 +31,34 @@ Currently, it takes as input a single '.csv' file, that contains the coordinates
 
 st.text_input("Input file", key="input_file", placeholder="path/to/input.csv")
 
+st.text_input("Backbone atoms", key="backbone_atoms", placeholder="Backbone atoms")
+
+st.text_input("Flow atom", key="flow_atom", placeholder="Flow atoms")
+
 st.text_input("Grid size in each dimension", key="grid_size", placeholder="Number of grid points in each dimension")
 
-def compute_circular_max_flow():
-	fat = 1
-	covering = numpy.array([-1,1])
-	reeb_stride = 2
-	relax = [grid_size//2,-(grid_size//2+1)]
-	stride = 20
+st.text_input("Fat radius", key="fat", placeholder="Fat radius")
 
+st.check_box("Periodic conditions", key="periodic", placeholder="Periodic")
+
+st.text_input("Reeb stride", key="reeb_stride", placeholder="Reeb stride")
+
+st.text_input("Stride", key="stride", placeholder="Stride")
+
+
+def compute_circular_max_flow():
+	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
 	reeb = Reeb_Graph(X, M = M, m = m, radii = radii,
-		grid_size = n_grid, 
-		periodic = True,
-		fat_radius = fat,
+		grid_size = int(st.session_state.grid_size), 
+		periodic = st.session_state.periodic,
+		fat_radius = float(st.session_state.fat),
 		covering = covering,
-		reeb_stride = reeb_stride,
+		reeb_stride = int(st.session_state.reeb_stride),
 		transform_points = None,
 		swap_res_grid_and_balls = True, #if this is set to false, you use the complementary of the thickening
 		relax_z_axis = relax,
-		verbose = False, save_RAM = True, stride=stride, MP=False)
+		verbose = False, save_RAM = True, stride=int(st.session_state.stride), MP=False)
 
 	reeb.make_reeb_graph(plot=False)
 
