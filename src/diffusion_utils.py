@@ -1,6 +1,7 @@
 import numpy as np
 import galois
 import matplotlib.pyplot as plt
+import ase.io as io
 
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.sparse import csr_matrix
@@ -111,142 +112,139 @@ def get_box_from_cell(cell_file):
     
     return np.array([M_x,M_y,M_z]), np.array([m_x,m_y,m_z])
 
+### DEPRECATED?
+# def read_data(path, backbone_atoms, flow_atoms):
+#     """
+#     Read an xyz file and extract the molecule's geometry.
 
-def read_data(path):
-    """
-    Read an xyz file and extract the molecule's geometry.
+#     The file should be in the format::
 
-    The file should be in the format::
+#         num_atoms
+#         comment
+#         ele0 x0 y0 z0
+#         ele1 x1 y1 z1
+#         ...
 
-        num_atoms
-        comment
-        ele0 x0 y0 z0
-        ele1 x1 y1 z1
-        ...
+#     Parameters
+#     ----------
+#     path : str
+#         A path to a file to read
 
-    Parameters
-    ----------
-    path : str
-        A path to a file to read
+#     Returns
+#     -------
+#     val : LazyValues
+#         An object storing all the data
+#     """
+#     N_ATOMS = []
+#     ATOMS = []
+#     COORDS = []
+#     TIMESTEPS = []
 
-    Returns
-    -------
-    val : LazyValues
-        An object storing all the data
-    """
-    N_ATOMS = []
-    ATOMS = []
-    COORDS = []
-    TIMESTEPS = []
-
-    aux = -1
-    elements = []
-    coords = []
-    comments={}
-    M = []
-    m = []
+#     aux = -1
+#     elements = []
+#     coords = []
+#     comments={}
+#     M = []
+#     m = []
     
-    tot = 100000000
+#     tot = 100000000
     
-    with open(path, 'r') as f:
-        for i, line in enumerate(f):  
+#     with open(path, 'r') as f:
+#         for i, line in enumerate(f):  
        
-            if i%tot==1:
+#             if i%tot==1:
 
-                time_step = line.strip().split()[0]
-                TIMESTEPS.append(time_step)
+#                 time_step = line.strip().split()[0]
+#                 TIMESTEPS.append(time_step)
             
-            elif i%tot==3:
+#             elif i%tot==3:
                 
-                n_atom = line.strip().split()[0]
+#                 n_atom = line.strip().split()[0]
                 
-                N_ATOMS.append(float(n_atom))
-                ATOMS.append(elements)
-                COORDS.append(coords)
+#                 N_ATOMS.append(float(n_atom))
+#                 ATOMS.append(elements)
+#                 COORDS.append(coords)
     
-                elements = []
-                coords = []
+#                 elements = []
+#                 coords = []
         
-                aux += 1
-                tot = float(n_atom)+9
+#                 aux += 1
+#                 tot = float(n_atom)+9
                 
-            elif i%tot==5:
+#             elif i%tot==5:
     
-                box = line.strip().split() 
-                M_x = float(box[1])
-                m_x = float(box[0])
+#                 box = line.strip().split() 
+#                 M_x = float(box[1])
+#                 m_x = float(box[0])
                                   
-            elif i%tot==6:
+#             elif i%tot==6:
                 
-                box = line.strip().split() 
-                M_y = float(box[1])
-                m_y = float(box[0])
+#                 box = line.strip().split() 
+#                 M_y = float(box[1])
+#                 m_y = float(box[0])
  
-            elif i%tot==7:
+#             elif i%tot==7:
                 
-                box = line.strip().split() 
-                M_z = float(box[1])
-                m_z = float(box[0])
+#                 box = line.strip().split() 
+#                 M_z = float(box[1])
+#                 m_z = float(box[0])
                     
-            elif i%tot==0 or i%tot==2 or i%tot==4 or i%tot==8:
+#             elif i%tot==0 or i%tot==2 or i%tot==4 or i%tot==8:
             
-                pass
+#                 pass
 
-            else:
+#             else:
                     
-                if len(line.strip().split())==5:
+#                 if len(line.strip().split())==5:
 
-                    _,type_, x, y, z = line.strip().split()
+#                     _,type_, x, y, z = line.strip().split()
 
-                    if float(type_) == 8:
-                        ele  = 'Li'
-                    elif float(type_) == 2 or float(type_) == 4 or float(type_) == 5 or float(type_) == 7:
-                        ele = 'S'
-                    else:
-                        ele = 'P'
+#                     if float(type_) == 8:
+#                         ele  = 'Li'
+#                     elif float(type_) == 2 or float(type_) == 4 or float(type_) == 5 or float(type_) == 7:
+#                         ele = 'S'
+#                     else:
+#                         ele = 'P'
                 
-                elif len(line.strip().split())==6:
+#                 elif len(line.strip().split())==6:
                          
-                    _,_,ele, x, y, z = line.strip().split()
+#                     _,_,ele, x, y, z = line.strip().split()
 
-                else:
+#                 else:
                     
-                    mario
+#                     mario
 
-                point = (float(x), float(y), float(z))
+#                 point = (float(x), float(y), float(z))
 
-                elements.append(ele)
-                coords.append(point)                
+#                 elements.append(ele)
+#                 coords.append(point)                
                     
-        ATOMS.append(elements)
-        COORDS.append(coords)
+#         ATOMS.append(elements)
+#         COORDS.append(coords)
           
-    M,m = np.array([M_x,M_y,M_z]), np.array([m_x,m_y,m_z])
+#     M,m = np.array([M_x,M_y,M_z]), np.array([m_x,m_y,m_z])
                                
-    return N_ATOMS, ATOMS[1:], COORDS[1:], TIMESTEPS, M, m
+#     return N_ATOMS, ATOMS[1:], COORDS[1:], TIMESTEPS, M, m
 
 
-
-def out_to_atoms(inputfile):
+def out_to_atoms(inputfile, backbone_atoms, flow_atoms):
     """
     Read the .xyz file and returns atoms coordinates by type, cardinalities and box boundaries
     """
 #    N_ATOMS, ATOMS, COORDS, COMMENTS, M, m = read_xyz_data(inputfile, box)
     N_ATOMS, ATOMS, COORDS, TIMESTEPS, M, m = read_data(inputfile)
 
-    n_Li, n_P, n_S = 0,0,0
+    n_backbone = [0 for a in backbone_atoms]
+    n_flow = [0 for a in flow_atoms]
     
     for atom in ATOMS[0]:
-        if atom=='Li':
-            n_Li += 1
-        elif atom=='P':
-            n_P += 1
-        else:
-            n_S += 1
+        if atom in backbone_atoms:
+            n_backbone[backbone_atoms.index(atom)] += 1
+        elif atom in flow_atoms:
+            n_flow[flow_atoms.index(atom)] += 1
             
-    Li = np.zeros((len(N_ATOMS),n_Li,3))
-    P = np.zeros((len(N_ATOMS),n_P,3))
-    S = np.zeros((len(N_ATOMS),n_S,3))
+    backbone = np.zeros((len(N_ATOMS),sum(n_backbone),3))
+    flow = np.zeros((len(N_ATOMS),sum(n_flow),3))
     
     for i,n in enumerate(N_ATOMS):        
         

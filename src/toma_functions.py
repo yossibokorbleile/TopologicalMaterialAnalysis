@@ -389,7 +389,7 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 
 	@return points		data frame of the points including the repetitions with columns 'Atom', 'x', 'y', 'z', 'w'
 	"""
-	print("Repeating as follows: ",repeat_x, repeat_y, repeat_z)
+	print("Repeating as follows: ", repeat_x, repeat_y, repeat_z)
 	if format == "Auto":
 		print("format is auto, sampling at ", sample_index)
 		sample = io.read(file_path, index=sample_index).repeat((repeat_x, repeat_y, repeat_z))

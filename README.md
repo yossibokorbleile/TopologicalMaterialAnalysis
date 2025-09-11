@@ -8,6 +8,11 @@ Currently, you need the following Python packages to be installed:
 * Streamlit
 * ASE
 * Pandas
+* galois
+* numba
+* pyomo
+* utils
+* networkx
 * Numpy
 * SciPy
 * Dionysus
@@ -15,6 +20,7 @@ Currently, you need the following Python packages to be installed:
 * Oineus
 * Plotly Express
 * colour
+
 * + any i have forgotten
 
 You will also need to ensure tkinter, CGAL, oneTBB are installed. 

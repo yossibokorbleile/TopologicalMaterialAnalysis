@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import galois
+#import galois
 import networkx as nx
 import multiprocessing as mp
 
@@ -21,8 +21,10 @@ class Reeb_Graph(object):
     
     """Reeb Graph Class"""
     
-    def __init__(self, backbone = None, M = None, m=None, radii = None,
+    def __init__(self, inputfile = None, radii = None,
                                 grid_size = 50, 
+                                t_step = 50,
+                                PREV_DATA = (None,None,None),
                                 periodic = True,
                                 fat_radius = 1,
                                 covering = np.array([-1,1]),
@@ -56,23 +58,21 @@ class Reeb_Graph(object):
         """
         Parameters Setup
         """
+        self.inputfile = inputfile        
         self.radii = radii
-        self.backbone = backbone    
-        self.M = M    
-        self.m = m    
-        self.M_x,self.M_y,self.M_z = self.M
-        self.m_x,self.m_y,self.m_z = self.m
+        self.t_step = t_step
         
         self.grid_size = grid_size
         self.axes = np.array([0,1])
         self.dim = 3
+        self.backbone, self.pLi, self.distances_to_balls_aux, self.atoms_kinds_aux = PREV_DATA
         self.periodic = periodic    
         self.fat_radius = fat_radius
         self.reeb_stride = reeb_stride
         self.covering = covering
         self.swap_res_grid_and_balls = swap_res_grid_and_balls
         self.transform_points = transform_points
-
+        
         if self.periodic:
             self.simply_connected_top_bottom = False
             self.relax_z_axis = np.array([self.covering[-1]+1,-1])
@@ -91,14 +91,58 @@ class Reeb_Graph(object):
             print('Coverings and stride should be coherent: stride = covering + 1 ! Stride: ', 
                   self.reeb_stride, 'Covering Step: ', np.max(self.covering))
 
+        if not self.inputfile is None:
 
-        """
-        Functions to Setup the Grid
-        """
+            self.Li,self.P,self.S,self.N,self.timesteps,self.M,self.m = out_to_atoms(inputfile)
 
-        self.setup_grid(self.backbone, self.radii, self.M, self.m)
+            self.timesteps = np.arange(0,self.Li.shape[0], self.t_step)    
 
-               
+            self.Li = self.Li[self.timesteps,:,:]
+
+            self.P = self.P[self.timesteps,:,:]
+            self.S = self.S[self.timesteps,:,:]
+            self.BACKBONE = np.hstack([self.P,self.S]) 
+
+            self.n_Li = self.Li.shape[1]
+            self.n_P = self.P.shape[1]
+            self.n_S = self.S.shape[1]
+
+            self.M_x,self.M_y,self.M_z = self.M
+            self.m_x,self.m_y,self.m_z = self.m
+                                                
+            if self.verbose:
+                print('Number of atoms. \nLi:', self.Li.shape[1], 
+                                  ' P: ', self.P.shape[1], 
+                                  ' S: ', self.S.shape[1])
+                
+                print('Lenght of time grid: ', len(self.timesteps))
+
+                print('Box: ', self.M, self.m)
+
+            if self.backbone is None:
+
+    #            P = self.P[0,:,:]
+    #            S = self.S[0,:,:]
+
+                P = point_cloud_frechet_mean_numba(self.P, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)            
+                S = point_cloud_frechet_mean_numba(self.S, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)
+                self.backbone = np.concatenate([P, S])
+
+            if self.pLi is None:
+                self.pLi = preprocess_PATHS(self.backbone, self.BACKBONE, self.Li, self.M, self.m, neigh=5)
+
+            if self.verbose:
+                print('Backbone Computed and Paths Projected.')
+                
+
+            """
+            Functions to Setup the Grid
+            """
+            
+            self.setup_grid(self.backbone, self.radii, self.M, self.m)
+
+            
+        
     """
     Auxiliary Functions
     """    
@@ -128,8 +172,21 @@ class Reeb_Graph(object):
             V = self.transform_points
             v = 0
 
+        if not self.inputfile is None: 
+            
+            P = balls_centres[:self.n_P,:]
+            r_P = balls_radii[:self.n_P]
+            S = balls_centres[self.n_P:,:]
+            r_S = balls_radii[self.n_P:]
 
-        balls_centres, balls_radii = self.affine_transform(balls_centres, balls_radii, V, v, M, m)
+            P, r_P = self.affine_transform(P, r_P, V, v, M, m)
+            S, r_S = self.affine_transform(S, r_S, V, v, M, m)
+
+            balls_centres = np.concatenate([P, S])    
+            balls_radii = np.concatenate([r_P,r_S])
+            
+        else:
+            balls_centres, balls_radii = self.affine_transform(balls_centres, balls_radii, V, v, M, m)
        
         return balls_centres, balls_radii
                 
@@ -224,44 +281,58 @@ class Reeb_Graph(object):
             aux_top = np.zeros_like(self.grid.shape[0])
             aux_bottom = np.zeros_like(self.grid.shape[0])
 
-        grid_aux = self.m + np.remainder(self.grid-self.m, self.M-self.m) 
-        self.distances_to_balls = np.infty*np.ones_like(self.grid[:,0]) 
-        self.atoms_kinds = -1*np.ones_like(self.grid[:,0]).astype(int) 
+        if self.distances_to_balls_aux is None:
+            grid_aux = self.m + np.remainder(self.grid-self.m, self.M-self.m) 
+            self.distances_to_balls = np.infty*np.ones_like(self.grid[:,0]) 
+            self.atoms_kinds = -1*np.ones_like(self.grid[:,0]).astype(int) 
+        else:
+            self.distances_to_balls = self.distances_to_balls_aux  
+            self.atoms_kinds = self.atoms_kinds_aux.astype(int)
+            
+        if self.distances_to_balls_aux is None:
+            
+            if self.save_RAM:
 
-        if self.save_RAM:
+                idxs_grid = np.arange(0,len(balls_centres),self.stride)
+                
+                if self.MP:
+                    pool = mp.Pool(processes=4)
 
-            idxs_grid = np.arange(0,len(balls_centres),self.stride)
+                    D = pool.map(dist_from_pts_periodic_boundaries_pool,
+                                     ([balls_centres[i:i+self.stride,:],grid_aux,self.M,self.m,axes_aux,self.dim] 
+                                             for i in idxs_grid))
+                    pool.close()
+                    
+                    for i,d in enumerate(D):
+                        self.distances_to_balls = np.vstack([self.distances_to_balls,d])
+                        r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
+                        self.distances_to_balls = np.min(self.distances_to_balls,axis=0)
 
-            if self.MP:
-                pool = mp.Pool(processes=4)
+                        self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+idxs_grid[i] 
+                        
+                else:
+                    for i in idxs_grid:
+                        if self.verbose and (i%1000)==0:
+                            print('Doing atom ',i,len(balls_centres), end='\r')
 
-                D = pool.map(dist_from_pts_periodic_boundaries_pool,
-                                 ([balls_centres[i:i+self.stride,:],grid_aux,self.M,self.m,axes_aux,self.dim] 
-                                         for i in idxs_grid))
-                pool.close()
+                        d = dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
+                                                                    grid_aux,self.M,self.m,axes_aux)
 
-                for i,d in enumerate(D):
-                    self.distances_to_balls = np.vstack([self.distances_to_balls,d])
-                    r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
-                    self.distances_to_balls = np.min(self.distances_to_balls,axis=0)
+                        self.distances_to_balls = np.vstack([self.distances_to_balls,d])
+                        r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
+                        self.distances_to_balls = np.min(self.distances_to_balls,axis=0)
+
+                        self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+i 
 
             else:
-                for i in idxs_grid:
-                    if self.verbose and (i%1000)==0:
-                        print('Doing atom ',i,len(balls_centres), end='\r')
-                        
-                    d = dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
-                                                                grid_aux,self.M,self.m,axes_aux)
 
-                    self.distances_to_balls = np.vstack([self.distances_to_balls,d])
+                D = dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)
 
-                    r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
-                    self.distances_to_balls = np.min(self.distances_to_balls,axis=0)
-
-                    self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+i                 
+                self.atoms_kinds = np.argmin(D,axis=0)
+                self.distances_to_balls = np.min(D,axis=0)
+                
                 
         thresh_radii = balls_radii[self.atoms_kinds]
-        
         thresh_aux = np.vstack([self.distances_to_balls, thresh_radii])
         idxs = np.argmin(thresh_aux, axis=0)==1  
         
@@ -271,7 +342,7 @@ class Reeb_Graph(object):
             if self.simply_connected_top_bottom:
                 self.idxs = ((1-self.idxs) + aux_top + aux_bottom)>0
             else:
-                self.idxs = (1-self.idxs)>0
+                self.idxs = (1-self.idxs)
         
             r = self.d_x*0
             self.balls_centres = self.grid[self.idxs]  
@@ -281,49 +352,42 @@ class Reeb_Graph(object):
             self.balls_radii = balls_radii
             
         N=sum(self.idxs)  
-        
-        if N<1:
-            self.res_grid = None
+        self.res_grid=self.grid[self.idxs]          
+            
+        if self.verbose:
+            print('The Residual Grid has: ', N,' points.')
+            print('Building Graph for the Point Cloud.')
+
+        if self.save_RAM:
+            
+            res_to_grid = np.where(self.idxs>0)[0]
+            grid_to_res = np.cumsum(self.idxs,dtype=int)-1
+
+            grid_to_cubic = np.unravel_index(np.arange(len(self.grid)),(self.nx,self.ny,self.nz))
+            grid_to_cubic = np.array(grid_to_cubic).T[:,[1,0,2]]
+
+            xv, yv, zv = np.meshgrid(np.arange(self.nx), np.arange(self.ny), np.arange(self.nz))
+
+            cubic_to_grid = np.ravel_multi_index((xv,yv,zv),(self.nx,self.ny,self.nz))
+
             if self.verbose:
-                print('Grid Empty.')
+                        print('Building Graph with Numba.')
+
+            A, cnt = make_graph_fast(self.grid,self.idxs,
+                                     res_to_grid,grid_to_res,
+                                     grid_to_cubic, cubic_to_grid,
+                                     self.nx,self.ny,self.nz,
+                                     self.dim,self.M,self.m)
+            
+            A = A[:cnt,:]
+            self.graph=csr_matrix((np.ones_like(A[:,0]), (A[:,0],A[:,1])), shape=(N, N)) 
                 
         else:
-            self.res_grid=self.grid[self.idxs]          
+            D = dist_periodic_boundaries(self.res_grid, self.M, self.m, self.axes, self.dim)        
+            self.graph = csr_matrix(D<self.r_graph)
             
-            if self.verbose:
-                print('The Residual Grid has: ', N,' points.')
-                print('Building Graph for the Point Cloud.')
-
-            if self.save_RAM:
-
-                res_to_grid = np.where(self.idxs>0)[0]
-                grid_to_res = np.cumsum(self.idxs,dtype=int)-1
-
-                grid_to_cubic = np.unravel_index(np.arange(len(self.grid)),(self.nx,self.ny,self.nz))
-                grid_to_cubic = np.array(grid_to_cubic).T[:,[1,0,2]]
-
-                xv, yv, zv = np.meshgrid(np.arange(self.nx), np.arange(self.ny), np.arange(self.nz))
-
-                cubic_to_grid = np.ravel_multi_index((xv,yv,zv),(self.nx,self.ny,self.nz))
-
-                if self.verbose:
-                            print('Building Graph with Numba.')
-
-                A, cnt = make_graph_fast(self.grid,self.idxs,
-                                         res_to_grid,grid_to_res,
-                                         grid_to_cubic, cubic_to_grid,
-                                         self.nx,self.ny,self.nz,
-                                         self.dim,self.M,self.m)
-
-                A = A[:cnt,:]
-                self.graph=csr_matrix((np.ones_like(A[:,0]), (A[:,0],A[:,1])), shape=(N, N)) 
-
-            else:
-                D = dist_periodic_boundaries(self.res_grid, self.M, self.m, self.axes, self.dim)        
-                self.graph = csr_matrix(D<self.r_graph)
-            
-            if self.verbose:
-                print('Grid Finished.')
+        if self.verbose:
+            print('Grid Finished.')
 
 
     def make_reeb_graph(self, axis=-1, old=False, plot = False):

@@ -25,9 +25,9 @@ st.markdown("""
 It creates a static approximation of the backbone, by taking approximate locations of atoms in the backbone, and for each atom type a radius to thicken these atoms by. 
 """)
 
-st.markdown("""
-Currently, it takes as input a single '.csv' file, that contains the coordinates of the atoms in the configuration in columns 'x', 'y', 'z', and then the radius to use for each atom in the column 'r'.
-""")
+# st.markdown("""
+# Currently, it takes as input a single '.csv' file, that contains the coordinates of the atoms in the configuration in columns 'x', 'y', 'z', and then the radius to use for each atom in the column 'r'.
+# """)
 
 st.text_input("Input file", key="input_file", placeholder="path/to/input.csv")
 
@@ -39,17 +39,33 @@ st.text_input("Grid size in each dimension", key="grid_size", placeholder="Numbe
 
 st.text_input("Fat radius", key="fat", placeholder="Fat radius")
 
-st.check_box("Periodic conditions", key="periodic", placeholder="Periodic")
+st.checkbox("Periodic conditions", key="periodic")
 
 st.text_input("Reeb stride", key="reeb_stride", placeholder="Reeb stride")
 
 st.text_input("Stride", key="stride", placeholder="Stride")
 
 
+def load_data():
+	st.session_state.atoms = []
+	for a in st.session_state.backbone_atoms.split(","):
+		st.session_state.atoms.append(str(a).strip())
+
+	for a in st.session_state.flow_atom.split(","):
+		st.session_state.atoms.append(str(a).strip())
+
+	st.session_state.grid_size = int(st.session_state.grid_size)
+	st.session_state.fat = float(st.session_state.fat)
+	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
+	st.session_state.stride = int(st.session_state.stride)
+	
+
+
 def compute_circular_max_flow():
+	fmean, pLi, radii = estimate_radius(st.input_file, t_step)
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
-	reeb = Reeb_Graph(X, M = M, m = m, radii = radii,
+	reeb = Reeb_Graph(st.input_file, M = M, m = m, radii = radii,
 		grid_size = int(st.session_state.grid_size), 
 		periodic = st.session_state.periodic,
 		fat_radius = float(st.session_state.fat),

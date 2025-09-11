@@ -450,9 +450,10 @@ def frechet_mean(D,initial_points,M,m,tol=0.0001, maxiter = 50):
     return MEANS[idx,:]
 
 
-def estimate_radius(inputfile,n_tmp_grid):
+def estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
     
-    Li,P,S,N,timesteps,M,m = out_to_atoms(inputfile)
+    backbone, flow, N, timesteps, M, m = out_to_atoms(inputfile)
+    # Li,P,S,N,timesteps,M,m = out_to_atoms(inputfile)
 
     tmp = np.arange(0,len(Li),n_tmp_grid)
     
