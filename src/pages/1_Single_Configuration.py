@@ -2,8 +2,8 @@
 # @internal
 # @file Single_Configuration.py
 # @brief Streamlit page for analysing a single configuration.
-# @version 0.6
-# @date December 2024
+# @version 1.0
+# @date September 2025
 # @author: Yossi Bokor Bleile
 
 import streamlit as st

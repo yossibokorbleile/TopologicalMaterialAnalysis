@@ -2,8 +2,8 @@
 ##
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
-# @version 0.6
-# @date December 2024
+# @version 1.0
+# @date September 2025
 # @copyright GPL
 # 
 # @section ToMA
@@ -13,7 +13,7 @@
 #
 # Information about the packages required and instructions for the settings files are in the [README](README.md).
 #
-# Copyright (c) 2023, 2024 Yossi Bokor Bleile.  All rights reserved.    
+# Copyright (c) 2023, 2024, 2025 Yossi Bokor Bleile.  All rights reserved.    
 
 import streamlit as st
 # import oineus

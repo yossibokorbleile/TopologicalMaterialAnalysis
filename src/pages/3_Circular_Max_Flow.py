@@ -3,7 +3,7 @@
 # @file Circular_Max_Flow.py
 # @brief Streamlit page for computing circular max flow.
 # @version 0.1
-# @date July 2025
+# @date September 2025
 # @author: Yossi Bokor Bleile
 # @author: Matteo Pegoraro
 
@@ -33,7 +33,7 @@ st.text_input("Input file", key="input_file", placeholder="path/to/input.csv")
 
 st.text_input("Backbone atoms", key="backbone_atoms", placeholder="Backbone atoms")
 
-st.text_input("Flow atom", key="flow_atom", placeholder="Flow atoms")
+st.text_input("Flow atoms", key="flow_atoms", placeholder="Flow atoms")
 
 st.text_input("Grid size in each dimension", key="grid_size", placeholder="Number of grid points in each dimension")
 
@@ -58,7 +58,25 @@ def load_data():
 	st.session_state.fat = float(st.session_state.fat)
 	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
 	st.session_state.stride = int(st.session_state.stride)
-	
+
+	st.session_state.atom_coords = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
+	st.session_state.cell = st.session_state.atom_coords[0].get_cell()[:]
+	st.session_state.m = [0,0,0]
+	st.session_state.M = [max(st.session_state.cell[:,0]), max(st.session_state.cell[:,1]), max(st.session_state.cell[:,2])]
+	st.session_state.backbone_coords = []
+	st.session_state.flow_coords = [] 
+	for i in range(len(st.session_state.atom_coords)):
+		dfpoints = pandas.DataFrame(numpy.column_stack([atoms[i].get_chemical_symbols(), atoms[i].get_positions()]), columns=["Atom", "x", "y", "z"])
+		st.session_state.backbone_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.backbone_atoms)])
+		st.session_state.flow_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.flow_atoms)])
+	st.session_state.backbone_means = point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
+	st.session_state.M_flow = preprocess_PATHS(st.session_state.backbone_mean, st.session_state.backbone_coords, st.session_state.flow_coords, st.session_state.M, st.session_state.m)    
+	st.session_state.D = flow_to_fmean_dist(st.session_state.M_flow, st.session_state.backbone_mean, st.session_state.M, st.session_state.m) 
+
+	##UNDERSTAND Li_to_fmean_dist in reeb_aux 
+
+	r_P = np.min(D[:n_P,:],axis=-1)
+	r_S = np.min(D[n_P:,:],axis=-1)
 
 
 def compute_circular_max_flow():

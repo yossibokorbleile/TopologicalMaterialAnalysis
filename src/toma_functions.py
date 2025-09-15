@@ -2,8 +2,8 @@
 # @internal
 # @file io.py
 # @brief functions to read configuration and computation settings, load atoms as well as save outputs.
-# @version 0.5
-# @date December 2024
+# @version 1
+# @date September 2025
 
 import streamlit as st
 import oineus
@@ -417,6 +417,18 @@ def sample_at(file_path : str, format : str, sample_index, repeat_x : int, repea
 	dfpoints["z"] = pandas.to_numeric(dfpoints["z"]) #ensure that everything is numeric and not string
 	return dfpoints #return the dataframe of points
 
+def sample_all_diffusion(file_path : str, format : str, sample_step: int = 1):
+	"""! Sample all the diffusion paths from a given file
+	@param file_path : str, path to the file to use for configurations
+	@param format : str, format of the file
+	@param backbone_list : list, list of backbone atoms to use
+	@param flow_list : list, list of flow atoms to use
+	"""
+	atom_locations = []
+	atoms = io.read(file_path, format=format, index=":")
+	for i in range(0, len(atoms), sample_step):
+		atom_locations.append(atoms[i].get_positions())
+	return atom_locations
 
 def weighted_alpha_diode(points):
 	"""! Use diode to fill the weighted alpha shapes

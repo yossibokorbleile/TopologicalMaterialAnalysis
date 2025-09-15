@@ -2,8 +2,8 @@
 # @internal
 # @file Cobordisms.py
 # @brief Streamlit page for analysing cobordisms.
-# @version 0.1
-# @date July 2025
+# @version 0.2
+# @date September 2025
 # @author: Yossi Bokor Bleile
 
 import streamlit as st
