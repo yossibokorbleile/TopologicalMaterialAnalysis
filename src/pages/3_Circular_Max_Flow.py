@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 from reeb_graph import Reeb_Graph
 from reeb_aux import *
 from utils import *
+from diffusion_utils import *
+from diffusion import *
+from toma_functions import *
 
 st.header("Circular Max Flow")
 
@@ -30,10 +33,11 @@ It creates a static approximation of the backbone, by taking approximate locatio
 # """)
 
 st.text_input("Input file", key="input_file", placeholder="path/to/input.csv")
+st.text_input("File format (this should be plain text containing the format of the initial structure file):", key="file_format",placeholder="Auto") #specify format of the initial strutcure file
 
-st.text_input("Backbone atoms", key="backbone_atoms", placeholder="Backbone atoms")
+st.text_input("Backbone atoms", key="backbone_atoms_input", placeholder="Backbone atoms")
 
-st.text_input("Flow atoms", key="flow_atoms", placeholder="Flow atoms")
+st.text_input("Flow atoms", key="flow_atoms_input", placeholder="Flow atoms")
 
 st.text_input("Grid size in each dimension", key="grid_size", placeholder="Number of grid points in each dimension")
 
@@ -46,40 +50,52 @@ st.text_input("Reeb stride", key="reeb_stride", placeholder="Reeb stride")
 st.text_input("Stride", key="stride", placeholder="Stride")
 
 
-def load_data():
+
+
+def compute_circular_max_flow():
 	st.session_state.atoms = []
-	for a in st.session_state.backbone_atoms.split(","):
+	st.session_state.backbone_atoms = []
+	st.session_state.flow_atoms = []
+
+	for a in st.session_state.backbone_atoms_input.split(","):
+		st.session_state.backbone_atoms.append(str(a).strip())
 		st.session_state.atoms.append(str(a).strip())
 
-	for a in st.session_state.flow_atom.split(","):
+	for a in st.session_state.flow_atoms_input.split(","):
+		st.session_state.flow_atoms.append(str(a).strip())
 		st.session_state.atoms.append(str(a).strip())
-
+	print("got atom types")
 	st.session_state.grid_size = int(st.session_state.grid_size)
 	st.session_state.fat = float(st.session_state.fat)
 	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
 	st.session_state.stride = int(st.session_state.stride)
 
 	st.session_state.atom_coords = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
+	print("loaded atom coords:", st.session_state.atom_coords)
 	st.session_state.cell = st.session_state.atom_coords[0].get_cell()[:]
-	st.session_state.m = [0,0,0]
-	st.session_state.M = [max(st.session_state.cell[:,0]), max(st.session_state.cell[:,1]), max(st.session_state.cell[:,2])]
+	st.session_state.m = numpy.array([0,0,0])
+	st.session_state.M = numpy.array([max(st.session_state.cell[:,0]), max(st.session_state.cell[:,1]), max(st.session_state.cell[:,2])])
 	st.session_state.backbone_coords = []
 	st.session_state.flow_coords = [] 
+
 	for i in range(len(st.session_state.atom_coords)):
-		dfpoints = pandas.DataFrame(numpy.column_stack([atoms[i].get_chemical_symbols(), atoms[i].get_positions()]), columns=["Atom", "x", "y", "z"])
+		dfpoints = pandas.DataFrame(numpy.column_stack([atoms[i].get_chemical_symbols(), atoms[i].get_positions().astype(float)]), columns=["Atom", "x", "y", "z"])
 		st.session_state.backbone_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.backbone_atoms)])
 		st.session_state.flow_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.flow_atoms)])
+	print("got backbone and flow coords")
+	st.session_state.backbone_coords = numpy.ascontiguousarray(st.session_state.backbone_coords)
+	st.session_state.flow_coords = numpy.ascontiguousarray(st.session_state.flow_coords)
+	print("converted to contiguous arrays")
 	st.session_state.backbone_means = point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
-	st.session_state.M_flow = preprocess_PATHS(st.session_state.backbone_mean, st.session_state.backbone_coords, st.session_state.flow_coords, st.session_state.M, st.session_state.m)    
+	print("computed backbone means")
+	st.session_state.M_flow = preprocess_PATHS(st.session_state.backbone_mean, st.session_state.backbone_coords, st.session_state.flow_coords, st.session_state.M, st.session_state.m) 
+	print("preprocessed flow coords")
 	st.session_state.D = flow_to_fmean_dist(st.session_state.M_flow, st.session_state.backbone_mean, st.session_state.M, st.session_state.m) 
-
+	print("computed flow to backbone distances")
 	##UNDERSTAND Li_to_fmean_dist in reeb_aux 
 
 	r_P = np.min(D[:n_P,:],axis=-1)
 	r_S = np.min(D[n_P:,:],axis=-1)
-
-
-def compute_circular_max_flow():
 	fmean, pLi, radii = estimate_radius(st.input_file, t_step)
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
@@ -103,6 +119,8 @@ def compute_circular_max_flow():
 
 	st.session_state.max_flow = flow
 	st.session_state.max_flow_computed = True
+
+st.button("Compute circular max flow", on_click=compute_circular_max_flow)
 
 if "max_flow_computed" in st.session_state and st.session_state.max_flow_computed:
 	st.markdown(f"Computed max flow: {st.session_state.max_flow}.")

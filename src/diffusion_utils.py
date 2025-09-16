@@ -76,7 +76,7 @@ def cut_path_from_bottom(path, h, grid, axis=-1):
 
     start_idx = 0
     path_ = np.copy(path)
-    
+     
     while grid[path_[start_idx+1]][axis]<=h*1.00001:
         path_ = path_[1:]
 
