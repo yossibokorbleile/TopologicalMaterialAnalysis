@@ -70,16 +70,16 @@ def compute_circular_max_flow():
 	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
 	st.session_state.stride = int(st.session_state.stride)
 
-	st.session_state.atom_coords = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
+	st.session_state.atom_coords, st.session_state.cell = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
 	print("loaded atom coords:", st.session_state.atom_coords)
-	st.session_state.cell = st.session_state.atom_coords[0].get_cell()[:]
+	# st.session_state.cell = st.session_state.atom_coords[0].get_cell()[:]
 	st.session_state.m = numpy.array([0,0,0])
 	st.session_state.M = numpy.array([max(st.session_state.cell[:,0]), max(st.session_state.cell[:,1]), max(st.session_state.cell[:,2])])
 	st.session_state.backbone_coords = []
 	st.session_state.flow_coords = [] 
 
 	for i in range(len(st.session_state.atom_coords)):
-		dfpoints = pandas.DataFrame(numpy.column_stack([atoms[i].get_chemical_symbols(), atoms[i].get_positions().astype(float)]), columns=["Atom", "x", "y", "z"])
+		dfpoints = pandas.DataFrame(numpy.column_stack([st.session_state.atoms[i].get_chemical_symbols(), st.session_state.atom_coords[i].get_positions().astype(float)]), columns=["Atom", "x", "y", "z"])
 		st.session_state.backbone_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.backbone_atoms)])
 		st.session_state.flow_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.flow_atoms)])
 	print("got backbone and flow coords")
@@ -119,6 +119,18 @@ def compute_circular_max_flow():
 
 	st.session_state.max_flow = flow
 	st.session_state.max_flow_computed = True
+
+def test():
+	st.session_state.input_file = "/Users/yossi/TopologicalMaterialAnalysis/examples/ZIF_test.xyz"
+	st.session_state.backbone_atoms_input = "S,Si"
+	st.session_state.flow_atoms_input = "Li"
+	st.session_state.grid_size = 10
+	st.session_state.fat = 1
+	st.session_state.reeb_stride = 10
+	st.session_state.stride = 10
+	compute_circular_max_flow()
+
+st.button("Test", on_click=test)
 
 st.button("Compute circular max flow", on_click=compute_circular_max_flow)
 
