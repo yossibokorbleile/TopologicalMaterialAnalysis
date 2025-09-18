@@ -9,4 +9,5 @@ PD*/
 .python-version
 pyproject.toml
 *.lock
+examples/md_wrapped.statsis2
 

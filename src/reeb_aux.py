@@ -450,7 +450,7 @@ def frechet_mean(D,initial_points,M,m,tol=0.0001, maxiter = 50):
     return MEANS[idx,:]
 
 
-def estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
+def  _radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
     
     backbone, flow, N, timesteps, M, m = out_to_atoms(inputfile)
     # Li,P,S,N,timesteps,M,m = out_to_atoms(inputfile)
@@ -503,16 +503,15 @@ def Li_to_backbone_dist(Li,P,S,M,m):
     return RES
 
 @jit(nopython=True, parallel=True, fastmath=True)
-def Li_to_fmean_dist(Li,P,S,M,m):
+def flow_to_fmean_dist(flow,backbone,M,m):
     
-    tmp = len(Li)
+    tmp = len(flow)
     axes_aux = np.array([0,1,2])
-    RES = np.zeros((len(P[:,0])+len(S[:,0]),tmp*len(Li[0,:,0])))
+    RES = np.zeros((len(backbone[:,0]),tmp*len(flow[0,:,0])))
         
     for t in prange(tmp):
-        L = Li[t,:,:] 
-        B = np.concatenate((P,S))
-        RES[:,t*len(Li[0,:,0]):(t+1)*len(Li[0,:,0])] = dist_from_pts_periodic_boundaries_numba(B,L,M,m,axes_aux)
+        L = flow[t,:,:] 
+        RES[:,t*len(flow[0,:,0]):(t+1)*len(flow[0,:,0])] = dist_from_pts_periodic_boundaries_numba(backbone,L,M,m,axes_aux)
     
     return RES
 

@@ -70,32 +70,36 @@ def compute_circular_max_flow():
 	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
 	st.session_state.stride = int(st.session_state.stride)
 
-	st.session_state.atom_coords, st.session_state.cell = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
+	st.session_state.atom_types, st.session_state.atom_coords, st.session_state.cell = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
 	print("loaded atom coords:", st.session_state.atom_coords)
 	# st.session_state.cell = st.session_state.atom_coords[0].get_cell()[:]
 	st.session_state.m = numpy.array([0,0,0])
 	st.session_state.M = numpy.array([max(st.session_state.cell[:,0]), max(st.session_state.cell[:,1]), max(st.session_state.cell[:,2])])
 	st.session_state.backbone_coords = []
 	st.session_state.flow_coords = [] 
+	st.session_state.backbone_idxs = []
+	st.session_state.flow_idxs = []
 
-	for i in range(len(st.session_state.atom_coords)):
-		dfpoints = pandas.DataFrame(numpy.column_stack([st.session_state.atoms[i].get_chemical_symbols(), st.session_state.atom_coords[i].get_positions().astype(float)]), columns=["Atom", "x", "y", "z"])
-		st.session_state.backbone_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.backbone_atoms)])
-		st.session_state.flow_coords.append(dfpoints[dfpoints["Atom"].isin(st.session_state.flow_atoms)])
+
+	for i in range(len(st.session_state.atom_types)):
+		
+		if st.session_state.atom_types[i] in st.session_state.backbone_atoms:
+			st.session_state.backbone_idxs.append(i)
+		if st.session_state.atom_types[i] in st.session_state.flow_atoms:
+			st.session_state.flow_idxs.append(i)
+
 	print("got backbone and flow coords")
-	st.session_state.backbone_coords = numpy.ascontiguousarray(st.session_state.backbone_coords)
-	st.session_state.flow_coords = numpy.ascontiguousarray(st.session_state.flow_coords)
-	print("converted to contiguous arrays")
-	st.session_state.backbone_means = point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
+	st.session_state.backbone_coords = st.session_state.atom_coords[:,st.session_state.backbone_idxs,:]
+	st.session_state.flow_coords = st.session_state.atom_coords[:,st.session_state.flow_idxs,:]
+	st.session_state.backbone_mean = point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
 	print("computed backbone means")
 	st.session_state.M_flow = preprocess_PATHS(st.session_state.backbone_mean, st.session_state.backbone_coords, st.session_state.flow_coords, st.session_state.M, st.session_state.m) 
 	print("preprocessed flow coords")
 	st.session_state.D = flow_to_fmean_dist(st.session_state.M_flow, st.session_state.backbone_mean, st.session_state.M, st.session_state.m) 
 	print("computed flow to backbone distances")
-	##UNDERSTAND Li_to_fmean_dist in reeb_aux 
 
-	r_P = np.min(D[:n_P,:],axis=-1)
-	r_S = np.min(D[n_P:,:],axis=-1)
+	r_P = np.min(st.session_state.D[:n_P,:],axis=-1)
+	r_S = np.min(st.session_state.D[n_P:,:],axis=-1)
 	fmean, pLi, radii = estimate_radius(st.input_file, t_step)
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
@@ -121,13 +125,13 @@ def compute_circular_max_flow():
 	st.session_state.max_flow_computed = True
 
 def test():
-	st.session_state.input_file = "/Users/yossi/TopologicalMaterialAnalysis/examples/ZIF_test.xyz"
+	st.session_state.input_file = "../examples/md_wrapped.statsis2"
 	st.session_state.backbone_atoms_input = "S,Si"
 	st.session_state.flow_atoms_input = "Li"
 	st.session_state.grid_size = 10
 	st.session_state.fat = 1
-	st.session_state.reeb_stride = 10
-	st.session_state.stride = 10
+	st.session_state.reeb_stride = 100
+	st.session_state.stride = 100
 	compute_circular_max_flow()
 
 st.button("Test", on_click=test)

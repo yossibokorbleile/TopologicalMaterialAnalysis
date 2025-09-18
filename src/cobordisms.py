@@ -255,9 +255,9 @@ def convert_index_diagram(index_dgm, kicr):
 		print("looking at ", pt)
 		print(kicr.fil_K.simplex(int(pt[0])).value)
 		if pt[1] != -1:
-			persistence_diagram.append([kicr.fil_K.simplex(int(pt[0])).value, kicr.fil_K.simplex(int(pt[1])).value, pt[0], pt[1]])
+			persistence_diagram.append([kicr.fil_K.simplex(int(pt[0])).value, kicr.fil_K.simplex(int(pt[1])).value, pt[0], pt[1], len(kicr.fil_K.simplex(int(pt[0])).vertices)])
 		else:
-			persistence_diagram.append([kicr.fil_K.simplex(int(pt[0])).value, math.inf, pt[0], -1])
+			persistence_diagram.append([kicr.fil_K.simplex(int(pt[0])).value, math.inf, pt[0], -1, len(kicr.fil_K.simplex(int(pt[0])).vertices)])
 	return persistence_diagram
 	
 def d_phi_generator(kicr_AB, kicr_A, kicr_B, sorted_ids_AB, sorted_ids_A, sorted_ids_B, A_verts, B_verts, perm_AB, perm_A, perm_B, inv_AB, inv_A, inv_B):

@@ -429,7 +429,7 @@ def sample_all_diffusion(file_path : str, format : str, sample_step: int = 1):
 	for i in range(0, len(atoms), sample_step):
 		atom_locations.append(atoms[i].get_positions())
 	cell = atoms[i].get_cell()
-	return atom_locations, cell
+	return atoms[0].get_chemical_symbols(), numpy.ascontiguousarray(atom_locations), cell
 
 def weighted_alpha_diode(points):
 	"""! Use diode to fill the weighted alpha shapes
