@@ -65,6 +65,8 @@ def compute_circular_max_flow():
 		st.session_state.flow_atoms.append(str(a).strip())
 		st.session_state.atoms.append(str(a).strip())
 	print("got atom types")
+	st.session_state.n_backbone_types = len(st.session_state.backbone_atoms)
+	st.session_state.n_flow_types = len(st.session_state.flow_atoms)
 	st.session_state.grid_size = int(st.session_state.grid_size)
 	st.session_state.fat = float(st.session_state.fat)
 	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
@@ -79,15 +81,18 @@ def compute_circular_max_flow():
 	st.session_state.flow_coords = [] 
 	st.session_state.backbone_idxs = []
 	st.session_state.flow_idxs = []
-
-
-	for i in range(len(st.session_state.atom_types)):
-		
-		if st.session_state.atom_types[i] in st.session_state.backbone_atoms:
-			st.session_state.backbone_idxs.append(i)
-		if st.session_state.atom_types[i] in st.session_state.flow_atoms:
-			st.session_state.flow_idxs.append(i)
-
+	
+	print("atom types:")
+	print(st.session_state.atom_types)
+	print(type(st.session_state.atom_types))
+	st.session_state.atom_idxs = []
+	for i in range(len(st.session_state.atoms)):
+		st.session_state.atom_idxs.append(numpy.where(st.session_state.atom_types == st.session_state.atoms[i])[0].tolist())
+		if i < st.session_state.n_backbone_types:
+			st.session_state.backbone_idxs.extend(st.session_state.atom_idxs[i])
+		else:
+			st.session_state.flow_idxs.extend(st.session_state.atom_idxs[i])
+	
 	print("got backbone and flow coords")
 	st.session_state.backbone_coords = st.session_state.atom_coords[:,st.session_state.backbone_idxs,:]
 	st.session_state.flow_coords = st.session_state.atom_coords[:,st.session_state.flow_idxs,:]
@@ -97,13 +102,14 @@ def compute_circular_max_flow():
 	print("preprocessed flow coords")
 	st.session_state.D = flow_to_fmean_dist(st.session_state.M_flow, st.session_state.backbone_mean, st.session_state.M, st.session_state.m) 
 	print("computed flow to backbone distances")
+	print(st.session_state.D)
 
-	r_P = np.min(st.session_state.D[:n_P,:],axis=-1)
-	r_S = np.min(st.session_state.D[n_P:,:],axis=-1)
-	fmean, pLi, radii = estimate_radius(st.input_file, t_step)
+	st.session_state.radii = []
+
+	fmean, pLi, radii = estimate_radius(st.session_state.input_file, t_step)
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
-	reeb = Reeb_Graph(st.input_file, M = M, m = m, radii = radii,
+	reeb = Reeb_Graph(st.session_state.input_file, M = st.session_state.M, m = st.session_state.m, radii = radii,
 		grid_size = int(st.session_state.grid_size), 
 		periodic = st.session_state.periodic,
 		fat_radius = float(st.session_state.fat),
