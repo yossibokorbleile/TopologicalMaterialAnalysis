@@ -87,12 +87,14 @@ def compute_circular_max_flow():
 	print(type(st.session_state.atom_types))
 	st.session_state.atom_idxs = []
 	for i in range(len(st.session_state.atoms)):
-		st.session_state.atom_idxs.append(numpy.where(st.session_state.atom_types == st.session_state.atoms[i])[0].tolist())
+		st.session_state.atom_idxs.append(numpy.where(numpy.isin(st.session_state.atom_types,[st.session_state.atoms[i]]))[0].tolist())
 		if i < st.session_state.n_backbone_types:
 			st.session_state.backbone_idxs.extend(st.session_state.atom_idxs[i])
 		else:
 			st.session_state.flow_idxs.extend(st.session_state.atom_idxs[i])
-	
+	print("got backbone and flow idxs:", st.session_state.backbone_idxs, st.session_state.flow_idxs)
+	st.session_state.backbone_atom_types = st.session_state.atom_types[[st.session_state.backbone_idxs]]
+	st.session_state.flow_atom_types = st.session_state.atom_types[[st.session_state.flow_idxs]]
 	print("got backbone and flow coords")
 	st.session_state.backbone_coords = st.session_state.atom_coords[:,st.session_state.backbone_idxs,:]
 	st.session_state.flow_coords = st.session_state.atom_coords[:,st.session_state.flow_idxs,:]
@@ -105,11 +107,15 @@ def compute_circular_max_flow():
 	print(st.session_state.D)
 
 	st.session_state.radii = []
+	for a in st.session_state.backbone_atoms:
+		a_mean = st.session_state.backbone_mean[st.session_state.backbone_atom_types == a]
+		st.session_state.radii.append(numpy.min(flow_to_fmean_dist(st.session_state.M_flow, a_mean, st.session_state.M, st.session_state.m) ))
 
-	fmean, pLi, radii = estimate_radius(st.session_state.input_file, t_step)
+	print("got radii: ", st.session_state.radii)
+	# fmean, pLi, radii = estimate_radius(st.session_state.input_file, t_step)
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 
-	reeb = Reeb_Graph(st.session_state.input_file, M = st.session_state.M, m = st.session_state.m, radii = radii,
+	reeb = Reeb_Graph(inputfile=None, M = st.session_state.M, m = st.session_state.m, radii = st.session_state.radii,
 		grid_size = int(st.session_state.grid_size), 
 		periodic = st.session_state.periodic,
 		fat_radius = float(st.session_state.fat),

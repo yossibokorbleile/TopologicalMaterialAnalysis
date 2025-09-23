@@ -58,14 +58,14 @@ class Reeb_Graph(object):
         """
         Parameters Setup
         """
-        self.inputfile = inputfile        
+        # self.inputfile = inputfile        
         self.radii = radii
         self.t_step = t_step
         
         self.grid_size = grid_size
         self.axes = np.array([0,1])
         self.dim = 3
-        self.backbone, self.pLi, self.distances_to_balls_aux, self.atoms_kinds_aux = PREV_DATA
+        self.backbone, self.flow, self.distances_to_balls_aux, self.atoms_kinds_aux = PREV_DATA
         self.periodic = periodic    
         self.fat_radius = fat_radius
         self.reeb_stride = reeb_stride
@@ -91,48 +91,48 @@ class Reeb_Graph(object):
             print('Coverings and stride should be coherent: stride = covering + 1 ! Stride: ', 
                   self.reeb_stride, 'Covering Step: ', np.max(self.covering))
 
-        if not self.inputfile is None:
+        # if not self.inputfile is None:
 
-            self.Li,self.P,self.S,self.N,self.timesteps,self.M,self.m = out_to_atoms(inputfile)
+        #     self.Li,self.P,self.S,self.N,self.timesteps,self.M,self.m = out_to_atoms(inputfile)
 
-            self.timesteps = np.arange(0,self.Li.shape[0], self.t_step)    
+        #     self.timesteps = np.arange(0,self.Li.shape[0], self.t_step)    
 
-            self.Li = self.Li[self.timesteps,:,:]
+        #     self.Li = self.Li[self.timesteps,:,:]
 
-            self.P = self.P[self.timesteps,:,:]
-            self.S = self.S[self.timesteps,:,:]
-            self.BACKBONE = np.hstack([self.P,self.S]) 
+        #     self.P = self.P[self.timesteps,:,:]
+        #     self.S = self.S[self.timesteps,:,:]
+        #     self.BACKBONE = np.hstack([self.P,self.S]) 
 
-            self.n_Li = self.Li.shape[1]
-            self.n_P = self.P.shape[1]
-            self.n_S = self.S.shape[1]
+        #     self.n_Li = self.Li.shape[1]
+        #     self.n_P = self.P.shape[1]
+        #     self.n_S = self.S.shape[1]
 
-            self.M_x,self.M_y,self.M_z = self.M
-            self.m_x,self.m_y,self.m_z = self.m
+        #     self.M_x,self.M_y,self.M_z = self.M
+        #     self.m_x,self.m_y,self.m_z = self.m
                                                 
-            if self.verbose:
-                print('Number of atoms. \nLi:', self.Li.shape[1], 
-                                  ' P: ', self.P.shape[1], 
-                                  ' S: ', self.S.shape[1])
+        #     if self.verbose:
+        #         print('Number of atoms. \nLi:', self.Li.shape[1], 
+        #                           ' P: ', self.P.shape[1], 
+        #                           ' S: ', self.S.shape[1])
                 
-                print('Lenght of time grid: ', len(self.timesteps))
+        #         print('Lenght of time grid: ', len(self.timesteps))
 
-                print('Box: ', self.M, self.m)
+        #         print('Box: ', self.M, self.m)
 
-            if self.backbone is None:
+    #         if self.backbone is None:
 
-    #            P = self.P[0,:,:]
-    #            S = self.S[0,:,:]
+    # #            P = self.P[0,:,:]
+    # #            S = self.S[0,:,:]
 
-                P = point_cloud_frechet_mean_numba(self.P, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)            
-                S = point_cloud_frechet_mean_numba(self.S, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)
-                self.backbone = np.concatenate([P, S])
+    #             P = point_cloud_frechet_mean_numba(self.P, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)            
+    #             S = point_cloud_frechet_mean_numba(self.S, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)
+    #             self.backbone = np.concatenate([P, S])
 
-            if self.pLi is None:
-                self.pLi = preprocess_PATHS(self.backbone, self.BACKBONE, self.Li, self.M, self.m, neigh=5)
+    #         if self.pLi is None:
+    #             self.pLi = preprocess_PATHS(self.backbone, self.BACKBONE, self.Li, self.M, self.m, neigh=5)
 
-            if self.verbose:
-                print('Backbone Computed and Paths Projected.')
+            # if self.verbose:
+            #     print('Backbone Computed and Paths Projected.')
                 
 
             """
