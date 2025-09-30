@@ -213,8 +213,8 @@ class Diffusion(object):
         
         plt.close(fig)
         
-        if self.verbose:
-            print('Estimated Radii (Li, P, S): ',self.d_Li,self.d_P, self.d_S)
+        # if self.verbose:
+        #     print('Estimated Radii (Li, P, S): ',self.d_Li,self.d_P, self.d_S)
             
     def produce_res_grid(self, balls_centres_ = None ,balls_radii_ = None,
                                 M_ = None, m_ = None):

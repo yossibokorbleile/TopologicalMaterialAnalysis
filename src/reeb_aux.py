@@ -132,7 +132,6 @@ def canonical_matrix_grid():
     
     return np.array(MAT)
 
-
 def gramschmidt(A):
     """
     Applies the Gram-Schmidt method to A
@@ -149,7 +148,7 @@ def gramschmidt(A):
             A[:, j] = A[:, j] - R[k, j]*Q[:, k]
     return Q, R
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=False, fastmath=True)
 def make_cubic_to_res(cubic_grid,res_grid,nx,ny,nz):
 
     cubic_to_res = np.zeros((nx,ny,nz), dtype=int32)-1
@@ -168,7 +167,7 @@ def make_cubic_to_res(cubic_grid,res_grid,nx,ny,nz):
     return cubic_to_res, res_to_cubic
 
 
-@jit(nopython=True, fastmath=True)    
+@jit(nopython=False, fastmath=True)    
 def make_graph(grid,res_grid,nx,ny,nz,dim,M,m):
 
     cubic_grid = np.transpose(grid.reshape((nx,ny,nz,3)),axes=(1,0,2,3))
@@ -203,7 +202,7 @@ def make_graph(grid,res_grid,nx,ny,nz,dim,M,m):
     
     return graph_try, cnt
 
-@jit(nopython=True, parallel=False, fastmath=True)    
+@jit(nopython=False, parallel=False, fastmath=True)    
 def make_graph_fast(grid,res_idxs,
                    res_to_grid,grid_to_res,
                    grid_to_cubic, cubic_to_grid,
@@ -242,7 +241,7 @@ def make_graph_fast(grid,res_idxs,
     return graph_try, cnt
 
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=False, fastmath=True)
 def match_grids(new_grid, old_grid):
 
     idxs = np.zeros_like(old_grid, dtype=int32)-1
@@ -254,7 +253,7 @@ def match_grids(new_grid, old_grid):
             idxs[i] = tmp[0][0]
     return idxs
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=False, fastmath=True)
 def match_graphs(old_to_new, old_graph):
 
     graph = np.zeros((len(old_to_new),2),dtype=int32)
@@ -267,7 +266,7 @@ def match_graphs(old_to_new, old_graph):
     return graph, cnt
 
 
-#@jit(nopython=True, parallel=True)
+@jit(nopython=False, parallel=True)
 def dist_from_pts_periodic_boundaries_pool(LIST):
     
     A,B,M,m,axes, dim = LIST
@@ -285,8 +284,8 @@ def numba_dist(a, b):
     dist = np.zeros((a.shape[0],b.shape[0]))
     for a_i in prange(a.shape[0]):
         for b_j in prange(b.shape[0]):
-            for i in range(a.shape[1]):
-                dist[a_i,b_j] += (b[b_j,i] - a[a_i, i])**2
+            # for i in range(a.shape[1]):
+            dist[a_i,b_j] = sum(b[b_j,:] - a[a_i, :])**2
             dist[a_i,b_j] = dist[a_i,b_j]**0.5
     return dist
 
@@ -325,7 +324,67 @@ def dist_from_pts_periodic_boundaries_numba(A_,B_,M,m,axes, dim=3):
 
     return D
 
-@jit(nopython=True, parallel=True, fastmath=True)
+
+# @jit(nopython=False, parallel=True, fastmath=True)
+def numba_dist_print(a, b):
+    """
+    A,B -> array of pts (npts,dim), calcolo distanza d(a_i,b_j) per ogni a_i in a e b_j in b
+    """
+    print("computing distances between ", a, " and ", b)
+    # Ensure contiguous arrays and float64 dtype for scalar math
+    # a_c = np.ascontiguousarray(a)
+    # b_c = np.ascontiguousarray(b)
+    dist = np.zeros((a.shape[0], b.shape[0]), dtype=np.float64)
+    assert a.shape[1] == b.shape[1]
+    for a_i in range(a.shape[0]):
+        for b_j in range(b.shape[0]):
+            dist_ai_bj = 0.0
+            for i in range(a.shape[1]):
+                diff = b[b_j, i] - a[a_i, i]
+                dist_ai_bj = dist_ai_bj + diff**2
+            dist[a_i, b_j] = dist_ai_bj ** 0.5
+            # dist[a_i,b_j] = dist[a_i,b_j]**0.5
+    return dist
+
+
+@jit(nopython=False, parallel=True, fastmath=True)
+def dist_from_pts_periodic_boundaries_numba_print(A_,B_,M,m,axes, dim=3):
+    """
+    A,B -> array of pts (npts,dim), calcolo distanza d(a,b) per ogni a in A e b in B
+    M -> array with upper bounds of the box (dim,)
+    m -> array with lower bound of the box (dim,)
+    axes -> array with the axes in which the boundary condition is applied
+    dim -> dimension of the dataset
+    """    
+    
+    print("A_ has shape: ", A_[0].shape)
+    print("B_ has shape: ", B_.shape)
+    A = m + np.remainder(A_-m, M-m)
+    B = m + np.remainder(B_-m, M-m)
+    A = np.ascontiguousarray(A)
+    B = np.ascontiguousarray(B)
+    D = numba_dist_print(A, B)
+    DELTAS = M-m
+    
+    c_idxs = np.arange(dim)
+    c_idxs = np.array([i not in axes for i in c_idxs]) 
+    DELTAS[c_idxs] = 0.0
+    for v_0 in [0.0,-DELTAS[0],DELTAS[0]]:
+        for v_1 in [0.0,-DELTAS[1],DELTAS[1]]:
+            for v_2 in [0.0,-DELTAS[2],DELTAS[2]]:
+
+                v = np.array([v_0,v_1,v_2])
+                
+                if np.min(v)==np.max(v)==0:
+                    pass
+                else:
+                    B_new = B + v
+                    D_new = numba_dist_print(A, B_new)
+                    D = np.minimum(D_new,D)
+
+    return D
+
+@jit(nopython=False, parallel=True, fastmath=True)
 def point_cloud_frechet_mean_numba(D,M,m,subsample=10,tol=0.001, maxiter = 50):
 
     frechet = np.zeros_like(D[0,:,:])
@@ -342,7 +401,7 @@ def point_cloud_frechet_mean_numba(D,M,m,subsample=10,tol=0.001, maxiter = 50):
     
     return frechet
 
-@jit(nopython=True, parallel=False, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def procustes_mean(p, D, M, m, tol = 0.001, maxiter = 50):
     
     cnt = 0
@@ -374,7 +433,7 @@ def procustes_mean(p, D, M, m, tol = 0.001, maxiter = 50):
     return mean_coords, cost
 
 
-@jit(nopython=True, parallel=False, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def frechet_mean_numba(D,initial_points,M,m,tol=0.001, maxiter = 50):
     
     L = initial_points.shape[0]
@@ -485,7 +544,7 @@ def  estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
     return fmean, M_Li, np.concatenate([r_P,r_S])
 
 
-@jit(nopython=True, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=True, fastmath=True)
 def Li_to_backbone_dist(Li,P,S,M,m):
     
     tmp = len(Li)
@@ -502,7 +561,7 @@ def Li_to_backbone_dist(Li,P,S,M,m):
     
     return RES
 
-@jit(nopython=True, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=True, fastmath=True)
 def flow_to_fmean_dist(flow,backbone,M,m):
     
     tmp = len(flow)
@@ -516,7 +575,7 @@ def flow_to_fmean_dist(flow,backbone,M,m):
     return RES
 
 
-@jit(nopython=True, parallel=False, fastmath=True)            
+@jit(nopython=False, parallel=False, fastmath=True)            
 def preprocess_ions(fmean, backbone_t, ions, M, m):
     
     axes = np.array([0,1,2])
@@ -541,7 +600,7 @@ def preprocess_ions(fmean, backbone_t, ions, M, m):
                 
     return new_ions 
 
-@jit(nopython=True, parallel=False, fastmath=True)            
+@jit(nopython=False, parallel=False, fastmath=True)            
 def preprocess_PATHS(fmean, BACKBONE, PATHS, M, m):
     
     new_PATHS = np.zeros_like(PATHS)
@@ -555,7 +614,7 @@ def preprocess_PATHS(fmean, BACKBONE, PATHS, M, m):
     return new_PATHS
 
 
-@jit(nopython=True, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=True, fastmath=True)
 def make_neigh(grid,p_graph,i_graph,f):
 
     aux = np.zeros_like(grid[:,0])
@@ -572,7 +631,7 @@ def make_neigh(grid,p_graph,i_graph,f):
 
     return np.max(aux)
 
-@jit(nopython=True, parallel=False, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def make_neigh_(grid,p_graph,i_graph,f):
     aux = 0
     
@@ -591,7 +650,7 @@ def make_neigh_(grid,p_graph,i_graph,f):
     return aux
 
 
-@jit(nopython=True, parallel=False, fastmath=True)    
+@jit(nopython=False, parallel=False, fastmath=True)    
 def connect_lvl_sets_aux(i, n_c, C, grid, lvl_to_grid, REEB_GRAPH, norm, count):
     
     AUX_w = np.zeros((n_c*len(np.unique(REEB_GRAPH[:,i-1])),3))

@@ -21,10 +21,10 @@ class Reeb_Graph(object):
     
     """Reeb Graph Class"""
     
-    def __init__(self, inputfile = None, radii = None,
+    def __init__(self, inputfile = None, backbone = None, flow = None, radii = None, M = None, m = None,
                                 grid_size = 50, 
                                 t_step = 50,
-                                PREV_DATA = (None,None,None),
+                                PREV_DATA = (None,None,None,None),
                                 periodic = True,
                                 fat_radius = 1,
                                 covering = np.array([-1,1]),
@@ -61,11 +61,16 @@ class Reeb_Graph(object):
         # self.inputfile = inputfile        
         self.radii = radii
         self.t_step = t_step
-        
+        self.M = M
+        self.m = m
         self.grid_size = grid_size
         self.axes = np.array([0,1])
         self.dim = 3
-        self.backbone, self.flow, self.distances_to_balls_aux, self.atoms_kinds_aux = PREV_DATA
+        # self.backbone, self.flow, self.distances_to_balls_aux, self.atoms_kinds_aux = PREV_DATA
+        self.backbone = backbone
+        self.flow = flow
+        self.distances_to_balls_aux = None
+        self.atoms_kinds_aux = None
         self.periodic = periodic    
         self.fat_radius = fat_radius
         self.reeb_stride = reeb_stride
@@ -90,65 +95,14 @@ class Reeb_Graph(object):
             print('Coverings should be symmetric for accurate periodic graphs!', np.min(self.covering),np.max(self.covering))
             print('Coverings and stride should be coherent: stride = covering + 1 ! Stride: ', 
                   self.reeb_stride, 'Covering Step: ', np.max(self.covering))
-
-        # if not self.inputfile is None:
-
-        #     self.Li,self.P,self.S,self.N,self.timesteps,self.M,self.m = out_to_atoms(inputfile)
-
-        #     self.timesteps = np.arange(0,self.Li.shape[0], self.t_step)    
-
-        #     self.Li = self.Li[self.timesteps,:,:]
-
-        #     self.P = self.P[self.timesteps,:,:]
-        #     self.S = self.S[self.timesteps,:,:]
-        #     self.BACKBONE = np.hstack([self.P,self.S]) 
-
-        #     self.n_Li = self.Li.shape[1]
-        #     self.n_P = self.P.shape[1]
-        #     self.n_S = self.S.shape[1]
-
-        #     self.M_x,self.M_y,self.M_z = self.M
-        #     self.m_x,self.m_y,self.m_z = self.m
-                                                
-        #     if self.verbose:
-        #         print('Number of atoms. \nLi:', self.Li.shape[1], 
-        #                           ' P: ', self.P.shape[1], 
-        #                           ' S: ', self.S.shape[1])
-                
-        #         print('Lenght of time grid: ', len(self.timesteps))
-
-        #         print('Box: ', self.M, self.m)
-
-    #         if self.backbone is None:
-
-    # #            P = self.P[0,:,:]
-    # #            S = self.S[0,:,:]
-
-    #             P = point_cloud_frechet_mean_numba(self.P, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)            
-    #             S = point_cloud_frechet_mean_numba(self.S, self.M, self.m, subsample=min([20,len(self.timesteps)]), tol=0.001, maxiter = 20)
-    #             self.backbone = np.concatenate([P, S])
-
-    #         if self.pLi is None:
-    #             self.pLi = preprocess_PATHS(self.backbone, self.BACKBONE, self.Li, self.M, self.m, neigh=5)
-
-            # if self.verbose:
-            #     print('Backbone Computed and Paths Projected.')
-                
-
-            """
-            Functions to Setup the Grid
-            """
-            
-            self.setup_grid(self.backbone, self.radii, self.M, self.m)
-
-            
+        self.setup_grid(balls_centres = self.backbone, balls_radii = self.radii, M = self.M, m = self.m)
+           
         
     """
     Auxiliary Functions
     """    
     def setup_grid(self, balls_centres = None, balls_radii = None,
                                 M = None, m = None):
-        
         if not self.transform_points is None:
             balls_centres, balls_radii = self.transform_backbone(balls_centres = balls_centres ,balls_radii = balls_radii,
                                 M = M, m = m)
@@ -227,9 +181,9 @@ class Reeb_Graph(object):
 
         self.nx, self.ny, self.nz = (self.grid_size, self.grid_size, self.grid_size)
         
-        self.x = np.linspace(self.m_x, self.M_x, self.nx+tmp)[:-1]
-        self.y = np.linspace(self.m_y, self.M_y, self.ny+tmp)[:-1]
-        self.z = np.linspace(self.m_z, self.M_z, self.nz+tmp)[:-1]
+        self.x = np.linspace(self.m[0], self.M[0], self.nx+tmp)[:-1]
+        self.y = np.linspace(self.m[1], self.M[1], self.ny+tmp)[:-1]
+        self.z = np.linspace(self.m[2], self.M[2], self.nz+tmp)[:-1]
             
         self.d_x = self.x[1]-self.x[0]
         self.d_y = self.y[1]-self.y[0]
@@ -283,14 +237,15 @@ class Reeb_Graph(object):
 
         if self.distances_to_balls_aux is None:
             grid_aux = self.m + np.remainder(self.grid-self.m, self.M-self.m) 
-            self.distances_to_balls = np.infty*np.ones_like(self.grid[:,0]) 
+            self.distances_to_balls = np.inf*np.ones_like(self.grid[:,0]) 
             self.atoms_kinds = -1*np.ones_like(self.grid[:,0]).astype(int) 
         else:
             self.distances_to_balls = self.distances_to_balls_aux  
             self.atoms_kinds = self.atoms_kinds_aux.astype(int)
             
         if self.distances_to_balls_aux is None:
-            
+            print("saving RAM is: ", self.save_RAM)
+            print("MP is: ", self.MP)
             if self.save_RAM:
 
                 idxs_grid = np.arange(0,len(balls_centres),self.stride)
@@ -314,24 +269,26 @@ class Reeb_Graph(object):
                     for i in idxs_grid:
                         if self.verbose and (i%1000)==0:
                             print('Doing atom ',i,len(balls_centres), end='\r')
-
                         d = dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
                                                                     grid_aux,self.M,self.m,axes_aux)
-
+ 
                         self.distances_to_balls = np.vstack([self.distances_to_balls,d])
                         r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
                         self.distances_to_balls = np.min(self.distances_to_balls,axis=0)
-
+                        # print("distances to balls: ", self.distances_to_balls, " with shape ", self.distances_to_balls.shape)
+                        # print("r_aux: ", r_aux, " with shape ", r_aux.shape)
+                        # print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)    
                         self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+i 
-
             else:
-
                 D = dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)
-
                 self.atoms_kinds = np.argmin(D,axis=0)
                 self.distances_to_balls = np.min(D,axis=0)
                 
-                
+        # print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)
+        # print("balls radii: ", balls_radii, " with shape ", balls_radii.shape)
+        # print("distances to balls: ", self.distances_to_balls, " with shape ", self.distances_to_balls.shape)
+        print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)
+        print("distances to balls: ", self.distances_to_balls)
         thresh_radii = balls_radii[self.atoms_kinds]
         thresh_aux = np.vstack([self.distances_to_balls, thresh_radii])
         idxs = np.argmin(thresh_aux, axis=0)==1  
