@@ -289,7 +289,7 @@ class Reeb_Graph(object):
         # print("distances to balls: ", self.distances_to_balls, " with shape ", self.distances_to_balls.shape)
         print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)
         print("distances to balls: ", self.distances_to_balls)
-        thresh_radii = balls_radii[self.atoms_kinds]
+        thresh_radii = [balls_radii[i] for i in self.atoms_kinds]
         thresh_aux = np.vstack([self.distances_to_balls, thresh_radii])
         idxs = np.argmin(thresh_aux, axis=0)==1  
         

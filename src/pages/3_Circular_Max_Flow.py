@@ -41,13 +41,13 @@ st.text_input("Flow atoms", key="flow_atoms_input", placeholder="Flow atoms")
 
 st.text_input("Grid size in each dimension", key="grid_size_input", placeholder="Number of grid points in each dimension")
 
-st.text_input("Fat radius", key="fat", placeholder="Fat radius")
+st.text_input("Fat radius", key="fat_input", placeholder="Fat radius")
 
 st.checkbox("Periodic conditions", key="periodic")
 
-st.text_input("Reeb stride", key="reeb_stride", placeholder="Reeb stride")
+st.text_input("Reeb stride", key="reeb_stride_input", placeholder="Reeb stride")
 
-st.text_input("Stride", key="stride", placeholder="Stride")
+st.text_input("Stride", key="stride_input", placeholder="Stride")
 
 
 
@@ -68,9 +68,9 @@ def compute_circular_max_flow():
 	st.session_state.n_backbone_types = len(st.session_state.backbone_atoms)
 	st.session_state.n_flow_types = len(st.session_state.flow_atoms)
 	st.session_state.grid_size = int(st.session_state.grid_size_input)
-	st.session_state.fat = float(st.session_state.fat)
-	st.session_state.reeb_stride = int(st.session_state.reeb_stride)
-	st.session_state.stride = int(st.session_state.stride)
+	st.session_state.fat = float(st.session_state.fat_input)
+	st.session_state.reeb_stride = int(st.session_state.reeb_stride_input)
+	st.session_state.stride = int(st.session_state.stride_input)
 
 	st.session_state.atom_types, st.session_state.atom_coords, st.session_state.cell = sample_all_diffusion(st.session_state.input_file, st.session_state.file_format, st.session_state.reeb_stride)
 	# print("loaded atom coords:", st.session_state.atom_coords)
@@ -146,9 +146,9 @@ def test():
 	st.session_state.backbone_atoms_input = "S,Si"
 	st.session_state.flow_atoms_input = "Li"
 	st.session_state.grid_size_input = "10"
-	st.session_state.fat = 1
-	st.session_state.reeb_stride = 1
-	st.session_state.stride = 1
+	st.session_state.fat_input = "1"
+	st.session_state.reeb_stride_input = "1"
+	st.session_state.stride_input = "1"
 	compute_circular_max_flow()
 
 st.button("Test", on_click=test)
