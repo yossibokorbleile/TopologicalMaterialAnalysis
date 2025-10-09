@@ -121,16 +121,23 @@ def compute_circular_max_flow():
 		st.session_state.backbone_radii.append(float(st.session_state.radii[st.session_state.backbone_atoms.index(a)]))
 	
 	
-	reeb = Reeb_Graph(inputfile=None, backbone = st.session_state.backbone_mean, flow = st.session_state.flow_coords, radii = st.session_state.backbone_radii, M = st.session_state.M, m = st.session_state.m,
+	reeb = Reeb_Graph(inputfile=None, 
+		backbone = st.session_state.backbone_mean, 
+		flow = st.session_state.flow_coords, 
+		radii = st.session_state.backbone_radii, 
+		M = st.session_state.M, 
+		m = st.session_state.m,
 		grid_size = int(st.session_state.grid_size), 
 		periodic = st.session_state.periodic,
 		fat_radius = float(st.session_state.fat),
 		covering = covering,
 		reeb_stride = int(st.session_state.reeb_stride),
 		transform_points = None,
-		swap_res_grid_and_balls = True, #if this is set to false, you use the complementary of the thickening
+		swap_res_grid_and_balls = False, #if this is set to false, you use the complementary of the thickening
 		relax_z_axis = relax,
-		verbose = False, save_RAM = True, stride=int(st.session_state.stride), MP=False)
+		verbose = False, 
+		save_RAM = True, 
+		stride=int(st.session_state.stride), MP=False)
 	reeb.make_reeb_graph(plot=False)
 
 	try:
