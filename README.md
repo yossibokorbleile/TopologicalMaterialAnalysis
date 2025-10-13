@@ -19,6 +19,7 @@ Currently, you need the following Python packages to be installed:
 * Oineus
 * Plotly Express
 * colour
+* gurobi
 
 * + any i have forgotten
 
