@@ -15,7 +15,6 @@ Currently, you need the following Python packages to be installed:
 * networkx
 * Numpy
 * SciPy
-* Dionysus
 * Diode
 * Oineus
 * Plotly Express
