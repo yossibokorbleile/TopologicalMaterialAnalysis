@@ -17,6 +17,7 @@ from utils import *
 from diffusion_utils import *
 from diffusion import *
 from toma_functions import *
+from reeb_aux import safe_point_cloud_frechet_mean_numba
 
 st.header("Circular Max Flow")
 
@@ -101,7 +102,7 @@ def compute_circular_max_flow():
 	# print("got backbone and flow coords")
 	st.session_state.backbone_coords = st.session_state.atom_coords[:,st.session_state.backbone_idxs,:]
 	st.session_state.flow_coords = st.session_state.atom_coords[:,st.session_state.flow_idxs,:]
-	st.session_state.backbone_mean = point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
+	st.session_state.backbone_mean = safe_point_cloud_frechet_mean_numba(st.session_state.backbone_coords, st.session_state.M, st.session_state.m, subsample=min([20,len(st.session_state.atom_coords)]), tol=0.001, maxiter = 20)   
 	print("computed backbone means")
 	st.session_state.M_flow = preprocess_PATHS(st.session_state.backbone_mean, st.session_state.backbone_coords, st.session_state.flow_coords, st.session_state.M, st.session_state.m) 
 	# print("preprocessed flow coords")
@@ -154,8 +155,8 @@ def test():
 	st.session_state.flow_atoms_input = "Li"
 	st.session_state.grid_size_input = "10"
 	st.session_state.fat_input = "1"
-	st.session_state.reeb_stride_input = "1"
-	st.session_state.stride_input = "1"
+	st.session_state.reeb_stride_input = "4"
+	st.session_state.stride_input = "4"
 	compute_circular_max_flow()
 
 st.button("Test", on_click=test)

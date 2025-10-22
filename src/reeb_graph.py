@@ -269,7 +269,7 @@ class Reeb_Graph(object):
                     for i in idxs_grid:
                         if self.verbose and (i%1000)==0:
                             print('Doing atom ',i,len(balls_centres), end='\r')
-                        d = dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
+                        d = safe_dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
                                                                     grid_aux,self.M,self.m,axes_aux)
  
                         self.distances_to_balls = np.vstack([self.distances_to_balls,d])
@@ -280,7 +280,7 @@ class Reeb_Graph(object):
                         # print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)    
                         self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+i 
             else:
-                D = dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)
+                D = safe_dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)
                 self.atoms_kinds = np.argmin(D,axis=0)
                 self.distances_to_balls = np.min(D,axis=0)
                 
@@ -374,7 +374,7 @@ class Reeb_Graph(object):
         l,u = self.covering
         
         if D_ is None:
-            D_graph = dist_from_pts_periodic_boundaries_numba(grid,grid,self.M,self.m,self.axes, self.dim)
+            D_graph = safe_dist_from_pts_periodic_boundaries_numba(grid,grid,self.M,self.m,self.axes, self.dim)
             D_graph = (D_graph<self.r_graph)
         else:
             D_graph = D_
@@ -482,7 +482,7 @@ class Reeb_Graph(object):
         l,u = self.covering
         
         if D_ is None:
-            D_graph = dist_from_pts_periodic_boundaries_numba(grid,grid,self.M,self.m,self.axes, self.dim)
+            D_graph = safe_dist_from_pts_periodic_boundaries_numba(grid,grid,self.M,self.m,self.axes, self.dim)
             D_graph = (D_graph<self.r_graph)
         else:
             D_graph = D_

@@ -4,12 +4,40 @@ from diffusion_utils import dist_from_pts_periodic_boundaries, out_to_atoms
 from itertools import chain, combinations, product
 import multiprocessing as mp
 from scipy.sparse.csgraph import connected_components
+import os
+
+# Configure Numba threading to prevent concurrent access issues
+# Use default threading layer
+# Limit threads to prevent oversubscription
+os.environ['NUMBA_NUM_THREADS'] = str(min(4, mp.cpu_count()))
 
 
 import networkx as nx
 import pyomo.environ as pyo
 import logging
 logging.getLogger('pyomo.core').setLevel(logging.ERROR)
+
+# Thread synchronization for Numba functions
+import threading
+_numba_lock = threading.Lock()
+
+def thread_safe_numba_call(func, *args, **kwargs):
+    """Wrapper to ensure thread-safe execution of Numba functions"""
+    with _numba_lock:
+        return func(*args, **kwargs)
+
+# Thread-safe wrappers for commonly used Numba functions
+def safe_dist_from_pts_periodic_boundaries_numba(A_, B_, M, m, axes, dim=3):
+    """Thread-safe wrapper for dist_from_pts_periodic_boundaries_numba"""
+    return thread_safe_numba_call(dist_from_pts_periodic_boundaries_numba, A_, B_, M, m, axes, dim)
+
+def safe_point_cloud_frechet_mean_numba(D, M, m, subsample=10, tol=0.001, maxiter=50):
+    """Thread-safe wrapper for point_cloud_frechet_mean_numba"""
+    return thread_safe_numba_call(point_cloud_frechet_mean_numba, D, M, m, subsample, tol, maxiter)
+
+def safe_flow_to_fmean_dist(flow, backbone, M, m):
+    """Thread-safe wrapper for flow_to_fmean_dist"""
+    return thread_safe_numba_call(flow_to_fmean_dist, flow, backbone, M, m)
 
 
 def circular_max_flow(reeb):
@@ -289,7 +317,7 @@ def numba_dist(a, b):
             dist[a_i,b_j] = dist[a_i,b_j]**0.5
     return dist
 
-@jit(nopython=True, parallel=True, fastmath=True)
+@jit(nopython=True, parallel=False, fastmath=True)
 def dist_from_pts_periodic_boundaries_numba(A_,B_,M,m,axes, dim=3):
     """
     A,B -> array of pts (npts,dim), calcolo distanza d(a,b) per ogni a in A e b in B
@@ -529,14 +557,14 @@ def  estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
     n_P = P.shape[1]
     n_S = S.shape[1]
 
-    M_P = point_cloud_frechet_mean_numba(P, M, m, subsample=min([20,len(tmp)]), tol=0.001, maxiter = 20)            
-    M_S = point_cloud_frechet_mean_numba(S, M, m, subsample=min([20,len(tmp)]), tol=0.001, maxiter = 20)
+    M_P = safe_point_cloud_frechet_mean_numba(P, M, m, subsample=min([20,len(tmp)]), tol=0.001, maxiter = 20)            
+    M_S = safe_point_cloud_frechet_mean_numba(S, M, m, subsample=min([20,len(tmp)]), tol=0.001, maxiter = 20)
 
     fmean = np.concatenate([M_P, M_S])
     M_Li = preprocess_PATHS(fmean, BACKBONE, Li, M, m)
             
 #    D = Li_to_backbone_dist(Li,P,S,M,m)
-    D = Li_to_fmean_dist(M_Li,M_P,M_S,M,m)
+    D = Li_to_backbone_dist(M_Li,M_P,M_S,M,m)
 
     r_P = np.min(D[:n_P,:],axis=-1)
     r_S = np.min(D[n_P:,:],axis=-1)
@@ -544,14 +572,14 @@ def  estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
     return fmean, M_Li, np.concatenate([r_P,r_S])
 
 
-@jit(nopython=False, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def Li_to_backbone_dist(Li,P,S,M,m):
     
     tmp = len(Li)
     axes_aux = np.array([0,1,2])
     RES = np.zeros((len(P[0,:,0])+len(S[0,:,0]),tmp*len(Li[0,:,0])))
         
-    for t in prange(tmp):
+    for t in range(tmp):
         L = Li[t,:,:] 
         P_ = P[t,:,:]
         S_ = S[t,:,:] 
@@ -561,14 +589,14 @@ def Li_to_backbone_dist(Li,P,S,M,m):
     
     return RES
 
-@jit(nopython=False, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def flow_to_fmean_dist(flow,backbone,M,m):
     
     tmp = len(flow)
     axes_aux = np.array([0,1,2])
     RES = np.zeros((len(backbone[:,0]),tmp*len(flow[0,:,0])))
         
-    for t in prange(tmp):
+    for t in range(tmp):
         L = flow[t,:,:] 
         RES[:,t*len(flow[0,:,0]):(t+1)*len(flow[0,:,0])] = dist_from_pts_periodic_boundaries_numba(backbone,L,M,m,axes_aux)
     
@@ -614,12 +642,12 @@ def preprocess_PATHS(fmean, BACKBONE, PATHS, M, m):
     return new_PATHS
 
 
-@jit(nopython=False, parallel=True, fastmath=True)
+@jit(nopython=False, parallel=False, fastmath=True)
 def make_neigh(grid,p_graph,i_graph,f):
 
     aux = np.zeros_like(grid[:,0])
     
-    for i in prange(len(grid)):
+    for i in range(len(grid)):
 
         neigh = np.zeros((p_graph[i+1]-p_graph[i]+1),dtype=int32)
         neigh[-1]=i
@@ -635,7 +663,7 @@ def make_neigh(grid,p_graph,i_graph,f):
 def make_neigh_(grid,p_graph,i_graph,f):
     aux = 0
     
-    for i in prange(len(grid)):
+    for i in range(len(grid)):
         neigh = np.zeros((p_graph[i+1]-p_graph[i]+1),dtype=int32)
         neigh[-1]=i
         
