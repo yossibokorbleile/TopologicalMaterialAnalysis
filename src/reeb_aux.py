@@ -312,9 +312,11 @@ def numba_dist(a, b):
     dist = np.zeros((a.shape[0],b.shape[0]))
     for a_i in prange(a.shape[0]):
         for b_j in prange(b.shape[0]):
-            # for i in range(a.shape[1]):
-            dist[a_i,b_j] = sum(b[b_j,:] - a[a_i, :])**2
-            dist[a_i,b_j] = dist[a_i,b_j]**0.5
+            dist_ai_bj = 0.0
+            for i in range(a.shape[1]):
+                diff = b[b_j, i] - a[a_i, i]
+                dist_ai_bj = dist_ai_bj + diff**2
+            dist[a_i,b_j] = dist_ai_bj**0.5
     return dist
 
 @jit(nopython=True, parallel=False, fastmath=True)

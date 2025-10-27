@@ -269,8 +269,7 @@ class Reeb_Graph(object):
                     for i in idxs_grid:
                         if self.verbose and (i%1000)==0:
                             print('Doing atom ',i,len(balls_centres), end='\r')
-                        d = safe_dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:],
-                                                                    grid_aux,self.M,self.m,axes_aux)
+                        d = dist_from_pts_periodic_boundaries_numba(balls_centres[i:i+self.stride,:], grid_aux,self.M,self.m,axes_aux)#safe_dist_from_pts_periodic_boundaries_numba
  
                         self.distances_to_balls = np.vstack([self.distances_to_balls,d])
                         r_aux = np.argmin(self.distances_to_balls,axis=0).astype(int)
@@ -280,7 +279,7 @@ class Reeb_Graph(object):
                         # print("atoms kinds: ", self.atoms_kinds, " with shape ", self.atoms_kinds.shape)    
                         self.atoms_kinds[r_aux>0] = r_aux[r_aux>0]-1+i 
             else:
-                D = safe_dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)
+                D = dist_from_pts_periodic_boundaries_numba(balls_centres,grid_aux,self.M,self.m,axes_aux)#safe_dist_from_pts_periodic_boundaries_numba
                 self.atoms_kinds = np.argmin(D,axis=0)
                 self.distances_to_balls = np.min(D,axis=0)
                 

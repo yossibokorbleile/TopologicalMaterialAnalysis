@@ -144,7 +144,8 @@ def compute_circular_max_flow():
 	try:
 		flow = circular_max_flow(reeb)*(reeb.unit_2d)
 	except:
-		flow=0
+		flow = np.nan
+
 
 	st.session_state.max_flow = flow
 	st.session_state.max_flow_computed = True
