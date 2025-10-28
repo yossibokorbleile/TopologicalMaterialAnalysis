@@ -18,6 +18,7 @@ from diffusion_utils import *
 from diffusion import *
 from toma_functions import *
 from reeb_aux import safe_point_cloud_frechet_mean_numba
+import pickle
 
 st.header("Circular Max Flow")
 
@@ -29,7 +30,7 @@ st.markdown("""
 It creates a static approximation of the backbone, by taking approximate locations of atoms in the backbone, and for each atom type a radius to thicken these atoms by. 
 """)
 
-# st.markdown("""
+# st.markdown("""fkjey+
 # Currently, it takes as input a single '.csv' file, that contains the coordinates of the atoms in the configuration in columns 'x', 'y', 'z', and then the radius to use for each atom in the column 'r'.
 # """)
 
@@ -50,8 +51,10 @@ st.text_input("Reeb stride", key="reeb_stride_input", placeholder="Reeb stride")
 
 st.text_input("Stride", key="stride_input", placeholder="Stride")
 
+st.checkbox("Save Reeb graph", key="save_rb")
 
-
+if st.session_state.save_rb:
+	st.text_input("Save Reeb graph to", key="save_rb_to_input", placeholder="path/to/save/reeb.graph")
 
 def compute_circular_max_flow():
 	st.session_state.atoms = []
@@ -140,7 +143,9 @@ def compute_circular_max_flow():
 		save_RAM = True, 
 		stride=int(st.session_state.stride), MP=False)
 	reeb.make_reeb_graph(plot=False)
-
+	if st.session_state.save_rb:
+		with open(st.session_state.save_rb_to_input, "wb") as f:
+			pickle.dump(reeb, f)
 	try:
 		flow = circular_max_flow(reeb)*(reeb.unit_2d)
 	except:
