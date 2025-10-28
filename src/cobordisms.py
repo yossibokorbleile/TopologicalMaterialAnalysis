@@ -252,8 +252,8 @@ def convert_index_diagram(index_dgm, kicr):
 	
 	persistence_diagram = []
 	for pt in index_dgm:
-		print("looking at ", pt)
-		print(kicr.fil_K.simplex(int(pt[0])).value)
+		# print("looking at ", pt)
+		# print(kicr.fil_K.simplex(int(pt[0])).value)
 		if pt[1] != -1:
 			persistence_diagram.append([kicr.fil_K.simplex(int(pt[0])).value, kicr.fil_K.simplex(int(pt[1])).value, pt[0], pt[1], len(kicr.fil_K.simplex(int(pt[0])).vertices)])
 		else:
@@ -283,12 +283,15 @@ def d_phi_generator(kicr_AB, kicr_A, kicr_B, sorted_ids_AB, sorted_ids_A, sorted
 	d_phi = []
 	sorted_ids = []
 	simplices = kicr_AB.fil_K.simplices()
+	print(f"Processing simplices: 0/{len(simplices)}", end="\r")
 	for i in range(len(simplices)):
+		if i % 1000 == 0:
+			print(f"Processing simplices: {i}/{len(simplices)}", end="\r")
 		simplex = simplices[i]
 		og_verts = sorted(convert_vertices(simplex.vertices, inv_AB))
 		sorted_id_A = sorted_ids_A[tuple(og_verts)]
 		sorted_id_B = sorted_ids_B[tuple(og_verts)]
-		print(i, " looking at simplex ", simplex, " with sorted_A ", sorted_id_A, " and sorted_B ", sorted_id_B)
+		# print(i, " looking at simplex ", simplex, " with sorted_A ", sorted_id_A, " and sorted_B ", sorted_id_B)
 		in_A = True
 		in_B = True
 		new_col_A = []
@@ -363,16 +366,22 @@ def d_phi_generator(kicr_AB, kicr_A, kicr_B, sorted_ids_AB, sorted_ids_A, sorted
 			# print("new_col_A is ", new_col_A)
 			# print("new_col_B is ", new_col_B)
 			if in_A and not in_B:
-				# print("in_A and not in_B")
+				print(i, " in_A and not in_B")
 				d_phi.append(new_col_A)
 				sorted_ids.append(i)
 				d_phi.append(new_col_B)
 				sorted_ids.append(i)
 			elif not in_A and in_B:
-				# print("not in_A and in_B")
+				print(i, " not in_A and in_B")
 				d_phi.append(new_col_B)
 				sorted_ids.append(i)
 				d_phi.append(new_col_A)
+				sorted_ids.append(i)
+			if not in_A and not in_B:
+				print(i, " not in_A and not in_B")
+				d_phi.append(new_col_A)	
+				sorted_ids.append(i)
+				d_phi.append(new_col_B)
 				sorted_ids.append(i)
 		elif new_col_A != [] and new_col_B == []:
 			# print("new_col_A is ", new_col_A)
