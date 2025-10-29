@@ -377,12 +377,14 @@ def d_phi_generator(kicr_AB, kicr_A, kicr_B, sorted_ids_AB, sorted_ids_A, sorted
 				sorted_ids.append(i)
 				d_phi.append(new_col_A)
 				sorted_ids.append(i)
-			if not in_A and not in_B:
+			elif not in_A and not in_B:
 				print(i, " not in_A and not in_B")
 				d_phi.append(new_col_A)	
 				sorted_ids.append(i)
 				d_phi.append(new_col_B)
 				sorted_ids.append(i)
+			else:
+				print(i, " in_A and in_B")
 		elif new_col_A != [] and new_col_B == []:
 			# print("new_col_A is ", new_col_A)
 			# print("new_col_B is ", new_col_B)
