@@ -113,16 +113,19 @@ def compute_circular_max_flow():
 	# print("computed flow to backbone distances")
 	# print(st.session_state.D)
 
-	st.session_state.radii = []
-	for a in st.session_state.backbone_atoms:
-		a_mean = st.session_state.backbone_mean[st.session_state.backbone_atom_types == a]
-		st.session_state.radii.append(numpy.min(flow_to_fmean_dist(st.session_state.M_flow, a_mean, st.session_state.M, st.session_state.m) ))
 
 	relax = [int(st.session_state.grid_size)//2,-(int(st.session_state.grid_size)//2+1)]
 	covering = np.array([-1,1])
-	st.session_state.backbone_radii = []
-	for a in st.session_state.backbone_atom_types:
-		st.session_state.backbone_radii.append(float(st.session_state.radii[st.session_state.backbone_atoms.index(a)]))
+	st.session_state.backbone_radii = numpy.min(flow_to_fmean_dist(st.session_state.M_flow, st.session_state.backbone_mean, st.session_state.M, st.session_state.m),axis=-1)
+
+#	st.session_state.radii = []
+#	for a in st.session_state.backbone_atoms:
+#		a_mean = st.session_state.backbone_mean[st.session_state.backbone_atom_types == a]
+#		st.session_state.radii.append(numpy.min(flow_to_fmean_dist(st.session_state.M_flow, a_mean, st.session_state.M, st.session_state.m) ))
+
+#	st.session_state.backbone_radii = []
+#	for a in st.session_state.backbone_atom_types:
+#		st.session_state.backbone_radii.append(float(st.session_state.radii[st.session_state.backbone_atoms.index(a)]))
 	
 	
 	reeb = Reeb_Graph(inputfile=None, 
