@@ -30,8 +30,9 @@ jobs:
 
       - name: Update site files
         run: |
-          rm -rf deploy/sites/toma.yossi.eu/*
-          cp -r ./docs/html/* deploy/sites/toma.yossi.eu/
+          mkdir -p deploy/sites/yossi.eu/toma
+          rm -rf deploy/sites/yossi.eu/toma/*
+          cp -r ./docs/html/* deploy/sites/yossi.eu/toma/
 
       - name: Push to deploy repo
         run: |
