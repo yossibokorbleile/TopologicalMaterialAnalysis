@@ -2,7 +2,7 @@
 # @internal
 # @file Batch_Mode.py
 # @brief Streamlit page for analysing a single configuration.
-# @version 0.1
+# @version 1.0.0
 # @date December 2024
 # @author: Yossi Bokor Bleile
 

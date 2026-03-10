@@ -2,7 +2,7 @@
 # @internal
 # @file Circular_Max_Flow.py
 # @brief Streamlit page for computing circular max flow.
-# @version 0.1
+# @version 1.0.0
 # @date September 2025
 # @author: Yossi Bokor Bleile
 # @author: Matteo Pegoraro
