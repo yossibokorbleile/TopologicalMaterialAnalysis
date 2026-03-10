@@ -776,7 +776,20 @@ def frechet_mean(D,initial_points,M,m,tol=0.0001, maxiter = 50):
 
 
 def  estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
-    
+    """! @brief Estimate exclusion radii for backbone atoms from simulation data.
+
+    Reads atom trajectories, computes Frechet means for backbone and flow
+    atoms, and derives per-atom exclusion radii based on minimum distances
+    to flow atoms.
+
+    @param inputfile       Path to the input XYZ trajectory file.
+    @param backbone_atoms  List of element symbols for backbone atoms.
+    @param flow_atoms      List of element symbols for flow atoms.
+    @param n_tmp_grid      Temporal subsampling stride for the trajectory.
+    @return Tuple (fmean, M_Li, radii) where fmean is the backbone Frechet
+            mean, M_Li is the preprocessed flow coordinates, and radii is
+            the array of per-atom exclusion radii.
+    """
     backbone, flow, N, timesteps, M, m = out_to_atoms(inputfile)
     # Li,P,S,N,timesteps,M,m = out_to_atoms(inputfile)
 
@@ -812,7 +825,18 @@ def  estimate_radius(inputfile, backbone_atoms, flow_atoms, n_tmp_grid):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def Li_to_backbone_dist(Li,P,S,M,m):
-    
+    """! @brief Compute distances from backbone atoms to lithium ions across time steps.
+
+    For each time step, concatenates P and S backbone coordinates and
+    computes distances to all Li positions with periodic boundaries.
+
+    @param Li  Lithium ion coordinates (shape: (T, n_Li, 3)).
+    @param P   Phosphorus atom coordinates (shape: (T, n_P, 3)).
+    @param S   Sulphur atom coordinates (shape: (T, n_S, 3)).
+    @param M   Upper bounds of the simulation box (shape: (3,)).
+    @param m   Lower bounds of the simulation box (shape: (3,)).
+    @return Distance matrix (shape: (n_P + n_S, T * n_Li)).
+    """
     tmp = len(Li)
     axes_aux = np.array([0,1,2])
     RES = np.zeros((len(P[0,:,0])+len(S[0,:,0]),tmp*len(Li[0,:,0])))
@@ -829,7 +853,17 @@ def Li_to_backbone_dist(Li,P,S,M,m):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def flow_to_fmean_dist(flow,backbone,M,m):
-    
+    """! @brief Compute distances from backbone Frechet mean to flow atoms across time steps.
+
+    For each time step, computes distances from the backbone mean
+    positions to all flow atom positions with periodic boundaries.
+
+    @param flow      Flow atom coordinates (shape: (T, n_flow, 3)).
+    @param backbone  Backbone Frechet mean coordinates (shape: (n_backbone, 3)).
+    @param M         Upper bounds of the simulation box (shape: (3,)).
+    @param m         Lower bounds of the simulation box (shape: (3,)).
+    @return Distance matrix (shape: (n_backbone, T * n_flow)).
+    """
     tmp = len(flow)
     axes_aux = np.array([0,1,2])
     RES = np.zeros((len(backbone[:,0]),tmp*len(flow[0,:,0])))
@@ -841,9 +875,20 @@ def flow_to_fmean_dist(flow,backbone,M,m):
     return RES
 
 
-@jit(nopython=False, parallel=False, fastmath=True)            
+@jit(nopython=False, parallel=False, fastmath=True)
 def preprocess_ions(fmean, backbone_t, ions, M, m):
-    
+    """! @brief Shift ion coordinates towards the Frechet mean frame.
+
+    Translates each ion position using a distance-weighted average of
+    backbone-to-Frechet-mean displacement vectors, with periodic wrapping.
+
+    @param fmean       Backbone Frechet mean coordinates (shape: (n_backbone, 3)).
+    @param backbone_t  Backbone coordinates at the current time step (shape: (n_backbone, 3)).
+    @param ions        Ion coordinates to preprocess (shape: (n_ions, 3)).
+    @param M           Upper bounds of the simulation box (shape: (3,)).
+    @param m           Lower bounds of the simulation box (shape: (3,)).
+    @return Preprocessed ion coordinates (shape: (n_ions, 3)).
+    """
     axes = np.array([0,1,2])
     matrix = dist_from_pts_periodic_boundaries_numba(ions,backbone_t,M,m,axes)
     new_ions = np.zeros_like(ions)
@@ -866,9 +911,20 @@ def preprocess_ions(fmean, backbone_t, ions, M, m):
                 
     return new_ions 
 
-@jit(nopython=False, parallel=False, fastmath=True)            
+@jit(nopython=False, parallel=False, fastmath=True)
 def preprocess_PATHS(fmean, BACKBONE, PATHS, M, m):
-    
+    """! @brief Preprocess ion trajectories by shifting towards the Frechet mean frame.
+
+    Applies preprocess_ions to each time step of the trajectory to align
+    ion paths with the Frechet mean backbone configuration.
+
+    @param fmean     Backbone Frechet mean coordinates (shape: (n_backbone, 3)).
+    @param BACKBONE  Backbone coordinates across time (shape: (T, n_backbone, 3)).
+    @param PATHS     Ion trajectories to preprocess (shape: (T, n_ions, 3)).
+    @param M         Upper bounds of the simulation box (shape: (3,)).
+    @param m         Lower bounds of the simulation box (shape: (3,)).
+    @return Preprocessed trajectories (shape: (T, n_ions, 3)).
+    """
     new_PATHS = np.zeros_like(PATHS)
     time_steps = PATHS.shape[0]
     
@@ -882,7 +938,18 @@ def preprocess_PATHS(fmean, BACKBONE, PATHS, M, m):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def make_neigh(grid,p_graph,i_graph,f):
+    """! @brief Compute the maximum neighbourhood function variation on the grid.
 
+    For each grid point, finds the maximum absolute difference between its
+    function value and those of its neighbours (including itself), then
+    returns the global maximum across all points.
+
+    @param grid     Grid point coordinates (shape: (npts, dim)).
+    @param p_graph  CSR row pointer array for the adjacency graph.
+    @param i_graph  CSR column index array for the adjacency graph.
+    @param f        Function values at grid points (shape: (npts,)).
+    @return Global maximum neighbourhood variation (scalar).
+    """
     aux = np.zeros_like(grid[:,0])
     
     for i in range(len(grid)):
@@ -899,6 +966,17 @@ def make_neigh(grid,p_graph,i_graph,f):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def make_neigh_(grid,p_graph,i_graph,f):
+    """! @brief Compute the maximum neighbourhood function variation (scalar variant).
+
+    Same as make_neigh but tracks the maximum as a running scalar instead
+    of allocating an auxiliary array, for improved memory efficiency.
+
+    @param grid     Grid point coordinates (shape: (npts, dim)).
+    @param p_graph  CSR row pointer array for the adjacency graph.
+    @param i_graph  CSR column index array for the adjacency graph.
+    @param f        Function values at grid points (shape: (npts,)).
+    @return Global maximum neighbourhood variation (scalar).
+    """
     aux = 0
     
     for i in range(len(grid)):
