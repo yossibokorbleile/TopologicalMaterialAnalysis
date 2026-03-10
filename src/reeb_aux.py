@@ -1,3 +1,9 @@
+##
+# @file reeb_aux.py
+# @brief Auxiliary functions for Reeb graph construction including Numba-optimised grid operations.
+# @version 1.3.0
+# @date March 2026
+
 import numpy as np
 from numba import jit, int32, prange
 from diffusion_utils import dist_from_pts_periodic_boundaries, out_to_atoms
@@ -22,26 +28,69 @@ import threading
 _numba_lock = threading.Lock()
 
 def thread_safe_numba_call(func, *args, **kwargs):
-    """Wrapper to ensure thread-safe execution of Numba functions"""
+    """! @brief Wrapper to ensure thread-safe execution of Numba functions.
+
+    Acquires a global lock before calling the Numba-compiled function to
+    prevent concurrent access issues.
+
+    @param func    The Numba-compiled function to call.
+    @param args    Positional arguments forwarded to func.
+    @param kwargs  Keyword arguments forwarded to func.
+    @return The return value of func(*args, **kwargs).
+    """
     with _numba_lock:
         return func(*args, **kwargs)
 
 # Thread-safe wrappers for commonly used Numba functions
 def safe_dist_from_pts_periodic_boundaries_numba(A_, B_, M, m, axes, dim=3):
-    """Thread-safe wrapper for dist_from_pts_periodic_boundaries_numba"""
+    """! @brief Thread-safe wrapper for dist_from_pts_periodic_boundaries_numba.
+
+    @param A_    First set of points (shape: (n, dim)).
+    @param B_    Second set of points (shape: (m, dim)).
+    @param M     Upper bounds of the simulation box (shape: (dim,)).
+    @param m     Lower bounds of the simulation box (shape: (dim,)).
+    @param axes  Array of axes along which periodic boundaries apply.
+    @param dim   Dimensionality of the dataset (default: 3).
+    @return Distance matrix of shape (n, m).
+    """
     return thread_safe_numba_call(dist_from_pts_periodic_boundaries_numba, A_, B_, M, m, axes, dim)
 
 def safe_point_cloud_frechet_mean_numba(D, M, m, subsample=10, tol=0.001, maxiter=50):
-    """Thread-safe wrapper for point_cloud_frechet_mean_numba"""
+    """! @brief Thread-safe wrapper for point_cloud_frechet_mean_numba.
+
+    @param D          Point cloud data array (shape: (T, L, dim)).
+    @param M          Upper bounds of the simulation box (shape: (dim,)).
+    @param m          Lower bounds of the simulation box (shape: (dim,)).
+    @param subsample  Subsampling stride for initial point selection (default: 10).
+    @param tol        Convergence tolerance (default: 0.001).
+    @param maxiter    Maximum number of iterations (default: 50).
+    @return Frechet mean coordinates (shape: (L, dim)).
+    """
     return thread_safe_numba_call(point_cloud_frechet_mean_numba, D, M, m, subsample, tol, maxiter)
 
 def safe_flow_to_fmean_dist(flow, backbone, M, m):
-    """Thread-safe wrapper for flow_to_fmean_dist"""
+    """! @brief Thread-safe wrapper for flow_to_fmean_dist.
+
+    @param flow      Flow atom coordinates (shape: (T, n_flow, 3)).
+    @param backbone  Backbone Frechet mean coordinates (shape: (n_backbone, 3)).
+    @param M         Upper bounds of the simulation box (shape: (3,)).
+    @param m         Lower bounds of the simulation box (shape: (3,)).
+    @return Distance matrix between backbone atoms and flow atoms across time.
+    """
     return thread_safe_numba_call(flow_to_fmean_dist, flow, backbone, M, m)
 
 
 def circular_max_flow(reeb):
-    
+    """! @brief Compute the maximum flow through a circular Reeb graph.
+
+    Constructs a flow network from the Reeb graph by adding source and
+    sink nodes connected to the bottom and top level-set vertices, then
+    solves the max-flow problem using Gurobi via Pyomo.
+
+    @param reeb  Reeb graph object with attributes E (edges), REEB_GRAPH,
+                 G (NetworkX graph), and D_reeb_w (edge weights).
+    @return Maximum flow value through the network.
+    """
     edges = reeb.E+1
     
     pts_bottom = np.unique(reeb.REEB_GRAPH[:,0])
@@ -123,7 +172,15 @@ def circular_max_flow(reeb):
 
 
 def sphere_sample(n=100, seed=0):
-    
+    """! @brief Sample points uniformly on the unit sphere.
+
+    Generates n random points on the 3D unit sphere by normalising
+    standard Gaussian samples.
+
+    @param n     Number of points to sample (default: 100).
+    @param seed  Random seed for reproducibility (default: 0).
+    @return Array of unit-sphere points (shape: (n, 3)).
+    """
     np.random.seed(seed)
     pts = np.random.normal(size=(n,3))    
     norms = np.linalg.norm(pts,axis=-1)
@@ -134,7 +191,15 @@ def sphere_sample(n=100, seed=0):
 
 
 def sample_matrix_grid(n=100,seed=0):
-    
+    """! @brief Generate a grid of rotation matrices from sphere samples.
+
+    Constructs n rotation matrices by applying Gram-Schmidt orthogonalisation
+    to frames built from sphere-sampled direction vectors.
+
+    @param n     Number of rotation matrices to generate (default: 100).
+    @param seed  Random seed for sphere sampling (default: 0).
+    @return Array of rotation matrices (shape: (n, 3, 3)).
+    """
     pts = sphere_sample(n, seed)
 
     MAT = []
@@ -151,7 +216,13 @@ def sample_matrix_grid(n=100,seed=0):
     return np.array(MAT)
 
 def canonical_matrix_grid():
-    
+    """! @brief Generate the three canonical axis-permutation rotation matrices.
+
+    Returns the identity matrix with its rows cyclically permuted to produce
+    rotations aligning each axis to the first position.
+
+    @return Array of three permutation matrices (shape: (3, 3, 3)).
+    """
     MAT = []
     m = np.identity(3)
     
@@ -161,9 +232,14 @@ def canonical_matrix_grid():
     return np.array(MAT)
 
 def gramschmidt(A):
-    """
-    Applies the Gram-Schmidt method to A
-    and returns Q and R, so Q*R = A.
+    """! @brief Apply the Gram-Schmidt orthogonalisation process to a matrix.
+
+    Decomposes matrix A into an orthogonal matrix Q and an upper triangular
+    matrix R such that A = Q * R.
+
+    @param A  Input matrix to decompose (shape: (n, k)).
+    @return Tuple (Q, R) where Q is orthogonal (shape: (n, k)) and R is
+            upper triangular (shape: (k, k)).
     """
     R = np.zeros((A.shape[1], A.shape[1]))
     Q = np.zeros(A.shape)
@@ -178,7 +254,20 @@ def gramschmidt(A):
 
 @jit(nopython=False, fastmath=True)
 def make_cubic_to_res(cubic_grid,res_grid,nx,ny,nz):
+    """! @brief Build mappings between cubic grid and resolution grid indices.
 
+    For each cell in the cubic grid, finds the matching point in the resolution
+    grid and records bidirectional index mappings.
+
+    @param cubic_grid  Cubic grid coordinates (shape: (nx, ny, nz, 3)).
+    @param res_grid    Resolution grid coordinates (shape: (npts, 3)).
+    @param nx          Number of grid cells along x.
+    @param ny          Number of grid cells along y.
+    @param nz          Number of grid cells along z.
+    @return Tuple (cubic_to_res, res_to_cubic) where cubic_to_res maps
+            (i,j,k) to resolution index (-1 if absent) and res_to_cubic
+            maps resolution index to (i,j,k).
+    """
     cubic_to_res = np.zeros((nx,ny,nz), dtype=int32)-1
     res_to_cubic = np.zeros((len(res_grid),3), dtype=int32)
     
@@ -195,9 +284,25 @@ def make_cubic_to_res(cubic_grid,res_grid,nx,ny,nz):
     return cubic_to_res, res_to_cubic
 
 
-@jit(nopython=False, fastmath=True)    
+@jit(nopython=False, fastmath=True)
 def make_graph(grid,res_grid,nx,ny,nz,dim,M,m):
+    """! @brief Build a neighbourhood graph on the resolution grid using a cubic lattice.
 
+    Reshapes the flat grid into a cubic lattice, maps to resolution indices,
+    and creates edges between each resolution point and its 26-connected
+    cubic neighbours (with periodic wrapping in x and y).
+
+    @param grid      Flat grid coordinates (shape: (nx*ny*nz, 3)).
+    @param res_grid  Resolution grid coordinates (shape: (npts, 3)).
+    @param nx        Number of grid cells along x.
+    @param ny        Number of grid cells along y.
+    @param nz        Number of grid cells along z.
+    @param dim       Dimensionality of the dataset.
+    @param M         Upper bounds of the simulation box (shape: (dim,)).
+    @param m         Lower bounds of the simulation box (shape: (dim,)).
+    @return Tuple (graph_try, cnt) where graph_try is an edge array
+            (shape: (npts*27, 2)) and cnt is the number of valid edges.
+    """
     cubic_grid = np.transpose(grid.reshape((nx,ny,nz,3)),axes=(1,0,2,3))
     cubic_to_res, res_to_cubic = make_cubic_to_res(cubic_grid,res_grid,nx,ny,nz)
 
@@ -230,12 +335,31 @@ def make_graph(grid,res_grid,nx,ny,nz,dim,M,m):
     
     return graph_try, cnt
 
-@jit(nopython=False, parallel=False, fastmath=True)    
+@jit(nopython=False, parallel=False, fastmath=True)
 def make_graph_fast(grid,res_idxs,
                    res_to_grid,grid_to_res,
                    grid_to_cubic, cubic_to_grid,
                    nx,ny,nz,dim,M,m):
+    """! @brief Build a neighbourhood graph using precomputed grid-to-cubic mappings.
 
+    A faster variant of make_graph that uses precomputed index mappings
+    instead of recomputing them, iterating only over resolution grid points.
+
+    @param grid            Full grid coordinates (shape: (N, 3)).
+    @param res_idxs        Boolean/indicator array marking resolution grid membership.
+    @param res_to_grid     Mapping from resolution indices to full grid indices.
+    @param grid_to_res     Mapping from full grid indices to resolution indices.
+    @param grid_to_cubic   Mapping from full grid indices to (i, j, k) tuples.
+    @param cubic_to_grid   Mapping from (i, j, k) to full grid indices (shape: (nx, ny, nz)).
+    @param nx              Number of grid cells along x.
+    @param ny              Number of grid cells along y.
+    @param nz              Number of grid cells along z.
+    @param dim             Dimensionality of the dataset.
+    @param M               Upper bounds of the simulation box (shape: (dim,)).
+    @param m               Lower bounds of the simulation box (shape: (dim,)).
+    @return Tuple (graph_try, cnt) where graph_try is an edge array and
+            cnt is the number of valid edges.
+    """
     graph_try = np.zeros((len(res_to_grid)*27,2),dtype=int32)
     cnt = 0
         
@@ -271,7 +395,16 @@ def make_graph_fast(grid,res_idxs,
 
 @jit(nopython=False, fastmath=True)
 def match_grids(new_grid, old_grid):
+    """! @brief Find index correspondences between two grids.
 
+    For each point in old_grid, finds its matching point in new_grid
+    (within tolerance 1e-5) and records the index mapping.
+
+    @param new_grid  Target grid coordinates (shape: (n, dim)).
+    @param old_grid  Source grid coordinates (shape: (m, dim)).
+    @return Index mapping array (shape: (m,)) where entry i gives the
+            new_grid index for old_grid[i], or -1 if no match found.
+    """
     idxs = np.zeros_like(old_grid, dtype=int32)-1
     
     for i,p in enumerate(old_grid):
@@ -283,7 +416,16 @@ def match_grids(new_grid, old_grid):
 
 @jit(nopython=False, fastmath=True)
 def match_graphs(old_to_new, old_graph):
+    """! @brief Remap a graph's vertex indices using an old-to-new index mapping.
 
+    Translates edges from old_graph into the new index space, discarding
+    edges where either endpoint has no valid mapping.
+
+    @param old_to_new  Index mapping from old to new vertex indices (shape: (n,)).
+    @param old_graph   Edge list in old indices (shape: (E, 2)).
+    @return Tuple (graph, cnt) where graph is the remapped edge array and
+            cnt is the number of valid edges.
+    """
     graph = np.zeros((len(old_to_new),2),dtype=int32)
     cnt = 0
 
@@ -296,7 +438,14 @@ def match_graphs(old_to_new, old_graph):
 
 @jit(nopython=False, parallel=True)
 def dist_from_pts_periodic_boundaries_pool(LIST):
-    
+    """! @brief Pool-compatible wrapper for dist_from_pts_periodic_boundaries_numba.
+
+    Unpacks arguments from a list and delegates to the Numba-optimised
+    periodic boundary distance function.
+
+    @param LIST  Packed argument list: (A, B, M, m, axes, dim).
+    @return Distance matrix from dist_from_pts_periodic_boundaries_numba.
+    """
     A,B,M,m,axes, dim = LIST
 
     d = dist_from_pts_periodic_boundaries_numba(A,B,M,m,axes, dim)
@@ -306,8 +455,14 @@ def dist_from_pts_periodic_boundaries_pool(LIST):
 
 @jit(nopython=True, parallel=True, fastmath=True)
 def numba_dist(a, b):
-    """
-    A,B -> array of pts (npts,dim), calcolo distanza d(a_i,b_j) per ogni a_i in a e b_j in b
+    """! @brief Compute pairwise Euclidean distances using Numba parallelisation.
+
+    Calculates the distance d(a_i, b_j) for every pair of points
+    a_i in a and b_j in b using parallel loops.
+
+    @param a  First array of points (shape: (n, dim)).
+    @param b  Second array of points (shape: (m, dim)).
+    @return Distance matrix of shape (n, m).
     """
     dist = np.zeros((a.shape[0],b.shape[0]))
     for a_i in prange(a.shape[0]):
@@ -321,12 +476,19 @@ def numba_dist(a, b):
 
 @jit(nopython=True, parallel=False, fastmath=True)
 def dist_from_pts_periodic_boundaries_numba(A_,B_,M,m,axes, dim=3):
-    """
-    A,B -> array of pts (npts,dim), calcolo distanza d(a,b) per ogni a in A e b in B
-    M -> array with upper bounds of the box (dim,)
-    m -> array with lower bound of the box (dim,)
-    axes -> array with the axes in which the boundary condition is applied
-    dim -> dimension of the dataset
+    """! @brief Compute pairwise distances with periodic boundaries using Numba.
+
+    Numba-optimised version of dist_from_pts_periodic_boundaries. Wraps
+    coordinates into the simulation box and evaluates distances across
+    all periodic images.
+
+    @param A_    First set of points (shape: (n, dim)).
+    @param B_    Second set of points (shape: (m, dim)).
+    @param M     Upper bounds of the simulation box (shape: (dim,)).
+    @param m     Lower bounds of the simulation box (shape: (dim,)).
+    @param axes  Array of axes along which periodic boundaries apply.
+    @param dim   Dimensionality of the dataset (default: 3).
+    @return Distance matrix of shape (n, m).
     """    
 
     A = m + np.remainder(A_-m, M-m)
@@ -357,8 +519,14 @@ def dist_from_pts_periodic_boundaries_numba(A_,B_,M,m,axes, dim=3):
 
 # @jit(nopython=False, parallel=True, fastmath=True)
 def numba_dist_print(a, b):
-    """
-    A,B -> array of pts (npts,dim), calcolo distanza d(a_i,b_j) per ogni a_i in a e b_j in b
+    """! @brief Compute pairwise Euclidean distances with debug printing.
+
+    Same as numba_dist but with print statements for debugging. Not
+    JIT-compiled to allow print output.
+
+    @param a  First array of points (shape: (n, dim)).
+    @param b  Second array of points (shape: (m, dim)).
+    @return Distance matrix of shape (n, m).
     """
     print("computing distances between ", a, " and ", b)
     # Ensure contiguous arrays and float64 dtype for scalar math
@@ -379,12 +547,18 @@ def numba_dist_print(a, b):
 
 @jit(nopython=False, parallel=True, fastmath=True)
 def dist_from_pts_periodic_boundaries_numba_print(A_,B_,M,m,axes, dim=3):
-    """
-    A,B -> array of pts (npts,dim), calcolo distanza d(a,b) per ogni a in A e b in B
-    M -> array with upper bounds of the box (dim,)
-    m -> array with lower bound of the box (dim,)
-    axes -> array with the axes in which the boundary condition is applied
-    dim -> dimension of the dataset
+    """! @brief Compute periodic boundary distances with debug printing.
+
+    Debug variant of dist_from_pts_periodic_boundaries_numba that prints
+    array shapes for diagnostic purposes.
+
+    @param A_    First set of points (shape: (n, dim)).
+    @param B_    Second set of points (shape: (m, dim)).
+    @param M     Upper bounds of the simulation box (shape: (dim,)).
+    @param m     Lower bounds of the simulation box (shape: (dim,)).
+    @param axes  Array of axes along which periodic boundaries apply.
+    @param dim   Dimensionality of the dataset (default: 3).
+    @return Distance matrix of shape (n, m).
     """    
     
     print("A_ has shape: ", A_[0].shape)
@@ -416,7 +590,19 @@ def dist_from_pts_periodic_boundaries_numba_print(A_,B_,M,m,axes, dim=3):
 
 @jit(nopython=False, parallel=True, fastmath=True)
 def point_cloud_frechet_mean_numba(D,M,m,subsample=10,tol=0.001, maxiter = 50):
+    """! @brief Compute the Frechet mean of a point cloud with periodic boundaries (Numba).
 
+    For each landmark point, computes the Frechet mean across time steps
+    using the Procrustes mean algorithm with periodic boundary wrapping.
+
+    @param D          Point cloud data (shape: (T, L, dim)).
+    @param M          Upper bounds of the simulation box (shape: (dim,)).
+    @param m          Lower bounds of the simulation box (shape: (dim,)).
+    @param subsample  Subsampling stride for initial points (default: 10).
+    @param tol        Convergence tolerance (default: 0.001).
+    @param maxiter    Maximum number of iterations per mean computation (default: 50).
+    @return Frechet mean coordinates (shape: (L, dim)).
+    """
     frechet = np.zeros_like(D[0,:,:])
     N = D.shape[0]
     L = D.shape[1]
@@ -433,7 +619,21 @@ def point_cloud_frechet_mean_numba(D,M,m,subsample=10,tol=0.001, maxiter = 50):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def procustes_mean(p, D, M, m, tol = 0.001, maxiter = 50):
-    
+    """! @brief Compute the Procrustes (Frechet) mean from a single initial point.
+
+    Iteratively refines the mean estimate by centring the data around
+    the current estimate, averaging, and wrapping back with periodic
+    boundary conditions until convergence.
+
+    @param p        Initial point estimate (shape: (dim,)).
+    @param D        Data points to average (shape: (N, dim)).
+    @param M        Upper bounds of the simulation box (shape: (dim,)).
+    @param m        Lower bounds of the simulation box (shape: (dim,)).
+    @param tol      Convergence tolerance on cost change (default: 0.001).
+    @param maxiter  Maximum number of iterations (default: 50).
+    @return Tuple (mean_coords, cost) where mean_coords is the converged
+            mean (shape: (dim,)) and cost is the final mean squared distance.
+    """
     cnt = 0
     err = 100
     cost = 0
@@ -465,7 +665,19 @@ def procustes_mean(p, D, M, m, tol = 0.001, maxiter = 50):
 
 @jit(nopython=False, parallel=False, fastmath=True)
 def frechet_mean_numba(D,initial_points,M,m,tol=0.001, maxiter = 50):
-    
+    """! @brief Compute the Frechet mean by selecting the best among multiple initial points (Numba).
+
+    Runs procustes_mean from each initial point and returns the result
+    with the lowest cost.
+
+    @param D               Data points to average (shape: (N, dim)).
+    @param initial_points  Candidate initial points (shape: (L, dim)).
+    @param M               Upper bounds of the simulation box (shape: (dim,)).
+    @param m               Lower bounds of the simulation box (shape: (dim,)).
+    @param tol             Convergence tolerance (default: 0.001).
+    @param maxiter         Maximum iterations per initial point (default: 50).
+    @return Best Frechet mean coordinates (shape: (dim,)).
+    """
     L = initial_points.shape[0]
     
     MEANS = np.zeros_like(initial_points)
@@ -483,7 +695,19 @@ def frechet_mean_numba(D,initial_points,M,m,tol=0.001, maxiter = 50):
     return MEANS[idx,:]
 
 def point_cloud_frechet_mean(D,M,m,subsample=10,tol=0.0001, maxiter = 50):
+    """! @brief Compute the Frechet mean of a point cloud with periodic boundaries.
 
+    Non-Numba version of point_cloud_frechet_mean_numba. Uses random
+    subsampling for initial point selection.
+
+    @param D          Point cloud data (shape: (T, L, dim)).
+    @param M          Upper bounds of the simulation box (shape: (dim,)).
+    @param m          Lower bounds of the simulation box (shape: (dim,)).
+    @param subsample  Number of random initial points to try (default: 10).
+    @param tol        Convergence tolerance (default: 0.0001).
+    @param maxiter    Maximum iterations per mean computation (default: 50).
+    @return Frechet mean coordinates (shape: (L, dim)).
+    """
     frechet = np.zeros_like(D[0,:,:])
     N = D.shape[0]
     L = D.shape[1]
@@ -500,7 +724,19 @@ def point_cloud_frechet_mean(D,M,m,subsample=10,tol=0.0001, maxiter = 50):
 
 
 def frechet_mean(D,initial_points,M,m,tol=0.0001, maxiter = 50):
-    
+    """! @brief Compute the Frechet mean by selecting the best among multiple initial points.
+
+    Non-Numba version of frechet_mean_numba. Iterates the Procrustes mean
+    algorithm from each initial point and returns the lowest-cost result.
+
+    @param D               Data points to average (shape: (N, dim)).
+    @param initial_points  Candidate initial points (shape: (L, dim)).
+    @param M               Upper bounds of the simulation box (shape: (dim,)).
+    @param m               Lower bounds of the simulation box (shape: (dim,)).
+    @param tol             Convergence tolerance (default: 0.0001).
+    @param maxiter         Maximum iterations per initial point (default: 50).
+    @return Best Frechet mean coordinates (shape: (dim,)).
+    """
     axes = np.array([0,1,2])
     center = (M+m)/2
     N = D.shape[0]

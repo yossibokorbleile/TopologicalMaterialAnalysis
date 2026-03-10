@@ -1,7 +1,6 @@
 ##
-# @internal
-# @file Cobordisms.py
-# @brief Streamlit page for analysing cobordisms.
+# @file 4_Cobordisms.py
+# @brief Streamlit page for cobordism-based relative homology analysis.
 # @version 1.3.0
 # @date March 2026
 # @author: Yossi Bokor Bleile

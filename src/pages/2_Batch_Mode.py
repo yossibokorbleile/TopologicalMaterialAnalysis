@@ -1,7 +1,6 @@
 ##
-# @internal
-# @file Batch_Mode.py
-# @brief Streamlit page for analysing a single configuration.
+# @file 2_Batch_Mode.py
+# @brief Streamlit page for batch processing of multiple configurations.
 # @version 1.3.0
 # @date March 2026
 # @author: Yossi Bokor Bleile

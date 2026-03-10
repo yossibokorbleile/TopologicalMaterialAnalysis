@@ -1,0 +1,311 @@
+/**
+@page tutorial_page Tutorial
+
+@tableofcontents
+
+This tutorial walks you through the core workflows of ToMA, from loading a material structure file to computing persistent homology and visualising the results.
+
+@section tut_overview Overview
+
+A typical ToMA workflow consists of:
+1. Preparing a configuration file describing the atoms and radii
+2. Loading a structure file (e.g., from a molecular dynamics simulation)
+3. Computing persistent homology of the weighted alpha complex
+4. Analysing the persistence diagrams and accumulated persistence functions
+5. Optionally computing kernel/image/cokernel persistence for relative homology
+
+@section tut_config Step 1: Preparing Configuration Files
+
+ToMA uses INI-format configuration files to specify atom types, radii, and computational parameters.
+
+@subsection tut_structure_config Structure Configuration
+
+A structure configuration file describes the atoms in your material and how the unit cell should be repeated. Create a file called @c structure.ini:
+
+@code{.ini}
+[ZIF]
+ATOMS = H, C, N, Zn
+RADII = 0.389, 0.718, 0.635, 1.491
+REPEAT_X = 3
+REPEAT_Y = 3
+REPEAT_Z = 3
+@endcode
+
+Each section (e.g., @c [ZIF]) defines a named configuration with:
+- @b ATOMS: Comma-separated list of element symbols to include. Atoms not in this list are discarded.
+- @b RADII: Corresponding atomic radii (in Angstroms) used as weights for the alpha complex.
+- @b REPEAT_X/Y/Z: How many times to tile the unit cell in each direction.
+
+@subsection tut_comp_settings Computation Settings
+
+A computation settings file specifies what analyses to run:
+
+@code{.ini}
+[ZIF-ANALYSIS]
+MODE = SINGLE
+STRUCTURE_FILE = ZIF_test.xyz
+CONFIGURATION_FILE = structure.ini
+CONFIGURATION_NAME = ZIF
+SAMPLE_START = 0
+SAMPLE_END = 2
+SAMPLE_STEP = 1
+N_THREADS = 4
+FILE_FORMAT = xyz
+KERNEL = TRUE
+IMAGE = TRUE
+COKERNEL = TRUE
+SAVE_PLOTS = TRUE
+THICKNESS = 0.1
+@endcode
+
+Key parameters:
+- @b MODE: Analysis mode (@c SINGLE, @c MULTI, or @c BATCH).
+- @b STRUCTURE_FILE: Path to the atomic structure file.
+- @b SAMPLE_START / SAMPLE_END / SAMPLE_STEP: Time step range to analyse from the trajectory.
+- @b KERNEL / IMAGE / COKERNEL: Enable relative homology computations.
+- @b THICKNESS: Fraction of the z-height used to define the top/bottom subcomplex for relative homology (e.g., 0.1 means the top 10% and bottom 10%).
+
+@section tut_loading Step 2: Loading a Structure
+
+ToMA uses ASE (Atomic Simulation Environment) to read structure files. Supported formats include @c .xyz, @c lammps-dump-text, and any format ASE can handle.
+
+@subsection tut_loading_code Loading in Python
+
+@code{.py}
+from toma_functions import read_configuration, sample_at
+
+# Read the configuration (atom types, radii, repetitions)
+atoms, radii, sample_start, sample_end, sample_step, repeat_x, repeat_y, repeat_z = \
+    read_configuration("structure.ini", "ZIF")
+
+# Sample the structure at time step 0
+points = sample_at(
+    file_path="ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+# points is a pandas DataFrame with columns: Atom, x, y, z, w
+# where w = radius^2 (the weight for the alpha complex)
+@endcode
+
+The resulting @c points DataFrame contains:
+| Column | Description |
+|--------|-------------|
+| Atom   | Element symbol (e.g., "Zn", "N") |
+| x, y, z | Cartesian coordinates in Angstroms |
+| w      | Weight = radius^2, used for the weighted alpha complex |
+
+@section tut_persistence Step 3: Computing Persistent Homology
+
+@subsection tut_standard Standard Persistent Homology
+
+To compute the persistent homology of the weighted alpha complex:
+
+@code{.py}
+import oineus
+from toma_functions import oineus_process
+
+# Set up computation parameters
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+# Compute persistent homology
+dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+@endcode
+
+This returns:
+- @c dcmp: The oineus decomposition object
+- @c filt: The filtration (simplicial complex with filtration values)
+- @c dgm_0, dgm_1, dgm_2: Persistence diagrams in dimensions 0, 1, and 2 as pandas DataFrames
+
+Each diagram DataFrame has columns:
+| Column | Description |
+|--------|-------------|
+| birth  | Filtration value at which the feature is born |
+| death  | Filtration value at which the feature dies |
+| birth simplex | Index of the simplex that creates the feature |
+| death simplex | Index of the simplex that destroys the feature |
+
+@b Interpreting the diagrams:
+- @b Dimension 0: Connected components. Points far from the diagonal indicate well-separated atomic clusters.
+- @b Dimension 1: Loops/rings. These correspond to ring structures in the material.
+- @b Dimension 2: Voids/cavities. These correspond to enclosed void spaces.
+
+@subsection tut_kic Kernel/Image/Cokernel Persistence
+
+For relative homology analysis (useful for studying the relationship between surface and bulk structure):
+
+@code{.py}
+from toma_functions import oineus_kernel_image_cokernel
+
+# Define the subcomplex thresholds
+top_pt = max(points["z"])
+bot_pt = min(points["z"])
+height = abs(top_pt - bot_pt)
+upper_threshold = top_pt - 0.1 * height  # top 10%
+lower_threshold = bot_pt + 0.1 * height  # bottom 10%
+
+# Compute kernel/image/cokernel persistence
+kicr, dgm_0, dgm_1, dgm_2 = oineus_kernel_image_cokernel(
+    points, params, upper_threshold, lower_threshold
+)
+
+# Access the individual diagrams
+import pandas
+import numpy
+kernel_dgm_1 = pandas.DataFrame(
+    kicr.kernel_diagrams().in_dimension(1),
+    columns=["birth", "death"]
+)
+image_dgm_1 = pandas.DataFrame(
+    kicr.image_diagrams().in_dimension(1),
+    columns=["birth", "death"]
+)
+cokernel_dgm_1 = pandas.DataFrame(
+    kicr.cokernel_diagrams().in_dimension(1),
+    columns=["birth", "death"]
+)
+@endcode
+
+@section tut_apf Step 4: Accumulated Persistence Function (APF)
+
+The APF transforms a persistence diagram into a monotonically increasing function, making comparison between samples straightforward:
+
+@code{.py}
+from toma_functions import calculate_APF, plot_APF
+
+# Calculate APF from a persistence diagram
+apf_1 = calculate_APF(dgm_1)
+
+# Plot the APF
+fig = plot_APF(apf_1, "Dimension 1 APF")
+fig.show()
+@endcode
+
+The APF is computed as follows:
+1. For each point (b, d) in the diagram, compute mean_age = (b+d)/2 and lifetime = |d-b|.
+2. Sort by mean_age.
+3. Cumulatively sum the lifetimes.
+
+@section tut_vis Step 5: Visualisation
+
+@subsection tut_vis_pd Persistence Diagrams
+
+@code{.py}
+from toma_functions import plot_PD
+
+# Plot a single persistence diagram
+fig = plot_PD(dgm_1, "ZIF Dimension 1 Persistence Diagram")
+fig.show()
+@endcode
+
+Points at infinity are plotted at 1.1 times the maximum finite death value.
+
+@subsection tut_vis_cycles Representative Cycles
+
+To visualise the atomic rings corresponding to dimension 1 features:
+
+@code{.py}
+from toma_functions import generate_visulisation_df, generate_display
+
+# Generate visualisation data
+vis_dgm = generate_visulisation_df(dgm_1, dcmp.r_data, filt, points, atoms)
+
+# Display a specific loop (e.g., loop with index 0)
+fig = generate_display(points, vis_dgm, 0, filt)
+fig.show()
+@endcode
+
+@subsection tut_vis_kic Kernel/Image/Cokernel Diagrams
+
+@code{.py}
+from toma_functions import plot_kernel_image_cokernel_PD
+
+# Plot all relative persistence diagrams together
+fig = plot_kernel_image_cokernel_PD(
+    kicr, d=1,
+    codomain=True,
+    kernel=True,
+    image=True,
+    cokernel=True,
+    name="Dimension 1 Relative Persistence"
+)
+fig.show()
+@endcode
+
+@section tut_reeb Step 6: Reeb Graph Analysis (Advanced)
+
+For studying transport pathways through void regions:
+
+@code{.py}
+from reeb_graph import Reeb_Graph
+import numpy as np
+
+# Create a Reeb graph from backbone atom positions
+reeb = Reeb_Graph(
+    backbone=backbone_positions,   # Nx3 array of atom positions
+    flow=flow_positions,           # Mx3 array of diffusing atom positions
+    radii=radii_array,             # radius for each backbone atom
+    M=box_max,                     # upper bounds of the simulation box
+    m=box_min,                     # lower bounds of the simulation box
+    grid_size=50,                  # resolution of the computational grid
+    periodic=True                  # use periodic boundary conditions
+)
+
+# Build the Reeb graph along the z-axis
+reeb.make_reeb_graph(axis=2, old=False, plot=True)
+
+# Compute maximum flow
+max_flow = reeb.compute_max_flow(D=distance_matrix)
+
+# Find tunnels through the structure
+tunnels = reeb.compute_tunnels(n=3, D=distance_matrix)
+@endcode
+
+@section tut_diffusion Step 7: Diffusion Analysis (Advanced)
+
+For computing diffusion pathways:
+
+@code{.py}
+from diffusion import Diffusion
+
+# Initialise diffusion analysis
+diff = Diffusion(
+    inputfile="trajectory.xyz",
+    r_Li=0.76,      # diffusing particle radius
+    d_P=2.5,         # obstacle radius (type P)
+    d_S=2.0,         # obstacle radius (type S)
+    grid_size=22,    # grid resolution
+    MP=True          # enable multiprocessing
+)
+
+# Set up the grid and triangulation
+diff.produce_fobidden_region()
+diff.setup_triangulation()
+
+# Compute diffusion paths
+diff.run_A_0_to_A_1_diffusion(n_paths=100)
+
+# Cluster similar paths
+diff.cluster_paths(save=True)
+@endcode
+
+@section tut_cli Step 8: Using the CLI
+
+For batch processing or scripting, use the command line interface:
+
+@code{.sh}
+# Analyse with settings from a file
+./src/ToMA-cli.py -s examples/settings_examples.ini -n SINGLE
+
+# Show license information
+./src/ToMA-cli.py -l
+@endcode
+
+See @ref examples_page for complete working examples.
+*/

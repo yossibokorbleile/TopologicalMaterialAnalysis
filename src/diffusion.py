@@ -1,3 +1,9 @@
+##
+# @file diffusion.py
+# @brief Diffusion pathway analysis through void regions in material structures.
+# @version 1.3.0
+# @date March 2026
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,7 +27,28 @@ import multiprocessing as mp
 
 class Diffusion(object):
     
-    """Diffusion Class"""
+    """! @brief Diffusion pathway analysis class for studying ionic transport in materials.
+
+    The Diffusion class analyses transport pathways through the void regions of a material
+    structure. It constructs a discretised grid of the void space, computes geodesic paths,
+    and provides methods for sampling, simplifying, and clustering diffusion pathways.
+    This is particularly useful for studying ionic conductivity in solid-state electrolytes.
+
+    @section diff_usage Usage
+    @code{.py}
+    from diffusion import Diffusion
+
+    diff = Diffusion(
+        inputfile="trajectory.xyz",
+        r_Li=0.76, d_P=2.5, d_S=2.0,
+        grid_size=22, MP=True
+    )
+    diff.produce_fobidden_region()
+    diff.setup_triangulation()
+    diff.run_A_0_to_A_1_diffusion(n_paths=100)
+    diff.cluster_paths(save=True)
+    @endcode
+    """
     
     def __init__(self, inputfile = None, box = True, r_Li = 0, d_P = 2.5, d_S = 2, sign_var = -1,
                                 grid_size = 22, axes = [0,1], dim = 3,  
@@ -35,20 +62,40 @@ class Diffusion(object):
                                 K_graph = 1,
                                 MP = True,
                                 verbose = False):
-        """
-        LEGEND
-        
-        simply_connected_top_bottom -> consider A_0 and A_1 as simply connected, ignoring the forbidden region in such sets.
-        swap_res_grid_and_balls -> swap forbidden region and residual grid.
-        close_loops_with_boundary_conditions -> consider all possible combinations for closing loops, 
-                                                as made available by boundary conditions. 
-                                                Requires A_0 and A_1 simply connected and geodesically convex.
-        z_axis_boundaries -> consider periodicity also on the z-axis to setup the forbidden region.
-        simplify_grid_with_triangles -> make sure that every edge is in a triangle. 
-        cut_paths_until_A_0 -> when simplifying a path, cuts the part of the path which is in A_0, but for the latest point.
-        homological_simplification -> when simplifying a path, uses homology to shorten it.
-        K_graph -> coefficient for building a graph on the grid when check path connected comp. Keep it equal to 1. 
-        MP -> using multiprocessing when checking if to paths are homologous.
+        """! @brief Initialise the Diffusion analysis object.
+
+        Constructs a Diffusion object with the given parameters for analysing
+        ionic transport pathways through the void regions of a material structure.
+
+        @param inputfile Path to the input trajectory file (e.g. .xyz format). If None,
+            parameters must be supplied manually via setup_triangulation.
+        @param box If True, the input file contains box dimensions.
+        @param r_Li Ionic radius of lithium atoms (Angstroms).
+        @param d_P Base distance parameter for phosphorus atoms (Angstroms).
+        @param d_S Base distance parameter for sulphur atoms (Angstroms).
+        @param sign_var Sign multiplier for the variance correction applied to atomic radii.
+        @param grid_size Number of grid points along each axis for the discretised void space.
+        @param axes List of axes indices with periodic boundary conditions (e.g. [0,1] for x,y).
+        @param dim Spatial dimensionality of the system (default 3).
+        @param simply_connected_top_bottom If True, treat A_0 and A_1 boundary regions as
+            simply connected, ignoring the forbidden region in those sets.
+        @param swap_res_grid_and_balls If True, swap the forbidden region and residual grid.
+        @param close_loops_with_boundary_conditions If True, consider all possible
+            combinations for closing loops as made available by boundary conditions.
+            Requires A_0 and A_1 to be simply connected and geodesically convex.
+        @param z_axis_boundaries If True, consider periodicity also on the z-axis
+            when setting up the forbidden region.
+        @param simplify_grid_with_triangles If True, ensure that every edge belongs
+            to at least one triangle in the triangulation.
+        @param cut_paths_until_A_0 If True, when simplifying a path, cut the portion
+            of the path inside A_0, keeping only the latest point.
+        @param a Weight coefficient for the distance term in the transition matrix.
+        @param b Weight coefficient for the direction term in the transition matrix.
+        @param c Weight coefficient for the repulsion term in the transition matrix.
+        @param K_graph Coefficient for building a graph on the grid when checking
+            path connected components. Keep equal to 1.
+        @param MP If True, use multiprocessing when checking if two paths are homologous.
+        @param verbose If True, print progress messages during computation.
         """   
     
     
@@ -110,8 +157,23 @@ class Diffusion(object):
     Auxiliary Functions
     """    
     def produce_fobidden_region(self, balls_centres_ = None ,balls_radii_ = None,
-                                M_ = None, m_ = None): 
-        
+                                M_ = None, m_ = None):
+        """! @brief Set up the forbidden (occupied) region around backbone atoms.
+
+        Computes the centres and radii of the spherical regions occupied by
+        phosphorus and sulphur atoms, adjusted by the lithium ionic radius and
+        a variance-based correction. When no input file is provided, uses the
+        explicitly supplied ball centres and radii.
+
+        @param balls_centres_ Optional numpy array of ball centre coordinates
+            to use when no input file is available.
+        @param balls_radii_ Optional numpy array of ball radii to use when no
+            input file is available.
+        @param M_ Optional upper bounds of the simulation box.
+        @param m_ Optional lower bounds of the simulation box.
+        @return Tuple (balls_centres, balls_radii) containing the centres and
+            radii of the forbidden region spheres.
+        """
         if not self.inputfile is None: 
             
             if len(self.M)>0:
@@ -157,7 +219,17 @@ class Diffusion(object):
     
     def setup_triangulation(self, balls_centres_ = None ,balls_radii_ = None,
                                 M_ = None, m_ = None):
-    
+        """! @brief Build the Delaunay triangulation of the void space.
+
+        Orchestrates the full pipeline: produces the residual grid, sets up
+        geodesic distances and boundary regions, constructs edges, and builds
+        the triangulation.
+
+        @param balls_centres_ Optional numpy array of ball centre coordinates.
+        @param balls_radii_ Optional numpy array of ball radii.
+        @param M_ Optional upper bounds of the simulation box.
+        @param m_ Optional lower bounds of the simulation box.
+        """
         if (self.d_P is None or self.d_S is None) and not self.inputfile is None:
             self.estimate_atoms_min_distances(n=10)
 
@@ -168,7 +240,13 @@ class Diffusion(object):
         self.make_triangulation()
     
     def estimate_atoms_min_distances(self,n=10):
-        
+        """! @brief Statistical analysis of minimum distances between atoms.
+
+        Estimates the minimum distances between lithium, phosphorus and sulphur
+        atoms by sub-sampling the trajectory and using box-plot statistics.
+
+        @param n Sub-sampling step for the trajectory frames.
+        """
         tmp = np.arange(0,len(self.Li),n)
 
         if self.z_axis_boundaries:
@@ -218,7 +296,18 @@ class Diffusion(object):
             
     def produce_res_grid(self, balls_centres_ = None ,balls_radii_ = None,
                                 M_ = None, m_ = None):
-        
+        """! @brief Generate the residual (void) grid.
+
+        Constructs the discretised grid, removes points inside the forbidden
+        region, keeps only the largest connected component, and optionally
+        simplifies the grid so that every vertex and edge belongs to at least
+        one triangle.
+
+        @param balls_centres_ Optional numpy array of ball centre coordinates.
+        @param balls_radii_ Optional numpy array of ball radii.
+        @param M_ Optional upper bounds of the simulation box.
+        @param m_ Optional lower bounds of the simulation box.
+        """
         balls_centres, balls_radii = self.produce_fobidden_region(balls_centres_ = balls_centres_,
                                                                   balls_radii_ = balls_radii_,
                                                                   M_ = M_, m_ = m_)
@@ -444,7 +533,12 @@ class Diffusion(object):
 
         
     def setup_geodesics_and_boundaries(self,):
+        """! @brief Configure geodesic distances and boundary conditions.
 
+        Computes the geodesic distance matrix and predecessor matrix for the
+        residual grid, then identifies the bottom (A_0) and top (A_1)
+        boundary regions and computes their internal geodesics.
+        """
         self.D, self.geod = make_geodesics(self.res_grid, self.r_graph, self.M, self.m, self.axes, 
                                            self.dim, 
                                            D_force_graph_ = self.D_force_graph)
@@ -481,7 +575,12 @@ class Diffusion(object):
 
 
     def make_edges(self,):
+        """! @brief Construct edge connectivity for the grid graph.
 
+        Iterates over all pairs of residual grid points and creates an edge
+        between those whose periodic distance is below the graph radius
+        threshold and whose forced-graph entry is positive.
+        """
         self.edge_idxs = {}
         idxs_to_edge = []
         self.r_graph_aux = np.sqrt(self.d_x**2 + self.d_y**2+self.d_z**2)*1.001*self.K_graph
@@ -505,7 +604,15 @@ class Diffusion(object):
         self.N_1 = aux
         
     def make_cubic_to_res(self, cubic_grid):
-    
+        """! @brief Build mapping from cubic grid indices to residual grid indices.
+
+        Creates a dictionary that maps each (i, j, k) cubic grid index to the
+        corresponding index in the residual grid, or -1 if the point is not
+        present in the residual grid.
+
+        @param cubic_grid Numpy array of shape (nx, ny, nz, 3) with the full
+            cubic grid coordinates.
+        """
         self.cubic_to_res = {}
 
         for i in range(self.nx):
@@ -520,7 +627,13 @@ class Diffusion(object):
                         self.cubic_to_res[(i,j,k)] = -1
 
     def make_triangulation(self,):
+        """! @brief Create Delaunay triangulation of the residual grid.
 
+        Builds triangles from the cubic grid using all face-diagonal
+        decompositions, filters out triangles that do not lie entirely in the
+        residual grid, and assembles the 2-boundary matrix and the boundary
+        matrices for the A_0 and A_1 regions.
+        """
         cubic_grid = np.transpose(self.grid.reshape((self.nx,self.ny,self.nz,3)),axes=(1,0,2,3))
         self.make_cubic_to_res(cubic_grid)
 
@@ -594,12 +707,29 @@ class Diffusion(object):
 
             
     def make_N(self,):
+        """! @brief Construct the normalised transition matrix.
+
+        Computes the un-normalised transition weights from the geodesic
+        distance, directional and repulsion penalty matrices, scaled by the
+        diffusion parameter epsilon.
+
+        @return Numpy array of transition weights between grid points.
+        """
         N = np.exp(-self.a*self.D/self.eps - (self.b*self.direction+self.c*self.repulsion)/self.eps**2)
         return N
 
         
     def sample_diffusion(self,):
+        """! @brief Sample a single diffusion path through the void region.
 
+        Randomly selects a starting point on the A_0 boundary and samples a
+        stochastic path until it reaches the A_1 boundary or becomes a
+        deadlock.
+
+        @return Tuple (path, tmp) where path is an array of residual grid
+            indices visited, and tmp is the index into A_1 of the endpoint
+            (empty if the path did not reach A_1).
+        """
         idx = np.random.multinomial(1,np.ones_like(self.idxs_A_0)/len(self.idxs_A_0))
         idx = np.argwhere(idx>0)[0][0]
         path = sample_path(self.idxs_A_0[idx], self.N, self.res_grid, self.z_1,)
@@ -607,11 +737,27 @@ class Diffusion(object):
         return path,tmp
 
     def preprocess_path(self, path):
+        """! @brief Smooth and simplify a sampled path.
+
+        Applies path smoothing using geodesic distances followed by removal
+        of repeated vertices.
+
+        @param path Array of residual grid indices forming the raw path.
+        @return Simplified array of residual grid indices.
+        """
         return simplify_path(smooth_path(path, self.geod, self.res_grid, self.D))
     
     
     def cut_until_A_0(self,path):
-        
+        """! @brief Trim path endpoints that lie inside boundary regions.
+
+        Removes consecutive vertices at the start of the path that belong to
+        A_0 (keeping only the last one) and consecutive vertices at the end
+        that belong to A_1 (keeping only the first one).
+
+        @param path Array of residual grid indices forming the path.
+        @return Trimmed numpy array of residual grid indices.
+        """
         path_ = np.copy(path)
         
         while np.min(np.linalg.norm(self.A_0-self.res_grid[path_[1]],axis=-1))<0.00000001:
@@ -623,7 +769,15 @@ class Diffusion(object):
         return np.array(path_)
     
     def simplify_path_with_homology(self,path):
-        
+        """! @brief Reduce a path using homological algebra.
+
+        Optionally trims the path at boundary regions, then applies
+        homological simplification to find a shorter homologically equivalent
+        path through the triangulated void space.
+
+        @param path Array of residual grid indices forming the path.
+        @return Simplified numpy array of residual grid indices.
+        """
         if self.cut_paths_until_A_0:
             path_ = self.cut_until_A_0(path)
         else:
@@ -643,7 +797,16 @@ class Diffusion(object):
 
     
     def equivalence(self, v_path):
+        """! @brief Test if a path is homologically trivial.
 
+        Projects the edge-vector representation of a path onto the quotient
+        space modulo boundaries and checks whether the result is zero.
+
+        @param v_path Numpy array representing the path as an edge vector
+            in the chain complex.
+        @return Maximum entry of the projected vector. Zero indicates the
+            path is homologically trivial.
+        """
         b_ = self.GF(v_path.astype(int)%2)
         b = self.V[self.rank:,:]@b_
 
@@ -653,11 +816,25 @@ class Diffusion(object):
 
     def fill_loop(self, idxs_list, BOUNDARY_MAT = None, RED_MAT = None, V_MAT = None,
                   find_chain = False, plot = False):
-        """
-        Finds the 2-chain which fills the loop in p,q are homologous. Se é "None" prendo A_0 e A_1.
-        BOUNDARY_MAT -> la matrice A, che genera il sottospazio di bord
-        RED_MAT -> la matrice A_red cioé la versione row-reduced di A[rank(B):,:]
-        V_MAT -> la matrice che porta A[rank(B):,:] in forma A_red
+        """! @brief Find the 2-chain filling a loop when paths are homologous.
+
+        Given a list of paths (by index or as explicit index arrays), checks
+        whether their concatenation is a boundary modulo a given subspace. If
+        requested, computes and optionally plots the filling 2-chain.
+
+        @param idxs_list List of path index arrays or single-element lists of
+            path indices into self.PATHS.
+        @param BOUNDARY_MAT Optional boundary matrix A generating the allowed
+            boundary subspace. If None, uses the default A_0/A_1 boundaries.
+        @param RED_MAT Optional row-reduced form of A[rank(B):, :].
+        @param V_MAT Optional change-of-basis matrix that produces RED_MAT
+            from A[rank(B):, :].
+        @param find_chain If True, compute the explicit filling 2-chain.
+        @param plot If True, produce a 3D plot of the filling 2-chain and
+            the loop.
+        @return Tuple (chain, tmp) where chain is the filling 2-chain vector
+            (empty list if not computed) and tmp is 0 if the paths are
+            homologous, nonzero otherwise.
         """
               
         if len(idxs_list[0])==1: 
@@ -772,7 +949,14 @@ class Diffusion(object):
         
     
     def cluster_deadlocks(self, PATHS):
+        """! @brief Cluster deadlock paths by homological equivalence.
 
+        Groups deadlock paths (paths that did not reach A_1) into clusters
+        of homologically equivalent paths.
+
+        @param PATHS List of deadlock path arrays to cluster.
+        @return List of clusters, each cluster being a list of paths.
+        """
         if len(PATHS)==0:
             return PATHS
         
@@ -816,7 +1000,17 @@ class Diffusion(object):
     
     
     def traslate_box(self, coords, v_=None):
-        
+        """! @brief Translate coordinates by half a box length with periodic wrapping.
+
+        Shifts the given coordinates along the periodic axes by half the box
+        dimensions (or by a custom vector) and wraps them back into the
+        simulation box using periodic boundary conditions.
+
+        @param coords Numpy array of coordinates to translate.
+        @param v_ Optional custom translation vector. If None, uses half the
+            box dimensions along each periodic axis.
+        @return Numpy array of translated and wrapped coordinates.
+        """
         axes_aux = np.array([i in self.axes for i in range(self.dim)])
         
         if v_ is None:
@@ -832,7 +1026,15 @@ class Diffusion(object):
     
     
     def check_cluster(self, n_clus, n = 5, plot=False):
-        
+        """! @brief Verify a cluster by checking random pairs of paths.
+
+        Randomly samples pairs of paths within the specified cluster and
+        checks that they are homologically equivalent using fill_loop.
+
+        @param n_clus Index of the cluster to check.
+        @param n Number of random pair checks to perform.
+        @param plot If True, plot the filling 2-chain for each pair.
+        """
         N = len(self.CLUSTERS[n_clus])
         
         for _ in range(n):
@@ -846,7 +1048,16 @@ class Diffusion(object):
     
     
     def proj_lithium_paths(self,LIST, plot=True):
-    
+        """! @brief Project lithium atom trajectories onto the residual grid.
+
+        For each lithium atom index in LIST, projects the raw trajectory onto
+        both the full grid and the residual grid using periodic boundary
+        conditions and optionally plots the results.
+
+        @param LIST List of lithium atom indices to project.
+        @param plot If True, produce a four-panel 3D plot for each atom
+            showing raw, full-grid and residual-grid projected paths.
+        """
         axes_aux = [0,1,2]
     
         for idx in LIST:
@@ -897,7 +1108,21 @@ class Diffusion(object):
                 
                 
     def reeb_graph(self,grid,axis=-1, D_ = None):
-        
+        """! @brief Compute the Reeb graph of a grid along a given axis.
+
+        Constructs a Reeb graph by sweeping a height function (the chosen
+        coordinate axis) through the grid and tracking connected components
+        at each level set.
+
+        @param grid Numpy array of grid point coordinates.
+        @param axis Coordinate axis to use as the height function (default -1,
+            i.e. z-axis).
+        @param D_ Optional pre-computed adjacency matrix. If None, it is
+            computed from periodic distances.
+        @return Tuple (E, fun, emb) where E is a list of edges, fun is a
+            numpy array of node function values and emb is a numpy array of
+            node embedding coordinates.
+        """
         g = lambda x: len(x)
         
         f = grid[:,axis]
@@ -978,7 +1203,16 @@ class Diffusion(object):
         return E, fun, emb
     
     def build_graph(self,E,emb,fun):
-    
+        """! @brief Build a NetworkX graph from Reeb graph data.
+
+        Creates an undirected NetworkX graph with 3D position attributes from
+        the edges, embeddings and function values returned by reeb_graph.
+
+        @param E List of edge tuples (source, target).
+        @param emb Numpy array of node embedding coordinates (n_nodes x 3).
+        @param fun Numpy array of function values for each node.
+        @return NetworkX Graph with positional node attributes.
+        """
         # create networkx graph
         G=nx.Graph()
 
@@ -996,7 +1230,13 @@ class Diffusion(object):
     """
     
     def plot_pts(self,pts):
-    
+        """! @brief Plot a set of 3D points in original and translated views.
+
+        Produces a two-panel figure showing the points in their original
+        coordinates (left) and translated by half the box (right).
+
+        @param pts Numpy array of shape (n, 3) with point coordinates.
+        """
         fig = plt.figure(figsize=(15,10))            
         ax1 = fig.add_subplot(121,projection='3d')
         ax2 = fig.add_subplot(122,projection='3d')
@@ -1022,13 +1262,22 @@ class Diffusion(object):
         plt.show()
             
     def plot_voids(self,):
+        """! @brief Plot the void (residual) grid points. """
         self.plot_pts(self,self.res_grid)
             
     def plot_balls(self,):
+        """! @brief Plot the forbidden region (ball) grid points. """
         self.plot_pts(self,self.balls)
             
     def plot_triangulation(self, axis=-1):
-        
+        """! @brief Plot 2D slices of the triangulation along a given axis.
+
+        For each level of the specified axis, displays edges and filled
+        triangles in original and translated coordinate frames, with
+        transparency indicating whether elements cross periodic boundaries.
+
+        @param axis Index of the axis to slice along (default -1, i.e. z).
+        """
         D_flat = squareform(pdist(self.res_grid))
         
         aux = self.traslate_box(self.res_grid)
@@ -1089,7 +1338,13 @@ class Diffusion(object):
             plt.show()
 
     def plot_path(self,path):
-        
+        """! @brief Plot a single diffusion path in 3D.
+
+        Displays the path in both original and half-box-translated coordinate
+        frames as a dotted red line.
+
+        @param path Array of residual grid indices forming the path.
+        """
      #   path = self.PATHS[path_idx]
                 
         fig = plt.figure(figsize=(15,10))
@@ -1114,7 +1369,13 @@ class Diffusion(object):
 
             
     def plot_vector_field(self, axis=1):
+        """! @brief Plot the combined direction and repulsion vector field.
 
+        Displays 2D quiver plots of the weighted sum of the directional and
+        repulsion penalty vectors for each slice along the specified axis.
+
+        @param axis Index of the axis to slice along (default 1, i.e. y).
+        """
         result = self.b*self.v + self.c*self.grad_pen
         
         for h in [self.x,self.y,self.z][axis]:
@@ -1131,7 +1392,17 @@ class Diffusion(object):
             plt.show()
             
     def plot_paths_clustered(self, min_len = 5, k = 0,aggregate = True):
-    
+        """! @brief Plot clustered diffusion paths in 3D with colour coding.
+
+        Displays paths grouped by cluster, each cluster drawn in a distinct
+        colour. Clusters with fewer members than min_len are skipped.
+
+        @param min_len Minimum cluster size to include in the plot.
+        @param k Standard deviation of Gaussian noise added to path
+            coordinates for visual separation.
+        @param aggregate If True, draw all clusters on a single figure;
+            otherwise create a separate figure per cluster.
+        """
         cmap = get_cmap(len(self.CLUSTERS))
         colors = ['r','b','g','k']
         
@@ -1199,8 +1470,16 @@ class Diffusion(object):
             plt.show()
         
 
-    def plot_results(self, min_len = 5, k=0, aggregate = False):   
-        
+    def plot_results(self, min_len = 5, k=0, aggregate = False):
+        """! @brief Plot clustered diffusion results and deadlocks.
+
+        Convenience method that calls plot_paths_clustered for both
+        successful path clusters and deadlock clusters.
+
+        @param min_len Minimum cluster size to include in cluster plots.
+        @param k Standard deviation of Gaussian noise for visual separation.
+        @param aggregate If True, aggregate all clusters onto one figure.
+        """
         if sum([len(c) for c in self.CLUSTERS])>0:
             if self.verbose:
                 print('Clusters')            
@@ -1211,7 +1490,14 @@ class Diffusion(object):
 #            self.plot_paths_clustered(self.DEADLOCKS, min_len = -1,k=k,aggregate = aggregate)
     
     def network_plot_3D(self, G, fun):
+        """! @brief Render a NetworkX graph in 3D.
 
+        Plots graph nodes as a scatter cloud coloured by function values and
+        edges as black lines in a 3D matplotlib figure.
+
+        @param G NetworkX Graph with 'pos' node attributes (x, y, z).
+        @param fun Array of scalar function values used to colour each node.
+        """
         # Get node positions
         pos = nx.get_node_attributes(G, 'pos')
         # Loop on the pos dictionary to extract the x,y,z coordinates of each node
@@ -1240,7 +1526,17 @@ class Diffusion(object):
         plt.show()
         
     def plot_triangulation_and_paths(self,LIST,axis=-1, k=0.1):
-        
+        """! @brief Overlay selected paths on the triangulation slices.
+
+        For each level of the specified axis, plots the triangulation edges
+        and faces together with scattered path points for the given path
+        indices.
+
+        @param LIST List of path indices into self.PATHS to overlay.
+        @param axis Index of the axis to slice along (default -1, i.e. z).
+        @param k Standard deviation of Gaussian noise added to path
+            coordinates for visual separation.
+        """
         D_flat = squareform(pdist(self.res_grid))
         colors = ['r','g','k']
 
@@ -1284,7 +1580,14 @@ class Diffusion(object):
     """    
 
     def check_lithium_ranges(self,plot=True):
-        
+        """! @brief Analyse the spatial range of lithium atom trajectories.
+
+        Sub-samples each lithium trajectory and computes the maximum pairwise
+        periodic distance as a fraction of the box diagonal, then optionally
+        displays the distribution as a box plot.
+
+        @param plot If True, display a box plot of the range distribution.
+        """
         axes_aux = [0,1,2]
         
         max_range = np.sqrt(3)*(self.M[0]-self.m[0])
@@ -1317,7 +1620,13 @@ class Diffusion(object):
             plt.show()
                 
     def check_lithium_paths(self,n=5):
-        
+        """! @brief Randomly project lithium trajectories onto the grid.
+
+        Selects n lithium atoms at random and calls proj_lithium_paths to
+        project and visualise their trajectories.
+
+        @param n Number of random lithium atoms to project.
+        """
         n_Li = self.Li.shape[1]
 
         for _ in range(n):
@@ -1326,7 +1635,13 @@ class Diffusion(object):
             self.proj_lithium_paths([idx])
     
     def reduce_boundary_mat(self,):
+        """! @brief Row-reduce the boundary matrices over GF(2).
 
+        Constructs the Galois field GF(2), row-reduces the transposed
+        2-boundary matrix B to obtain the change-of-basis matrix V and the
+        reduced form B_red, then similarly reduces the boundary matrix A
+        restricted to the kernel of B.
+        """
         self.GF = galois.GF(2)
 
         B = self.B.T.astype(float)
@@ -1357,7 +1672,15 @@ class Diffusion(object):
         self.rank_A = np.sum(np.max(self.A_red, axis=-1)>0)        
         
     def compute_vector_field_penalties(self, v_ = np.array([0,0,1])):
-    
+        """! @brief Compute directional and repulsion penalty fields.
+
+        Calculates the gradient of the repulsion potential from the forbidden
+        region balls, then integrates the directional and repulsion penalties
+        along all geodesic paths between grid point pairs.
+
+        @param v_ Direction vector (shape (3,)) or per-point direction field
+            (shape (N, 3)) used for the directional penalty term.
+        """
         if len(v_.shape)<2:
             self.v = np.ones_like(self.res_grid)*v_
         else:
@@ -1387,7 +1710,14 @@ class Diffusion(object):
                 self.repulsion[j,i] = - self.repulsion[i,j]
 
     def make_markov_chain_matrix(self, eps_ = 1):
+        """! @brief Construct Markov chain transition matrix.
 
+        Sets the diffusion temperature parameter epsilon, computes the raw
+        transition weights via make_N and normalises each row to obtain a
+        row-stochastic matrix.
+
+        @param eps_ Diffusion temperature parameter (default 1).
+        """
         self.eps = eps_                               
         self.N = self.make_N()
         norm = np.sum(self.N,axis=1)
@@ -1397,7 +1727,15 @@ class Diffusion(object):
 
 
     def equivalence_wrapper(self, loop):
-        
+        """! @brief Wrapper for testing homological equivalence of a loop.
+
+        Converts a loop (array of grid indices) to its edge-vector
+        representation and checks whether it is homologically trivial.
+
+        @param loop Numpy array of residual grid indices forming a closed loop.
+        @return Maximum entry of the projected vector. Zero indicates the
+            loop is homologically trivial.
+        """
         v_path = path_to_vec(loop,self.D,self.N_1,self.edge_idxs,self.r_graph)
 
         b_ = self.GF(v_path.astype(int)%2)
@@ -1405,10 +1743,20 @@ class Diffusion(object):
 
         return np.max(b)        
             
-    def run_A_0_to_A_1_diffusion(self, n_paths=200, 
+    def run_A_0_to_A_1_diffusion(self, n_paths=200,
                                  save = False,
                                  folder_path = '/Users/ye72al/Library/Mobile Documents/com~apple~CloudDocs/Glass_TDA/'):
+        """! @brief Compute diffusion flows from the bottom to the top boundary.
 
+        Repeatedly samples stochastic paths from A_0 towards A_1, collecting
+        successful paths and deadlocks until the requested number of
+        successful paths is reached. Optionally saves the resulting clusters
+        to disk.
+
+        @param n_paths Number of successful (A_0-to-A_1) paths to collect.
+        @param save If True, save clusters and deadlocks to disk.
+        @param folder_path Directory path for saving results.
+        """
         self.DEADLOCKS = []
         self.PATHS = []        
         cnt = 0
@@ -1445,7 +1793,16 @@ class Diffusion(object):
 #                    save_paths(LIST,'DEADLOCKS_'+str(i),folder_path)    
 
     def random_simplification_wrapper_MP(self,LIST):
-        
+        """! @brief Multiprocessing wrapper for random path simplification.
+
+        Unpacks arguments from a tuple and calls
+        random_simplification_wrapper. Designed to be used with
+        multiprocessing.Pool.map.
+
+        @param LIST Tuple (path, n, i) containing the path array, number of
+            random simplification attempts, and the path index.
+        @return Simplified path array.
+        """
         path,n,i = LIST
         
         if self.verbose:
@@ -1458,7 +1815,18 @@ class Diffusion(object):
 
 
     def random_simplification_wrapper(self,path,n=20,verbose=False):
-        
+        """! @brief Simplify a path by random geodesic shortcutting.
+
+        Randomly selects pairs of points along the path and replaces the
+        sub-path between them with the geodesic shortcut, provided the
+        replacement is homologically equivalent. Repeats until n consecutive
+        attempts fail to shorten the path.
+
+        @param path Array of residual grid indices forming the path.
+        @param n Number of consecutive failed attempts before stopping.
+        @param verbose If True, print progress information.
+        @return Simplified numpy array of residual grid indices.
+        """
         if self.cut_paths_until_A_0:
             path_ = self.cut_until_A_0(path)
         else:
@@ -1522,7 +1890,17 @@ class Diffusion(object):
                                          
 
     def simplify_paths_with_homology(self,n=100,random=False):
-        
+        """! @brief Batch path simplification using homology.
+
+        Simplifies all paths in self.PATHS using either deterministic
+        homological simplification or random geodesic shortcutting.
+        Optionally uses multiprocessing for the random variant.
+
+        @param n Number of random simplification iterations per path (used
+            only when random is True).
+        @param random If True, use random geodesic shortcutting; otherwise
+            use deterministic homological simplification.
+        """
         if random:
             if self.MP:
                     pool = mp.Pool(processes=10)
@@ -1552,7 +1930,10 @@ class Diffusion(object):
                                    
                 
     def simplify_deadlocks_with_homology(self,):
-        
+        """! @brief Simplify all deadlock paths using homological simplification.
+
+        Applies simplify_path_with_homology to every path in self.DEADLOCKS.
+        """
         if self.verbose:
             DEADLOCKS_ = []
             for p in self.DEADLOCKS:
@@ -1564,7 +1945,14 @@ class Diffusion(object):
             self.DEADLOCKS = [self.simplify_path_with_homology(p) for p in self.DEADLOCKS_]
                 
     def cluster_paths(self, save = False):
-        
+        """! @brief Group similar diffusion paths by homological equivalence.
+
+        Iterates through self.PATHS, assigning each path to an existing
+        cluster if it is homologous to the cluster representative, or
+        creating a new cluster otherwise.
+
+        @param save If True, save the resulting clusters to disk.
+        """
         self.CLUSTERS = [[0]]
           
         for i_,p in enumerate(self.PATHS[1:]):
@@ -1597,7 +1985,11 @@ class Diffusion(object):
             self.save_clusters()
             
     def reeb_graph_voids(self,axis=-1, plot = True):
-        
+        """! @brief Compute and optionally plot the Reeb graph of the void space.
+
+        @param axis Coordinate axis for the height function (default -1).
+        @param plot If True, display the Reeb graph in 3D.
+        """
         E, fun, emb = self.reeb_graph(self.res_grid,axis=axis, D_ = self.D_force_graph)            
         G = self.build_graph(E,emb,fun)
         
@@ -1606,7 +1998,11 @@ class Diffusion(object):
                
         
     def reeb_graph_balls(self,axis=-1, plot = True):
-        
+        """! @brief Compute and optionally plot the Reeb graph of the forbidden region.
+
+        @param axis Coordinate axis for the height function (default -1).
+        @param plot If True, display the Reeb graph in 3D.
+        """
         E, fun, emb = self.reeb_graph(self.balls,axis=axis)            
         G = self.build_graph(E,emb,fun)
         
@@ -1615,12 +2011,22 @@ class Diffusion(object):
          
         
     def prova(self, paths, BOUNDARY_MAT = None, RED_MAT = None, V_MAT = None,verbose = False):
-        """
-        Check se una lista di paths paths sono riempibili con una 2-chain a meno di un sottospazio generato 
-        da una BOUNDARY_MAT. Si sovrappone con fill_loop.
-        BOUNDARY_MAT -> la matrice A, che genera il sottospazio di bordo. Se é "None" prendo A_0 e A_1.
-        RED_MAT -> la matrice A_red cioé la versione row-reduced di A[rank(B):,:]
-        V_MAT -> la matrice che porta A[rank(B):,:] in forma A_red
+        """! @brief Check whether a list of paths can be filled with a 2-chain.
+
+        Tests whether the concatenation of the given paths is a boundary
+        modulo a subspace generated by BOUNDARY_MAT. Overlaps in
+        functionality with fill_loop but returns only the scalar result.
+
+        @param paths List of path arrays (residual grid index arrays).
+        @param BOUNDARY_MAT Optional boundary matrix A generating the allowed
+            boundary subspace. If None, uses the default A_0/A_1 boundaries.
+            If 0, ignores boundary corrections.
+        @param RED_MAT Optional row-reduced form of A[rank(B):, :].
+        @param V_MAT Optional change-of-basis matrix (unused, reserved for
+            compatibility with fill_loop).
+        @param verbose If True, print diagnostic information.
+        @return Maximum entry of the projected vector. Zero means the paths
+            are homologous modulo the boundary subspace.
         """
         path = np.concatenate(paths)
         
@@ -1655,7 +2061,17 @@ class Diffusion(object):
 
 
     def make_boundary_matrix_from_paths(self, BOUNDARY_PATHS, add_top_bottom = False):
+        """! @brief Construct a boundary matrix from a list of paths.
 
+        Builds a GF(2) matrix whose columns encode the edge vectors of the
+        given paths, optionally augmented with the top/bottom boundary
+        matrix A.
+
+        @param BOUNDARY_PATHS List of path arrays used to build columns.
+        @param add_top_bottom If True, concatenate the A_0/A_1 boundary
+            matrix with the path-derived columns.
+        @return GF(2) boundary matrix.
+        """
         A = np.zeros((self.N_1,sum([len(p) for p in BOUNDARY_PATHS])))
 
         for n_col,path_ in enumerate(BOUNDARY_PATHS):
@@ -1673,7 +2089,21 @@ class Diffusion(object):
 
 
     def make_overlapping_summary(self, paths, step=1, plot=True, plot_steps = False):
+        """! @brief Compute a z-slice overlap summary between paths.
 
+        For each pair of adjacent z-levels (separated by step), checks
+        whether the paths are homologous within the horizontal slab and
+        returns the array of results.
+
+        @param paths List of path arrays to compare.
+        @param step Number of z-levels separating the top and bottom of each
+            slab (default 1).
+        @param plot If True, plot the filling chains on homologous slabs and
+            the overlap profile along z.
+        @param plot_steps If True, produce a plot for each individual slab.
+        @return Numpy array of overlap indicators (0 = homologous) for each
+            slab.
+        """
         overl = []
         
         for i,z in enumerate(self.z[:-step]):
@@ -1742,7 +2172,21 @@ class Diffusion(object):
 
 
     def fill_loop_on_slice(self,paths, z_l, z_u, plot=True, FIG = None):
-            
+        """! @brief Check and visualise path homology within a horizontal slab.
+
+        Restricts the given paths to the slab between z_l and z_u, checks
+        whether they are homologous within that slab, and optionally plots
+        the filling 2-chain.
+
+        @param paths List of path arrays to compare.
+        @param z_l Lower z-boundary of the slab.
+        @param z_u Upper z-boundary of the slab.
+        @param plot If True, compute and plot the filling 2-chain.
+        @param FIG Optional tuple (fig, ax1, ax2) of existing matplotlib
+            figure and axes to draw on. If None, creates a new figure.
+        @return Scalar result: 0 if paths are homologous in the slab,
+            nonzero otherwise.
+        """
         axis = -1
         idxs_e = []
 

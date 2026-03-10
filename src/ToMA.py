@@ -1,19 +1,23 @@
 #!python3
 ##
-# @mainpage Topological Material Analysis (ToMA)
+# @file ToMA.py
+# @brief Streamlit GUI entry point for Topological Material Analysis (ToMA).
+#
+# This is the main entry point for the Streamlit-based graphical user interface.
+# Run with: @code{.sh} python -m streamlit run src/ToMA.py @endcode
+#
+# The GUI provides multi-page navigation for:
+# - Single configuration analysis
+# - Batch mode processing
+# - Circular max flow analysis
+# - Cobordism analysis
+#
 # @authors Yossi Bokor Bleile
 # @version 1.3.0
 # @date March 2026
 # @copyright GPL
-# 
-# @section ToMA
-# Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.
-
-# ToMA is dependent on Oineus and Diode to handle a lot of the "under the hood" functionalities.
 #
-# Information about the packages required and instructions for the settings files are in the [README](README.md).
-#
-# Copyright (c) 2023, 2024, 2025 Yossi Bokor Bleile.  All rights reserved.    
+# Copyright (c) 2023, 2024, 2025 Yossi Bokor Bleile. All rights reserved.
 
 import streamlit as st
 # import oineus

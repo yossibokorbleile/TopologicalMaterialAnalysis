@@ -1,36 +1,25 @@
 #!/usr/bin/env python3
 ##
-# @mainpage Topological Material Analysis (ToMA)
+# @file ToMA-cli.py
+# @brief Command Line Interface entry point for Topological Material Analysis (ToMA).
+#
+# This script provides the CLI for running ToMA analyses. It supports three modes:
+# -# @b Single: Analyse a single structure at specified time steps
+# -# @b Multi: Analyse multiple structures from different files
+# -# @b Batch: Recursively process all structures in a directory
+#
+# @section cli_usage Usage
+# @code{.sh}
+# ./ToMA-cli.py -s <settings_file> -n <settings_name>
+# ./ToMA-cli.py -l  # Display license
+# @endcode
+#
 # @authors Yossi Bokor Bleile
 # @version 1.3.0
 # @date March 2026
 # @copyright GPL
-# 
-# [![DOI](https://zenodo.org/badge/682051112.svg)](https://zenodo.org/doi/10.5281/zenodo.10781424)
-# @section License
-# Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](md__l_i_c_e_n_s_e.html) of this when you downloaded this repository.
-# @section description_main Description
-# ToMA is dependent on Oineus and Diode to handle a lot of the "under the hood" functionalities.
 #
-# There are two ways you can use Amorphous Material Analysis:
-# -# Graphical User Interface (default)
-# -# Command Line Interface
-#    
-# both of which have several different modes:
-# -# single
-# -# multi
-# -# batch (currently only in CLI)
-#
-# In the GUI, these are selected at startup, and for the CLI, the mode to be used is set in a settings file with an INI format. 
-# To use the GUI for `ToMA` run 
-#` streamlit run ToMA-gui.py`
-#
-# To use `ToMA` in the CLI mode, run 
-#`./ToMA-cli.py -s $SETTINGS FILE`.
-#
-# Information about the packages required and instructions for the settings files are in the [README](md__r_e_a_d_m_e.html).
-#
-# Copyright (c) 2023, 2024 Yossi Bokor Bleile.  All rights reserved.    
+# Copyright (c) 2023, 2024, 2025 Yossi Bokor Bleile. All rights reserved.
 
 
 import argparse

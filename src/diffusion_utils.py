@@ -1,3 +1,9 @@
+##
+# @file diffusion_utils.py
+# @brief Utility functions for distance computation, path manipulation, and grid operations with periodic boundaries.
+# @version 1.3.0
+# @date March 2026
+
 import numpy as np
 import galois
 import matplotlib.pyplot as plt
@@ -16,7 +22,17 @@ Utils
 """
 
 def row_reduce_matrix(A,GF):
-    
+    """! @brief Row reduce a matrix over a Galois field.
+
+    Computes the row-reduced echelon form of matrix A over the given Galois field,
+    along with the transformation matrix V such that V*A = A_red.
+
+    @param A  The matrix to row reduce (shape: (n, m)).
+    @param GF  The Galois field to perform arithmetic in.
+    @return Tuple (A_red, V) where A_red is the row-reduced matrix and V is the
+            transformation matrix.
+    """
+
     I = np.identity(A.shape[0])
     I = GF(I.astype(int)%2)
 
@@ -29,13 +45,19 @@ def row_reduce_matrix(A,GF):
 
 
 def solve_linear_system_with_boundary(B, v, A, A_red, V, GF):
-    """
-    Finds a solution - if it exists - of B*x = v + A*mu
-    
-    B is row-reduced form
-    A generates the boundary subspace
-    A_red is A[rank(B):,:] in row reduced form via the matrix V
-    tmp tells if the solution is exact
+    """! @brief Solve a linear system with boundary constraints.
+
+    Finds a solution, if it exists, of B*x = v + A*mu where A generates
+    the boundary subspace.
+
+    @param B      Row-reduced coefficient matrix.
+    @param v      Right-hand side vector.
+    @param A      Matrix generating the boundary subspace.
+    @param A_red  A[rank(B):,:] in row-reduced form via the matrix V.
+    @param V      Transformation matrix from row reduction of A.
+    @param GF     Galois field for arithmetic operations.
+    @return Tuple (x, tmp) where x is the solution vector and tmp indicates
+            whether the solution is exact (0) or approximate (1).
     """
 
     rank = np.sum(np.max(B, axis=-1)>0)
@@ -53,10 +75,15 @@ def solve_linear_system_with_boundary(B, v, A, A_red, V, GF):
     return x, tmp
 
 def solve_linear_system(B,v):
-    """
-    Finds a solution - if it exists - of B*x = v
-    
-    B is row-reduced form
+    """! @brief Solve a linear system B*x = v where B is row-reduced.
+
+    Finds a solution, if it exists, of B*x = v using back-substitution
+    on the row-reduced matrix B.
+
+    @param B  Row-reduced coefficient matrix (shape: (n, m)).
+    @param v  Right-hand side vector (shape: (n,)).
+    @return Tuple (x, tmp) where x is the solution vector (shape: (m,)) and
+            tmp indicates if the system is consistent (0) or inconsistent (1).
     """
     
     non_zero = np.where(v==1) 
@@ -73,6 +100,17 @@ def solve_linear_system(B,v):
     
     
 def cut_path_from_bottom(path, h, grid, axis=-1):
+    """! @brief Trim a path from the bottom at a height threshold.
+
+    Removes leading points from the path whose coordinate along the specified
+    axis is at or below the threshold h.
+
+    @param path  Array of grid point indices representing the path.
+    @param h     Height threshold value.
+    @param grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param axis  Coordinate axis to compare against the threshold (default: -1).
+    @return Trimmed path as an integer numpy array.
+    """
 
     start_idx = 0
     path_ = np.copy(path)
@@ -84,6 +122,17 @@ def cut_path_from_bottom(path, h, grid, axis=-1):
 
     
 def cut_path_from_top(path, h, grid, axis=-1):
+    """! @brief Trim a path from the top at a height threshold.
+
+    Removes trailing points from the path whose coordinate along the specified
+    axis is at or above the threshold h.
+
+    @param path  Array of grid point indices representing the path.
+    @param h     Height threshold value.
+    @param grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param axis  Coordinate axis to compare against the threshold (default: -1).
+    @return Trimmed path as an integer numpy array.
+    """
 
     start_idx = -1
     path_ = np.copy(path)
@@ -95,13 +144,29 @@ def cut_path_from_top(path, h, grid, axis=-1):
 
 
 def get_cmap(n, name='hsv'):
-    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
-    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    """! @brief Get a colormap for distinct color assignment.
+
+    Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+    RGB color using a matplotlib colormap.
+
+    @param n     Number of distinct colors needed.
+    @param name  Name of the matplotlib colormap to use (default: 'hsv').
+    @return A colormap function mapping integer indices to RGBA tuples.
+    """
     return plt.cm.get_cmap(name, n)
 
 
 def get_box_from_cell(cell_file):
-    
+    """! @brief Read simulation box dimensions from a cell file.
+
+    Parses a CSV cell file to extract the upper and lower bounds of the
+    cubic simulation box.
+
+    @param cell_file  Path to the cell file (CSV format with whitespace delimiter).
+    @return Tuple (M, m) where M is the upper bound array [Mx, My, Mz] and
+            m is the lower bound array [mx, my, mz].
+    """
+
     cell = pd.read_csv(cell_file, delimiter = '       ')
 
     M_x = cell['Bx [Angstrom]'].max()
@@ -228,8 +293,16 @@ def get_box_from_cell(cell_file):
 
 
 def out_to_atoms(inputfile, backbone_atoms, flow_atoms):
-    """
-    Read the .xyz file and returns atoms coordinates by type, cardinalities and box boundaries
+    """! @brief Read an XYZ file and return atom coordinates by type.
+
+    Parses the input XYZ file and separates atom coordinates into backbone
+    and flow atom arrays, along with cardinalities and box boundaries.
+
+    @param inputfile      Path to the .xyz input file.
+    @param backbone_atoms List of element symbols for backbone atoms.
+    @param flow_atoms     List of element symbols for flow (mobile) atoms.
+    @return Tuple (Li, P, S, N, TIMESTEPS, M, m) containing atom coordinate
+            arrays, atom counts, timestep list, and box boundary arrays.
     """
 #    N_ATOMS, ATOMS, COORDS, COMMENTS, M, m = read_xyz_data(inputfile, box)
     N_ATOMS, ATOMS, COORDS, TIMESTEPS, M, m = read_data(inputfile)
@@ -268,8 +341,15 @@ def out_to_atoms(inputfile, backbone_atoms, flow_atoms):
 
 
 def clean_Li(Li,m,M):
-    """
-    Remove Lithium Atoms Outside the Box
+    """! @brief Remove atoms outside the simulation box.
+
+    Filters out lithium atoms whose coordinates fall outside the
+    simulation box defined by lower bound m and upper bound M.
+
+    @param Li  Lithium atom coordinates array (shape: (timesteps, n_atoms, 3)).
+    @param m   Lower bounds of the simulation box (scalar or array of shape (3,)).
+    @param M   Upper bounds of the simulation box (scalar or array of shape (3,)).
+    @return Filtered lithium coordinates array with out-of-box atoms removed.
     """
     
     idxs = []
@@ -300,7 +380,25 @@ def clean_Li(Li,m,M):
         return Li
 
 def make_geodesics(grid, r, M, m, axes, dim, D_= None, D_force_graph_ = None, verbose = False):
-            
+    """! @brief Compute geodesic distances and predecessor matrix on a grid graph.
+
+    Builds a distance graph from the grid points using periodic boundary conditions,
+    then computes shortest-path (geodesic) distances and predecessors via Dijkstra's
+    algorithm.
+
+    @param grid             Array of grid point coordinates (shape: (npts, dim)).
+    @param r                Radius threshold for graph edge connectivity.
+    @param M                Upper bounds of the simulation box (shape: (dim,)).
+    @param m                Lower bounds of the simulation box (shape: (dim,)).
+    @param axes             Array of axes along which periodic boundaries apply.
+    @param dim              Dimensionality of the dataset.
+    @param D_               Precomputed distance/graph matrix (default: None).
+    @param D_force_graph_   Optional mask to force/suppress graph edges (default: None).
+    @param verbose          If True, print the number of connected components (default: False).
+    @return Tuple (D, geod) where D is the geodesic distance matrix and geod is
+            the predecessor matrix for path reconstruction.
+    """
+
     if D_ is None:
         D = dist_periodic_boundaries(grid,M,m,axes, dim)
         
@@ -329,7 +427,21 @@ def make_geodesics(grid, r, M, m, axes, dim, D_= None, D_force_graph_ = None, ve
     return D, geod
 
 def find_geod(idx0,idx1,geodesics,pts, D, maxiter = np.inf):
-    
+    """! @brief Find the geodesic path between two points.
+
+    Traces the shortest path from idx0 to idx1 using the predecessor matrix,
+    collecting coordinates and edge lengths along the way.
+
+    @param idx0       Starting point index.
+    @param idx1       Target point index.
+    @param geodesics  Predecessor matrix from Dijkstra (shape: (npts, npts)).
+    @param pts        Array of grid point coordinates (shape: (npts, dim)).
+    @param D          Geodesic distance matrix (shape: (npts, npts)).
+    @param maxiter    Maximum number of steps before stopping (default: inf).
+    @return Tuple (path, lengths) where path is the array of point indices and
+            lengths is the array of edge lengths along the path.
+    """
+
     idx = idx0
     path = [idx]
     coords = [pts[idx]]
@@ -353,14 +465,17 @@ def find_geod(idx0,idx1,geodesics,pts, D, maxiter = np.inf):
     return path, lengths
 
 def dist_periodic_boundaries(grid_,M,m,axes, dim=3):
-    """
-    Makes a 
-    
-    grid -> array of pts (npts,dim)
-    M -> array with upper bounds of the box (dim,)
-    m -> array with lower bound of the box (dim,)
-    axes -> array with the axes in which the boundary condition is applied
-    dim -> dimension of the dataset
+    """! @brief Compute pairwise distances with periodic boundary conditions.
+
+    Computes the full pairwise distance matrix between all grid points,
+    accounting for periodic boundary conditions along the specified axes.
+
+    @param grid_  Array of grid point coordinates (shape: (npts, dim)).
+    @param M      Upper bounds of the simulation box (shape: (dim,)).
+    @param m      Lower bounds of the simulation box (shape: (dim,)).
+    @param axes   Array of axes along which periodic boundaries apply.
+    @param dim    Dimensionality of the dataset (default: 3).
+    @return Symmetric distance matrix of shape (npts, npts).
     """    
 #    grid = m + np.remainder(grid_-m, M-m)   
 
@@ -382,13 +497,18 @@ def dist_periodic_boundaries(grid_,M,m,axes, dim=3):
     return D
 
 def dist_from_pts_periodic_boundaries(pts_,grid_,M,m,axes, dim=3):
-    """
-    pts -> punti da proiettare
-    grid -> array of pts (npts,dim)
-    M -> array with upper bounds of the box (dim,)
-    m -> array with lower bound of the box (dim,)
-    axes -> array with the axes in which the boundary condition is applied
-    dim -> dimension of the dataset
+    """! @brief Compute distances from points to a grid with periodic boundaries.
+
+    Computes distances from a set of query points to all grid points,
+    accounting for periodic boundary conditions along the specified axes.
+
+    @param pts_   Query points to project (shape: (n, dim) or (dim,)).
+    @param grid_  Array of grid point coordinates (shape: (npts, dim)).
+    @param M      Upper bounds of the simulation box (shape: (dim,)).
+    @param m      Lower bounds of the simulation box (shape: (dim,)).
+    @param axes   Array of axes along which periodic boundaries apply.
+    @param dim    Dimensionality of the dataset (default: 3).
+    @return Distance matrix of shape (n, npts).
     """    
     if len(pts_.shape)<2:
         pts = np.array([pts_])
@@ -423,8 +543,18 @@ def dist_from_pts_periodic_boundaries(pts_,grid_,M,m,axes, dim=3):
 
 
 def append_tr(ITRIS, B, edge_idxs, ia,ib,ic):
-    """
-    N.B. ia<ib<ic
+    """! @brief Append a triangle to the triangle list and update the boundary matrix.
+
+    Adds a triangle defined by vertex indices (ia, ib, ic) to ITRIS and sets
+    the corresponding edge entries in the boundary matrix B.
+
+    @param ITRIS      List of triangles (each a list of three vertex indices).
+    @param B          Boundary matrix mapping triangles to edges.
+    @param edge_idxs  Dictionary mapping sorted vertex pairs to edge indices.
+    @param ia         First vertex index (must satisfy ia < ib < ic).
+    @param ib         Second vertex index.
+    @param ic         Third vertex index.
+    @return Tuple (ITRIS, B) with the updated triangle list and boundary matrix.
     """
 #    ia,ib,ic = np.sort([ia_,ib_,ic_])
     
@@ -442,7 +572,22 @@ def append_tr(ITRIS, B, edge_idxs, ia,ib,ic):
 
 
 def check_tr(p0,p1,p2, res_grid, grid, cubic_to_res, ITRIS, B, edge_idxs):
-    
+    """! @brief Check and append a triangle from cubic grid indices.
+
+    Converts cubic grid indices to resolution grid indices, sorts them,
+    and appends the triangle if all vertices are valid.
+
+    @param p0             First cubic grid index tuple.
+    @param p1             Second cubic grid index tuple.
+    @param p2             Third cubic grid index tuple.
+    @param res_grid       Resolution grid point coordinates.
+    @param grid           Full grid point coordinates.
+    @param cubic_to_res   Mapping from cubic grid indices to resolution grid indices.
+    @param ITRIS          List of triangles to update.
+    @param B              Boundary matrix mapping triangles to edges.
+    @param edge_idxs      Dictionary mapping sorted vertex pairs to edge indices.
+    @return Tuple (ITRIS, B) with the updated triangle list and boundary matrix.
+    """
     i0 = cubic_to_res[p0]
     i1 = cubic_to_res[p1]
     i2 = cubic_to_res[p2]
@@ -456,6 +601,18 @@ def check_tr(p0,p1,p2, res_grid, grid, cubic_to_res, ITRIS, B, edge_idxs):
     return ITRIS, B 
 
 def r_squared(px,py,pz,balls_centres,balls_radii):
+    """! @brief Compute a repulsion field value at a point.
+
+    Evaluates a repulsion potential at point (px, py, pz) as the sum of
+    inverse power contributions from each ball centre.
+
+    @param px             X-coordinate of the query point.
+    @param py             Y-coordinate of the query point.
+    @param pz             Z-coordinate of the query point.
+    @param balls_centres  Array of ball centre coordinates (shape: (n, 3)).
+    @param balls_radii    Array of ball radii (shape: (n,)).
+    @return Scalar repulsion field value at the query point.
+    """
     p=2
     eps = 0.3
     pt = np.array([px,py,pz])
@@ -469,7 +626,22 @@ def r_squared(px,py,pz,balls_centres,balls_radii):
     return out
 
 def aux_fn(px,py,pz,xc,yc,zc,r,eps,p=4):
-    
+    """! @brief Compute a single-component gradient contribution for the repulsion field.
+
+    Evaluates the partial derivative contribution of one ball along one
+    coordinate axis, used internally by grad_r2.
+
+    @param px   Query point coordinate along the differentiation axis.
+    @param py   Query point coordinate along the second axis.
+    @param pz   Query point coordinate along the third axis.
+    @param xc   Ball centre coordinate along the differentiation axis.
+    @param yc   Ball centre coordinate along the second axis.
+    @param zc   Ball centre coordinate along the third axis.
+    @param r    Radius of the ball.
+    @param eps  Smoothing parameter controlling field sharpness.
+    @param p    Power exponent for the potential (default: 4).
+    @return Scalar gradient contribution along the differentiation axis.
+    """
     dx = (px-xc)
     dy = (py-yc)
     dz = (pz-zc)
@@ -490,7 +662,18 @@ def aux_fn(px,py,pz,xc,yc,zc,r,eps,p=4):
     return out
     
 def grad_r2(pt,balls_centres,balls_radii,p=2,eps=1):
-      
+    """! @brief Compute the negative gradient of the repulsion field at a point.
+
+    Evaluates the gradient of the repulsion potential with respect to
+    (x, y, z) at the given point, summing contributions from all balls.
+
+    @param pt             Query point coordinates (shape: (3,)).
+    @param balls_centres  Array of ball centre coordinates (shape: (n, 3)).
+    @param balls_radii    Array of ball radii (shape: (n,)).
+    @param p              Power exponent for the potential (default: 2).
+    @param eps            Smoothing parameter controlling field sharpness (default: 1).
+    @return Negative gradient vector at the query point (shape: (3,)).
+    """
     dx = 0
     dy = 0
     dz = 0
@@ -504,7 +687,19 @@ def grad_r2(pt,balls_centres,balls_radii,p=2,eps=1):
     return -np.array([dx,dy,dz])
 
 def sample_path(idx, N, res_grid, z_1, maxiter=100000):
-    
+    """! @brief Sample a random walk path on the grid.
+
+    Performs a random walk starting from the given index using the transition
+    matrix N, stopping when the path reaches a height above z_1 or after
+    maxiter steps.
+
+    @param idx      Starting grid point index.
+    @param N        Transition probability matrix (shape: (npts, npts)).
+    @param res_grid Array of grid point coordinates (shape: (npts, dim)).
+    @param z_1      Height threshold along the last axis to terminate the walk.
+    @param maxiter  Maximum number of random walk steps (default: 100000).
+    @return Array of grid point indices forming the sampled path.
+    """
     PATH = [idx]
     N_idx = N[idx,:]
 
@@ -525,7 +720,17 @@ def sample_path(idx, N, res_grid, z_1, maxiter=100000):
 
 
 def smooth_path(path,geod,res_grid,D):
-    
+    """! @brief Smooth a path using geodesic interpolation.
+
+    Replaces each consecutive pair of points in the path with the geodesic
+    path between them, producing a smoother trajectory on the grid.
+
+    @param path      Array of grid point indices forming the path.
+    @param geod      Predecessor matrix for geodesic path reconstruction.
+    @param res_grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param D         Geodesic distance matrix (shape: (npts, npts)).
+    @return Smoothed path as an integer numpy array.
+    """
     idx = 0
     path_smooth = []
 
@@ -537,7 +742,18 @@ def smooth_path(path,geod,res_grid,D):
     return np.array(path_smooth)
 
 def close_paths(p_0, p_1, grid, geod,D):
-    
+    """! @brief Close two open paths into a loop by connecting their endpoints.
+
+    Connects the start and end points of two paths via geodesics to form
+    a closed loop: p_1_start -> p_0_start -> ... -> p_0_end -> p_1_end -> ... -> p_1_start.
+
+    @param p_0   First path as an array of grid point indices.
+    @param p_1   Second path as an array of grid point indices.
+    @param grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param geod  Predecessor matrix for geodesic path reconstruction.
+    @param D     Geodesic distance matrix (shape: (npts, npts)).
+    @return Closed loop as a numpy array of grid point indices.
+    """
     start_point_path,_ = find_geod(p_0[0], p_1[0], geod, grid,D) 
     end_point_path,_ = find_geod(p_0[-1], p_1[-1], geod, grid,D)
 
@@ -548,9 +764,24 @@ def close_paths(p_0, p_1, grid, geod,D):
 
 
 def homological_simplification_of_path_pts(idx0, idx1, path, grid, geod, V, rank, GF, D, N, edge_idxs, r_graph):
-    """
-    idx0,idx1 (p0,p1) -> are indexes to sample from the path
-    q0,q1 -> are the indexes sampled from the paths and refer to pts in the grid
+    """! @brief Simplify a path segment between two indices preserving homology class.
+
+    Attempts to replace the sub-path between idx0 and idx1 with a shorter
+    geodesic, provided the resulting loop is homologically trivial.
+
+    @param idx0       First index into the path array.
+    @param idx1       Second index into the path array.
+    @param path       Array of grid point indices forming the path.
+    @param grid       Array of grid point coordinates (shape: (npts, dim)).
+    @param geod       Predecessor matrix for geodesic path reconstruction.
+    @param V          Transformation matrix from row reduction of the boundary.
+    @param rank       Rank of the boundary matrix.
+    @param GF         Galois field for arithmetic operations.
+    @param D          Geodesic distance matrix (shape: (npts, npts)).
+    @param N          Number of 1-simplices (edges) in the complex.
+    @param edge_idxs  Dictionary mapping sorted vertex pairs to edge indices.
+    @param r_graph    Radius threshold for graph edge connectivity.
+    @return Simplified path as a numpy array of grid point indices.
     """
     [p0,p1] = np.sort([idx0,idx1])
     
@@ -582,7 +813,24 @@ def homological_simplification_of_path_pts(idx0, idx1, path, grid, geod, V, rank
 
 
 def homological_simplification_of_path(path, grid, geod, V, rank, GF, D, N, edge_idxs, r_graph):
-    
+    """! @brief Iteratively simplify an entire path preserving its homology class.
+
+    Repeatedly scans the path for segments that can be replaced by shorter
+    geodesics without changing the homology class, until no further
+    simplification is possible.
+
+    @param path       Array of grid point indices forming the path.
+    @param grid       Array of grid point coordinates (shape: (npts, dim)).
+    @param geod       Predecessor matrix for geodesic path reconstruction.
+    @param V          Transformation matrix from row reduction of the boundary.
+    @param rank       Rank of the boundary matrix.
+    @param GF         Galois field for arithmetic operations.
+    @param D          Geodesic distance matrix (shape: (npts, npts)).
+    @param N          Number of 1-simplices (edges) in the complex.
+    @param edge_idxs  Dictionary mapping sorted vertex pairs to edge indices.
+    @param r_graph    Radius threshold for graph edge connectivity.
+    @return Simplified path as a numpy array of grid point indices.
+    """
     path_ = path
     path_old = path
     n_ = len(path_)-1
@@ -632,7 +880,24 @@ def homological_simplification_of_path(path, grid, geod, V, rank, GF, D, N, edge
 
 
 def close_paths_A_0_A_1(p_0,p_1, D, A_0,A_1,res_to_A_0, res_to_A_1, A_0_to_res, A_1_to_res, geod_A_0, geod_A_1):
-    
+    """! @brief Close two paths into a loop using boundary subspace geodesics.
+
+    Connects the start points via a geodesic on A_0 and the end points via
+    a geodesic on A_1, forming a closed loop through both paths.
+
+    @param p_0           First path as an array of resolution grid indices.
+    @param p_1           Second path as an array of resolution grid indices.
+    @param D             Geodesic distance matrix.
+    @param A_0           Bottom boundary grid point coordinates.
+    @param A_1           Top boundary grid point coordinates.
+    @param res_to_A_0    Mapping from resolution grid indices to A_0 indices.
+    @param res_to_A_1    Mapping from resolution grid indices to A_1 indices.
+    @param A_0_to_res    Mapping from A_0 indices to resolution grid indices.
+    @param A_1_to_res    Mapping from A_1 indices to resolution grid indices.
+    @param geod_A_0      Predecessor matrix for geodesics on A_0.
+    @param geod_A_1      Predecessor matrix for geodesics on A_1.
+    @return Closed loop as a numpy array of resolution grid point indices.
+    """
     start_point_path_,_ = find_geod(res_to_A_0[p_0[0]],res_to_A_0[p_1[0]],geod_A_0,A_0,D) 
     end_point_path_,_ = find_geod(res_to_A_1[p_0[-1]],res_to_A_1[p_1[-1]],geod_A_1,A_1,D)
 
@@ -645,7 +910,20 @@ def close_paths_A_0_A_1(p_0,p_1, D, A_0,A_1,res_to_A_0, res_to_A_1, A_0_to_res, 
     return np.array(path)
 
 def join_points_boundary_conditions(p_, q_, M, m, axes, dim, n=20):
-    
+    """! @brief Generate candidate line segments between two points under periodic boundaries.
+
+    Creates straight-line interpolations between p_ and all periodic images
+    of q_, wrapping coordinates back into the simulation box.
+
+    @param p_    Start point coordinates (shape: (dim,)).
+    @param q_    End point coordinates (shape: (dim,)).
+    @param M     Upper bounds of the simulation box (shape: (dim,)).
+    @param m     Lower bounds of the simulation box (shape: (dim,)).
+    @param axes  Array of axes along which periodic boundaries apply.
+    @param dim   Dimensionality of the dataset.
+    @param n     Number of interpolation samples per segment (default: 20).
+    @return List of interpolated path arrays, one per periodic image.
+    """
     p = p_*np.ones((n,dim))
     mu = np.linspace(0,1,n) 
     mu = np.array([mu]).T
@@ -669,11 +947,26 @@ def join_points_boundary_conditions(p_, q_, M, m, axes, dim, n=20):
         
     return paths
 
-def close_paths_boundary_conditions(p_0, p_1, 
-                                    res_grid, geod, 
+def close_paths_boundary_conditions(p_0, p_1,
+                                    res_grid, geod,
                                     M, m, D,
                                     axes, dim):
-    
+    """! @brief Close two paths into loops using periodic boundary conditions.
+
+    Generates all candidate closed loops by connecting path endpoints through
+    periodic boundary interpolations, projecting onto the grid, and smoothing.
+
+    @param p_0       First path as an array of grid point indices.
+    @param p_1       Second path as an array of grid point indices.
+    @param res_grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param geod      Predecessor matrix for geodesic path reconstruction.
+    @param M         Upper bounds of the simulation box (shape: (dim,)).
+    @param m         Lower bounds of the simulation box (shape: (dim,)).
+    @param D         Geodesic distance matrix (shape: (npts, npts)).
+    @param axes      Array of axes along which periodic boundaries apply.
+    @param dim       Dimensionality of the dataset.
+    @return Array of candidate closed loops (dtype: object).
+    """
     start_point_paths_ = join_points_boundary_conditions(res_grid[p_0[0]],
                                                         res_grid[p_1[0]], 
                                                         M, m, axes, dim)
@@ -702,7 +995,22 @@ def close_paths_boundary_conditions(p_0, p_1,
     
 
 def close_deadlocks(p_0,p_1, res_grid, geod, res_to_A_0, A_0_to_res, geod_A_0,A_0):
-    
+    """! @brief Close two deadlocked paths into a loop if monotonicity is preserved.
+
+    Connects start points via a geodesic on A_0 and end points via a geodesic
+    on the resolution grid. Returns an empty list if the connecting path
+    is not monotone along the height axis.
+
+    @param p_0          First path as an array of grid point indices.
+    @param p_1          Second path as an array of grid point indices.
+    @param res_grid     Array of grid point coordinates (shape: (npts, dim)).
+    @param geod         Predecessor matrix for geodesics on the resolution grid.
+    @param res_to_A_0   Mapping from resolution grid indices to A_0 indices.
+    @param A_0_to_res   Mapping from A_0 indices to resolution grid indices.
+    @param geod_A_0     Predecessor matrix for geodesics on A_0.
+    @param A_0          Bottom boundary grid point coordinates.
+    @return Closed loop as a numpy array, or empty list if not monotone.
+    """
     start_point_path_,_ = find_geod(res_to_A_0[p_0[0]],res_to_A_0[p_1[0]],geod_A_0,A_0) 
     end_point_path_,_ = find_geod(p_0[-1],p_1[-1],geod,res_grid)
 
@@ -722,7 +1030,14 @@ def close_deadlocks(p_0,p_1, res_grid, geod, res_to_A_0, A_0_to_res, geod_A_0,A_
 
 
 def simplify_path(path_):
-    
+    """! @brief Remove consecutive duplicate points from a path.
+
+    Filters the path so that no two adjacent entries are identical,
+    preserving the order of traversal.
+
+    @param path_  Array of grid point indices forming the path.
+    @return Simplified path with consecutive duplicates removed.
+    """
     if len(path_)==0:
         return path_
     
@@ -742,7 +1057,19 @@ def simplify_path(path_):
     return path
 
 def path_to_vec(path,D,N_1,edge_idxs,r_graph,verbose=False):
-    
+    """! @brief Convert a path to an edge vector representation.
+
+    Maps each consecutive pair of points in the path to an edge index and
+    accumulates edge traversal counts into a vector over all edges.
+
+    @param path       Array of grid point indices forming the path.
+    @param D          Geodesic distance matrix (shape: (npts, npts)).
+    @param N_1        Total number of edges in the simplicial complex.
+    @param edge_idxs  Dictionary mapping sorted vertex pairs to edge indices.
+    @param r_graph    Radius threshold; edges longer than this are flagged.
+    @param verbose    If True, print warnings for discontinuous edges (default: False).
+    @return Edge vector of shape (N_1,) with integer traversal counts.
+    """
     v_path = np.zeros(N_1, dtype=int)
 
     for i,p in enumerate(path[:-1]):
@@ -774,7 +1101,15 @@ def equivalence(A,v_path,rank):
     return aux
 
 def project_path(path_coords, grid):
-    
+    """! @brief Project path coordinates onto the nearest grid points.
+
+    For each point in path_coords, finds the closest grid point by
+    Euclidean distance and returns the array of grid indices.
+
+    @param path_coords  Array of coordinates to project (shape: (n, dim)).
+    @param grid         Array of grid point coordinates (shape: (npts, dim)).
+    @return Array of grid point indices (shape: (n,)).
+    """
     path = []
      
     for p in path_coords:       
@@ -783,14 +1118,20 @@ def project_path(path_coords, grid):
     return np.array(path)
 
 def project_path_periodic(path_coords, grid,M,m,axes, dim=3, D_=None):
-    """
-    path_coords -> coordinates of the points of the path
-    grid -> array of pts to project the path on (npts,dim)
-    M -> array with upper bounds of the box (dim,)
-    m -> array with lower bound of the box (dim,)
-    axes -> array with the axes in which the boundary condition is applied
-    dim -> dimension of the dataset
-    D_ -> distance matrix if already computed
+    """! @brief Project path coordinates onto grid points with periodic boundaries.
+
+    For each point in path_coords, finds the closest grid point accounting
+    for periodic boundary conditions, and returns indices and projection errors.
+
+    @param path_coords  Array of coordinates to project (shape: (n, dim)).
+    @param grid         Array of grid point coordinates (shape: (npts, dim)).
+    @param M            Upper bounds of the simulation box (shape: (dim,)).
+    @param m            Lower bounds of the simulation box (shape: (dim,)).
+    @param axes         Array of axes along which periodic boundaries apply.
+    @param dim          Dimensionality of the dataset (default: 3).
+    @param D_           Precomputed distance matrix (default: None).
+    @return Tuple (path, err) where path is an array of grid indices and
+            err is an array of projection errors.
     """   
 
     if D_ is None:
@@ -811,7 +1152,20 @@ def project_path_periodic(path_coords, grid,M,m,axes, dim=3, D_=None):
 
 
 def project_timeseries_array(A,grid,M,m,axes, dim=3):
-    
+    """! @brief Project a time-series of coordinate arrays onto grid points.
+
+    Projects each frame in A onto the grid with periodic boundaries and
+    accumulates unique grid indices across all frames.
+
+    @param A     Time-series array of coordinates (shape: (T, n, dim)).
+    @param grid  Array of grid point coordinates (shape: (npts, dim)).
+    @param M     Upper bounds of the simulation box (shape: (dim,)).
+    @param m     Lower bounds of the simulation box (shape: (dim,)).
+    @param axes  Array of axes along which periodic boundaries apply.
+    @param dim   Dimensionality of the dataset (default: 3).
+    @return Tuple (p, err) where p is the array of unique grid indices and
+            err is the maximum projection error across all frames.
+    """
     a = A[0]
     p,e = project_path_periodic(a, grid,M,m,axes, dim)
     
@@ -828,7 +1182,20 @@ def project_timeseries_array(A,grid,M,m,axes, dim=3):
 
 
 def cluster_deadlocks(PATHS,res_grid, geod, res_to_A_0,geod_A_0,A_0):
-    
+    """! @brief Cluster deadlocked paths by homological equivalence.
+
+    Groups paths into clusters where paths within each cluster are
+    homologically equivalent, using close_deadlocks and path_to_vec
+    for equivalence testing.
+
+    @param PATHS        List of paths to cluster.
+    @param res_grid     Array of grid point coordinates (shape: (npts, dim)).
+    @param geod         Predecessor matrix for geodesic path reconstruction.
+    @param res_to_A_0   Mapping from resolution grid indices to A_0 indices.
+    @param geod_A_0     Predecessor matrix for geodesics on A_0.
+    @param A_0          Bottom boundary grid point coordinates.
+    @return List of clusters, each a list of homologically equivalent paths.
+    """
     DEADLOCKS=[[PATHS[0]]]
     
     for p in PATHS[1:]:
@@ -860,7 +1227,15 @@ def cluster_deadlocks(PATHS,res_grid, geod, res_to_A_0,geod_A_0,A_0):
     return DEADLOCKS
 
 def save_paths(LIST,name, folder_path):
-    
+    """! @brief Save a list of paths to a numpy file.
+
+    Pads all paths to equal length with -1 and saves the resulting
+    matrix to a .npy file in the specified folder.
+
+    @param LIST         List of paths (arrays of grid point indices).
+    @param name         Output file name (without directory prefix).
+    @param folder_path  Directory path where the file will be saved.
+    """
     n=0
         
     for p in LIST:
@@ -880,7 +1255,14 @@ Parallelization Utils
 """
 
 def compute_all(LIST):
-    
+    """! @brief Compute directional and penalty integrals along geodesic paths.
+
+    For each pair (i, j) with j < i, finds the geodesic path and integrates
+    the direction field v and the gradient penalty field along it.
+
+    @param LIST  Packed argument list: (i, v, grad_pen, multi_idx_to_list, D, geod, res_grid).
+    @return List of [directional_integral, penalty_integral] pairs for each j < i.
+    """
     i,v,grad_pen,multi_idx_to_list,D,geod,res_grid = LIST
     
     out = []
@@ -899,7 +1281,14 @@ def compute_all(LIST):
     return out
 
 def compute_penalties(LIST):
-    
+    """! @brief Compute directional and penalty integrals for a single pair using precomputed paths.
+
+    Retrieves the precomputed geodesic path for pair (i, j) and integrates
+    the direction and gradient penalty fields along it.
+
+    @param LIST  Packed argument list: (i, j, v, grad_pen, RESULTS, multi_idx_to_list, D, res_grid).
+    @return List [directional_integral, penalty_integral].
+    """
     i,j,v,grad_pen,RESULTS,multi_idx_to_list,D,res_grid = LIST
     
     path, lengths = RESULTS[multi_idx_to_list[(i,j)]]
@@ -913,7 +1302,14 @@ def compute_penalties(LIST):
     return [out0,out1]
 
 def compute_direction(LIST):
-    
+    """! @brief Compute the directional integral for a single pair using precomputed paths.
+
+    Retrieves the precomputed geodesic path for pair (i, j) and integrates
+    the direction field v along it.
+
+    @param LIST  Packed argument list: (i, j, v, RESULTS, multi_idx_to_list, D, res_grid).
+    @return Scalar directional integral value.
+    """
     i,j,v,RESULTS,multi_idx_to_list,D,res_grid = LIST
     
     path, lengths = RESULTS[multi_idx_to_list[(i,j)]]
@@ -924,7 +1320,14 @@ def compute_direction(LIST):
     return np.sum(np.sum(-v*(line),axis=1)*lenghts)
 
 def compute_repulsion(LIST):
-    
+    """! @brief Compute the repulsion penalty integral for a single pair using precomputed paths.
+
+    Retrieves the precomputed geodesic path for pair (i, j) and integrates
+    the gradient penalty field along it.
+
+    @param LIST  Packed argument list: (i, j, grad_pen, RESULTS, multi_idx_to_list, D, res_grid).
+    @return Scalar repulsion penalty integral value.
+    """
     i,j,grad_pen,RESULTS,multi_idx_to_list,D,res_grid = LIST
     
     path, lengths = RESULTS[multi_idx_to_list[(i,j)]]
@@ -935,13 +1338,29 @@ def compute_repulsion(LIST):
     return np.sum(np.sum(-grad_pen[path[:-1]]*(line),axis=1)*lenghts)
 
 def find_geod_wrap(LIST):
-    i,j,geod,res_grid = LIST 
+    """! @brief Wrapper for find_geod suitable for multiprocessing pool.map.
+
+    Unpacks arguments from a list and calls find_geod to compute the
+    geodesic path between two points.
+
+    @param LIST  Packed argument list: (i, j, geod, res_grid).
+    @return List [path, lengths] from find_geod.
+    """
+    i,j,geod,res_grid = LIST
     path, lenghts = find_geod(i,j,geod,res_grid)
     
     return [path,lenghts]
 
 def rank_mod_p(LIST):
-    
+    """! @brief Compute the rank of a matrix modulo a prime p.
+
+    Row-reduces the matrix over the Galois field GF(p) and returns
+    the matrix rank.
+
+    @param LIST  Packed argument list: (m, p) where m is the matrix and
+                 p is the prime (defaults to 2 if None).
+    @return Integer rank of the matrix over GF(p).
+    """
     m, p = LIST
     
     if p is None:

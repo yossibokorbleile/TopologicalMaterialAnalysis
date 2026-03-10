@@ -1,0 +1,430 @@
+/**
+@page examples_page Examples
+
+@tableofcontents
+
+This page provides complete, self-contained examples demonstrating common ToMA workflows. Each example can be run directly from the repository root directory.
+
+@section ex_basic Example 1: Basic Persistent Homology
+
+This example loads a ZIF (Zeolitic Imidazolate Framework) structure and computes its persistent homology.
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import oineus
+from toma_functions import read_configuration, sample_at, oineus_process, calculate_APF
+
+# Step 1: Read atom types and radii from the configuration file
+atoms, radii, sample_start, sample_end, sample_step, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+# Step 2: Load the structure at time step 0
+points = sample_at(
+    file_path="examples/ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+
+print(f"Loaded {len(points)} atoms")
+print(f"Atom types found: {points['Atom'].unique()}")
+
+# Step 3: Compute persistent homology
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+
+# Step 4: Print summary statistics
+print(f"\nDimension 0: {len(dgm_0)} features (connected components)")
+print(f"Dimension 1: {len(dgm_1)} features (loops/rings)")
+print(f"Dimension 2: {len(dgm_2)} features (voids/cavities)")
+
+# Step 5: Compute the Accumulated Persistence Function
+apf_1 = calculate_APF(dgm_1)
+print(f"\nAPF dimension 1 has {len(apf_1)} points")
+print(f"Total accumulated persistence: {apf_1['lifetime'].iloc[-1]:.4f}")
+@endcode
+
+@subsection ex_basic_output Expected Output
+
+The output will show the number of topological features detected in each dimension:
+- Dimension 0 features correspond to connected clusters of atoms.
+- Dimension 1 features correspond to ring structures in the material.
+- Dimension 2 features correspond to enclosed void spaces.
+
+@section ex_kic Example 2: Kernel/Image/Cokernel Persistence
+
+This example demonstrates relative homology computation, which compares the topology of a surface subcomplex against the full complex.
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import oineus
+import pandas
+import numpy
+from toma_functions import (
+    read_configuration, sample_at,
+    oineus_kernel_image_cokernel, calculate_APF
+)
+
+# Load configuration
+atoms, radii, _, _, _, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+# Sample the structure
+points = sample_at(
+    file_path="examples/ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+
+# Define the subcomplex: top and bottom 10% of the structure
+top_pt = max(points["z"])
+bot_pt = min(points["z"])
+height = abs(top_pt - bot_pt)
+upper_threshold = top_pt - 0.1 * height
+lower_threshold = bot_pt + 0.1 * height
+
+print(f"Structure height: {height:.2f} Angstroms")
+print(f"Upper threshold: {upper_threshold:.2f}")
+print(f"Lower threshold: {lower_threshold:.2f}")
+
+# Set up parameters
+params = oineus.ReductionParams()
+params.n_threads = 4
+params.kernel = True
+params.image = True
+params.cokernel = True
+
+# Compute kernel/image/cokernel persistence
+kicr, dgm_0, dgm_1, dgm_2 = oineus_kernel_image_cokernel(
+    points, params, upper_threshold, lower_threshold
+)
+
+# Extract kernel persistence diagrams
+kernel_dgm_1 = pandas.DataFrame(
+    kicr.kernel_diagrams().in_dimension(1),
+    columns=["birth", "death"]
+)
+
+# Extract image persistence diagrams
+image_dgm_1 = pandas.DataFrame(
+    kicr.image_diagrams().in_dimension(1),
+    columns=["birth", "death"]
+)
+
+print(f"\nCodomain diagram dim 1: {len(dgm_1)} features")
+print(f"Kernel diagram dim 1: {len(kernel_dgm_1)} features")
+print(f"Image diagram dim 1: {len(image_dgm_1)} features")
+@endcode
+
+@subsection ex_kic_interp Interpreting Relative Persistence
+
+- @b Kernel persistence captures features that are born in the subcomplex and die when mapped to the full complex.
+- @b Image persistence captures features from the subcomplex that persist in the full complex.
+- @b Cokernel persistence captures features that exist in the full complex but not in the subcomplex.
+
+The @c THICKNESS parameter controls how much of the top and bottom of the structure forms the subcomplex:
+- 0.1 means the top 10% and bottom 10% by z-coordinate.
+- Smaller values give a thinner surface slice.
+
+@section ex_multi Example 3: Multi-Timestep Analysis
+
+This example analyses a structure across multiple time steps from a molecular dynamics trajectory.
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import oineus
+from toma_functions import (
+    read_configuration, sample_at,
+    oineus_process, calculate_APF
+)
+
+# Load configuration
+atoms, radii, _, _, _, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+# Analyse multiple time steps
+sample_start = 0
+sample_end = 2
+sample_step = 1
+
+all_dgms_1 = []
+all_apfs_1 = []
+
+for t in range(sample_start, sample_end, sample_step):
+    print(f"\n--- Processing time step {t} ---")
+
+    points = sample_at(
+        file_path="examples/ZIF_test.xyz",
+        format="xyz",
+        sample_index=t,
+        repeat_x=repeat_x,
+        repeat_y=repeat_y,
+        repeat_z=repeat_z,
+        atom_list=atoms,
+        radius_list=radii
+    )
+
+    dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+    apf_1 = calculate_APF(dgm_1)
+
+    all_dgms_1.append(dgm_1)
+    all_apfs_1.append(apf_1)
+
+    print(f"  Dim 1 features: {len(dgm_1)}")
+    print(f"  Total accumulated persistence: {apf_1['lifetime'].iloc[-1]:.4f}")
+
+print(f"\nProcessed {len(all_dgms_1)} time steps")
+@endcode
+
+@section ex_vis Example 4: Visualising Representative Cycles
+
+This example shows how to extract and visualise the atomic rings corresponding to dimension 1 persistence features.
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import oineus
+from toma_functions import (
+    read_configuration, sample_at, oineus_process,
+    generate_visulisation_df, generate_display
+)
+
+# Load and process
+atoms, radii, _, _, _, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+points = sample_at(
+    file_path="examples/ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+
+# Generate visualisation data with cycle composition
+vis_dgm = generate_visulisation_df(dgm_1, dcmp.r_data, filt, points, atoms)
+
+# Print the atomic composition of each ring
+for i in range(min(5, len(vis_dgm))):
+    print(f"\nLoop {i}:")
+    print(f"  Birth: {vis_dgm['birth'].iloc[i]:.4f}")
+    print(f"  Death: {vis_dgm['death'].iloc[i]:.4f}")
+    print(f"  Lifetime: {vis_dgm['lifetime'].iloc[i]:.4f}")
+    for atom_type in atoms:
+        count = vis_dgm[atom_type].iloc[i]
+        if count > 0:
+            print(f"  {atom_type}: {count} atoms")
+
+# Create an interactive 3D visualisation of the first loop
+fig = generate_display(points, vis_dgm, vis_dgm.index[0], filt)
+fig.write_html("ring_visualisation.html")
+print("\nSaved interactive visualisation to ring_visualisation.html")
+@endcode
+
+@section ex_plotting Example 5: Plotting Persistence Diagrams and APFs
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import oineus
+from toma_functions import (
+    read_configuration, sample_at, oineus_process,
+    calculate_APF, plot_PD, plot_APF
+)
+
+# Load and process
+atoms, radii, _, _, _, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+points = sample_at(
+    file_path="examples/ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+
+# Plot persistence diagrams
+fig_pd_0 = plot_PD(dgm_0, "ZIF - Connected Components (H0)")
+fig_pd_1 = plot_PD(dgm_1, "ZIF - Loops/Rings (H1)")
+fig_pd_2 = plot_PD(dgm_2, "ZIF - Voids/Cavities (H2)")
+
+# Save as images (requires kaleido or orca)
+# fig_pd_1.write_image("PD_dim1.png")
+
+# Calculate and plot APFs
+apf_0 = calculate_APF(dgm_0)
+apf_1 = calculate_APF(dgm_1)
+apf_2 = calculate_APF(dgm_2)
+
+fig_apf_1 = plot_APF(apf_1, "ZIF - Dimension 1 APF")
+# fig_apf_1.write_image("APF_dim1.png")
+
+print("Plots created successfully")
+print(f"Dimension 0 APF total: {apf_0['lifetime'].iloc[-1]:.4f}")
+print(f"Dimension 1 APF total: {apf_1['lifetime'].iloc[-1]:.4f}")
+print(f"Dimension 2 APF total: {apf_2['lifetime'].iloc[-1]:.4f}")
+@endcode
+
+@section ex_settings Example 6: Configuration File Reference
+
+@subsection ex_settings_single Single Mode Settings
+
+@code{.ini}
+[SINGLE]
+MODE = SINGLE
+STRUCTURE_FILE = examples/ZIF_test.xyz
+CONFIGURATION_FILE = examples/settings.ini
+CONFIGURATION_NAME = ZIF
+SAMPLE_TIME = 0
+N_THREADS = 4
+FILE_FORMAT = xyz
+KERNEL = TRUE
+IMAGE = TRUE
+COKERNEL = TRUE
+SAVE_PLOTS = TRUE
+THICKNESS = 0.1
+@endcode
+
+@subsection ex_settings_multi Multi Mode Settings
+
+@code{.ini}
+[MULTI]
+MODE = MULTI
+STRUCTURE_FILE = examples/ZIF_test.xyz
+SAMPLE_START = 0
+SAMPLE_END = 10
+SAMPLE_STEP = 1
+CONFIGURATION_FILE = examples/settings.ini
+CONFIGURATION_NAME = ZIF
+FILE_FORMAT = xyz
+N_THREADS = 4
+KERNEL = FALSE
+IMAGE = FALSE
+COKERNEL = FALSE
+SAVE_PLOTS = TRUE
+@endcode
+
+@subsection ex_settings_batch Batch Mode Settings
+
+@code{.ini}
+[BATCH]
+MODE = BATCH
+PARENT_DIR = data/structures/
+FILE_EXT = .xyz
+FILE_FORMAT = xyz
+SAMPLE_START = 0
+SAMPLE_END = 5
+SAMPLE_STEP = 1
+CONFIGURATION_FILE = settings.ini
+CONFIGURATION_NAME = ZIF
+N_THREADS = 16
+KERNEL = TRUE
+IMAGE = TRUE
+COKERNEL = TRUE
+SAVE_PLOTS = TRUE
+THICKNESS = 0.1
+@endcode
+
+@subsection ex_settings_structure Structure Configuration
+
+@code{.ini}
+[ZIF]
+ATOMS = H, C, N, Zn
+RADII = 0.389, 0.718, 0.635, 1.491
+REPEAT_X = 3
+REPEAT_Y = 3
+REPEAT_Z = 3
+
+[LPS]
+ATOMS = Li, P, S
+RADII = 0.76, 1.05, 1.80
+REPEAT_X = 1
+REPEAT_Y = 1
+REPEAT_Z = 1
+@endcode
+
+@section ex_csv Example 7: Saving and Loading Persistence Diagrams
+
+@code{.py}
+import sys
+sys.path.insert(0, "src")
+
+import pandas
+import oineus
+from toma_functions import (
+    read_configuration, sample_at, oineus_process,
+    write_dgm_csv, calculate_APF
+)
+
+# Load and process
+atoms, radii, _, _, _, repeat_x, repeat_y, repeat_z = \
+    read_configuration("examples/settings.ini", "ZIF")
+
+points = sample_at(
+    file_path="examples/ZIF_test.xyz",
+    format="xyz",
+    sample_index=0,
+    repeat_x=repeat_x,
+    repeat_y=repeat_y,
+    repeat_z=repeat_z,
+    atom_list=atoms,
+    radius_list=radii
+)
+
+params = oineus.ReductionParams()
+params.n_threads = 4
+
+dcmp, filt, dgm_0, dgm_1, dgm_2 = oineus_process(points, params)
+
+# Save persistence diagrams as CSV
+write_dgm_csv(dgm_0, "output/ZIF_sample_0_PD_0")
+write_dgm_csv(dgm_1, "output/ZIF_sample_0_PD_1")
+write_dgm_csv(dgm_2, "output/ZIF_sample_0_PD_2")
+
+# Load a previously saved diagram
+loaded_dgm = pandas.read_csv("output/ZIF_sample_0_PD_1.csv", index_col=0)
+apf = calculate_APF(loaded_dgm)
+
+print(f"Loaded diagram with {len(loaded_dgm)} points")
+print(f"APF total: {apf['lifetime'].iloc[-1]:.4f}")
+@endcode
+*/

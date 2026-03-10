@@ -1,0 +1,100 @@
+/**
+@mainpage Topological Material Analysis (ToMA) Documentation
+
+@section intro_sec Introduction
+
+Topological Material Analysis (ToMA) is a Python application for analysing the topological structure of materials using tools from <b>Topological Data Analysis (TDA)</b>, specifically <b>persistent homology</b>. It is designed for chemists, physicists, and materials scientists who work with simulated atomic configurations.
+
+ToMA was developed in conjunction with the <a href="https://sites.google.com/view/smedskjaer">Glass Structure and Mechanics Group, Aalborg University</a>.
+
+@section features_sec Key Features
+
+- <b>Persistent Homology</b>: Compute persistence diagrams in dimensions 0, 1, and 2 using weighted alpha complexes via Oineus and Diode.
+- <b>Kernel/Image/Cokernel Persistence</b>: Relative homology computations for subcomplex analysis (e.g., surface vs. bulk).
+- <b>Accumulated Persistence Function (APF)</b>: A vectorisation of persistence diagrams for comparison and summary statistics.
+- <b>Representative Cycle Extraction</b>: Identify and visualise the atomic rings corresponding to topological features.
+- <b>Reeb Graph Analysis</b>: Construct Reeb graphs of void regions to study connectivity and transport pathways.
+- <b>Diffusion Pathway Analysis</b>: Compute and cluster diffusion paths through void regions in materials.
+- <b>Maximum Flow Computation</b>: Quantify flow capacity through material void networks using Reeb graph analysis.
+- <b>Interactive Visualisation</b>: Persistence diagrams, APF plots, 3D structure visualisation, and Reeb graph network plots.
+
+@section interfaces_sec User Interfaces
+
+ToMA provides two interfaces:
+
+@subsection gui_sec Graphical User Interface (Streamlit)
+
+Run the GUI from the @c src directory:
+@code{.sh}
+python -m streamlit run src/ToMA.py
+@endcode
+
+The GUI offers multi-page navigation for:
+- Single configuration analysis
+- Batch mode processing
+- Circular max flow analysis
+- Cobordism analysis
+
+@subsection cli_sec Command Line Interface
+
+Run the CLI with a settings file:
+@code{.sh}
+./src/ToMA-cli.py -s <settings_file> -n <settings_name>
+@endcode
+
+@section install_sec Installation
+
+@subsection deps_sec Python Dependencies
+
+The following Python packages are required:
+- Streamlit
+- ASE (Atomic Simulation Environment)
+- Oineus
+- Diode
+- Pandas, NumPy, SciPy
+- NetworkX
+- Plotly Express
+- Galois
+- Numba
+- PyOMO
+- Gurobi
+- colour
+
+@subsection sys_deps_sec System Dependencies
+
+- tkinter
+- CGAL (Computational Geometry Algorithms Library)
+- oneTBB (Threading Building Blocks)
+
+@section modules_sec Module Overview
+
+| Module | Description |
+|--------|-------------|
+| @ref toma_functions.py | Core I/O, persistent homology computation, APF calculation, and plotting |
+| @ref reeb_graph.py | Reeb graph construction and analysis for void region connectivity |
+| @ref diffusion.py | Diffusion pathway computation through void space |
+| @ref cobordisms.py | Cobordism-based relative homology computations |
+| @ref reeb_aux.py | Auxiliary functions for Reeb graph linear algebra |
+| @ref diffusion_utils.py | Utility functions for distance computation with periodic boundaries |
+
+@section getting_started Getting Started
+
+See the @ref tutorial_page for a step-by-step guide, and @ref examples_page for ready-to-use example scripts.
+
+@section citation_sec Citation
+
+If you use ToMA in your research, please cite:
+
+@code
+@article{toma2024,
+  title={ToMA: Analyse the structures of materials using tools from TDA},
+  author={Bokor Bleile, Yossi and others},
+  year={2024},
+  doi={10.5281/zenodo.10781424}
+}
+@endcode
+
+@section license_sec License
+
+ToMA is released under the GNU General Public License (GPL). See @ref md__l_i_c_e_n_s_e for details.
+*/

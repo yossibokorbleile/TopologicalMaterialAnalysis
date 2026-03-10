@@ -1,3 +1,9 @@
+##
+# @file reeb_graph.py
+# @brief Reeb graph construction and analysis for void region connectivity in materials.
+# @version 1.3.0
+# @date March 2026
+
 import numpy as np
 import matplotlib.pyplot as plt
 #import galois
@@ -19,7 +25,30 @@ from reeb_aux import *
 
 class Reeb_Graph(object):
     
-    """Reeb Graph Class"""
+    """! @brief Reeb graph class for analysing void region connectivity in materials.
+
+    The Reeb_Graph class constructs a Reeb graph from the void regions of a material
+    structure, enabling the study of transport pathways and connectivity. It discretises
+    the void space onto a grid, constructs a graph from connected components of level sets,
+    and provides methods for maximum flow computation and tunnel identification.
+
+    @section reeb_usage Usage
+    @code{.py}
+    from reeb_graph import Reeb_Graph
+    import numpy as np
+
+    reeb = Reeb_Graph(
+        backbone=atom_positions,
+        flow=flow_positions,
+        radii=radii_array,
+        M=box_max, m=box_min,
+        grid_size=50,
+        periodic=True
+    )
+    reeb.make_reeb_graph(axis=2, old=False, plot=True)
+    max_flow = reeb.compute_max_flow()
+    @endcode
+    """
     
     def __init__(self, inputfile = None, backbone = None, flow = None, radii = None, M = None, m = None,
                                 grid_size = 50, 
@@ -36,22 +65,28 @@ class Reeb_Graph(object):
                                 MP = False,
                                 save_RAM = True,
                                 stride = 1):
-        """
-        LEGEND
-        radii  -> vector or real value determining the radius around the atoms of the backbone, inducing the void region;
-        axes -> the axis along which keep the boundary conditions. The remaining axis is "unrolled";
-        PREV_DATA -> use to pass from previous calculations the distances between grid and backbone;
-        simply_connected_top_bottom -> consider top and bottom layer as simply connected, 
-                                       ignoring the forbidden region in such sets;
-        swap_res_grid_and_balls -> swap forbidden region and residual grid;
-        fat_radius -> scalar saying how many times the diamater of a cell is multiplied to obtain a neighborhood of the graph;
-        reeb_stride -> the stride along the axis to make the Reeb graph;
-        covering -> e.g. [-1,0] or [-1,1] determine the thickness of the "level sets": (v-delta,v) or (v-delta,v+delta). 
-                    Other values different from -1,1 can be tried but can cause topological errors in the graph;
-        relax_z_axis -> [a,-b] puts the first a layers of the cube on top of it and the last b on the bottom: less or equal than a, 
-                 greater then -b;
-        transform_points -> change atoms location with affine transformation Vxpts+v
-        stride -> the stride to subdivide the calculations of the distances between backbone and the grid
+        """! @brief Initialise the Reeb_Graph with material structure data and grid parameters.
+
+        @param inputfile Optional path to an input file containing atomic structure data.
+        @param backbone Numpy array of shape (N, 3) with backbone atom positions.
+        @param flow Numpy array of shape (N, 3) with flow particle positions.
+        @param radii Vector or scalar determining the radius around backbone atoms, defining the void region.
+        @param M Numpy array of shape (3,) with the upper bounds of the simulation box.
+        @param m Numpy array of shape (3,) with the lower bounds of the simulation box.
+        @param grid_size Number of grid points along each axis (default 50).
+        @param t_step Time step parameter (default 50).
+        @param PREV_DATA Tuple (backbone, flow, distances, atom_kinds) from previous calculations to reuse distances.
+        @param periodic Whether to apply periodic boundary conditions (default True).
+        @param fat_radius Multiplier for the cell diameter to define the graph neighbourhood radius (default 1).
+        @param covering Array defining the level set thickness, e.g. [-1,1] for symmetric covering (default [-1,1]).
+        @param reeb_stride Stride along the axis for Reeb graph construction (default 1).
+        @param swap_res_grid_and_balls If True, swap forbidden region and residual grid (default False).
+        @param transform_points Affine transformation (V, v) to apply to atom positions as V*pts + v.
+        @param relax_z_axis Array [a, -b] to extend the z-axis by placing boundary layers (default None).
+        @param verbose If True, print progress and diagnostic information (default False).
+        @param MP If True, use multiprocessing for distance calculations (default False).
+        @param save_RAM If True, use memory-efficient graph construction (default True).
+        @param stride Stride for subdividing distance calculations between backbone and grid (default 1).
         """   
     
     
@@ -103,6 +138,16 @@ class Reeb_Graph(object):
     """    
     def setup_grid(self, balls_centres = None, balls_radii = None,
                                 M = None, m = None):
+        """! @brief Set up the computational grid and residual region.
+
+        Optionally applies an affine transformation to backbone positions, then
+        generates the residual grid by excluding forbidden regions around atoms.
+
+        @param balls_centres Numpy array of shape (N, 3) with atom centre positions.
+        @param balls_radii Numpy array of atom radii defining forbidden regions.
+        @param M Upper bounds of the simulation box.
+        @param m Lower bounds of the simulation box.
+        """
         if not self.transform_points is None:
             balls_centres, balls_radii = self.transform_backbone(balls_centres = balls_centres ,balls_radii = balls_radii,
                                 M = M, m = m)
@@ -112,8 +157,18 @@ class Reeb_Graph(object):
                  
 
     def transform_backbone(self, balls_centres = None, balls_radii = None,
-                                M = None, m = None): 
-        
+                                M = None, m = None):
+        """! @brief Apply affine transformation to backbone atom positions.
+
+        Extracts the transformation matrix V and translation vector v from
+        self.transform_points and applies them to atom centres.
+
+        @param balls_centres Numpy array of shape (N, 3) with atom positions.
+        @param balls_radii Numpy array of atom radii.
+        @param M Upper bounds of the simulation box.
+        @param m Lower bounds of the simulation box.
+        @return Tuple (balls_centres, balls_radii) with transformed positions and filtered radii.
+        """
         a=0        
         try:
             self.transform_points.shape
@@ -146,7 +201,20 @@ class Reeb_Graph(object):
                 
     
     def affine_transform(self, points, radii, V, v, M, m):
+        """! @brief Apply affine coordinate transformation with periodic boundary handling.
 
+        Replicates points across periodic boundaries, applies the affine
+        transformation V*points + v, and filters to retain only those within
+        the simulation box [m, M].
+
+        @param points Numpy array of shape (N, 3) with point coordinates.
+        @param radii Numpy array of radii associated with each point.
+        @param V Transformation matrix.
+        @param v Translation vector.
+        @param M Upper bounds of the simulation box.
+        @param m Lower bounds of the simulation box.
+        @return Tuple (points, radii) after transformation and filtering.
+        """
         DELTAS = M-m
         vectors = list([[0,-DELTAS[i],DELTAS[i]] for i in range(len(DELTAS))])
         
@@ -172,7 +240,17 @@ class Reeb_Graph(object):
         
     def produce_res_grid(self, balls_centres = None ,balls_radii = None,
                                 M = None, m = None):
-        
+        """! @brief Generate the residual grid (void region) by excluding forbidden regions around atoms.
+
+        Creates a 3D grid over the simulation box, computes distances from each grid
+        point to the nearest atom, and marks points outside all atomic radii as the
+        residual (void) region. Also builds a sparse adjacency graph over the residual grid.
+
+        @param balls_centres Numpy array of shape (N, 3) with atom centre positions.
+        @param balls_radii Numpy array of atom radii defining forbidden regions.
+        @param M Upper bounds of the simulation box.
+        @param m Lower bounds of the simulation box.
+        """
         if self.verbose:
             print('The filtration radii are: ', balls_radii[0],
                                                 balls_radii[-1])
@@ -347,7 +425,15 @@ class Reeb_Graph(object):
 
 
     def make_reeb_graph(self, axis=-1, old=False, plot = False):
+        """! @brief Construct the Reeb graph from the residual grid.
 
+        Computes the Reeb graph along the specified axis using either the current
+        or legacy algorithm, builds a NetworkX graph, and optionally plots the result.
+
+        @param axis The coordinate axis along which to slice the residual grid (default -1, i.e. z-axis).
+        @param old If True, use the legacy Reeb graph algorithm (default False).
+        @param plot If True, display a 3D plot of the Reeb graph after construction (default False).
+        """
         grid = self.res_grid
 
         if old:
@@ -363,7 +449,18 @@ class Reeb_Graph(object):
 
                
     def reeb_graph(self, grid, axis=-1, D_ = None):
-        
+        """! @brief Core Reeb graph computation using connected components of level sets.
+
+        Sweeps through the grid along the given axis, computing connected components
+        at each level set and connecting components between consecutive levels based
+        on their intersection.
+
+        @param grid Numpy array of shape (N, 3) with residual grid points.
+        @param axis The coordinate axis for the sweep (default -1, i.e. z-axis).
+        @param D_ Precomputed sparse adjacency matrix for the grid (default None, computed internally).
+        @return Tuple (E, weights, fun, emb) containing edges, edge weight matrix,
+                node measures, and node embedding coordinates.
+        """
         self.axis = axis
         g = lambda x: len(x)
         
@@ -471,7 +568,17 @@ class Reeb_Graph(object):
         return E, weights, fun, emb
     
     def reeb_graph_old(self, grid, axis=-1, D_ = None):
-        
+        """! @brief Legacy Reeb graph computation method.
+
+        An older implementation of the Reeb graph algorithm that uses dictionary-based
+        edge weights and a list-based edge collection. Retained for backward compatibility.
+
+        @param grid Numpy array of shape (N, 3) with residual grid points.
+        @param axis The coordinate axis for the sweep (default -1, i.e. z-axis).
+        @param D_ Precomputed sparse adjacency matrix for the grid (default None, computed internally).
+        @return Tuple (E, weights, fun, emb) containing edge list, weight dictionary,
+                node measures, and node embedding coordinates.
+        """
         self.axis = axis
         g = lambda x: len(x)
         
@@ -578,7 +685,18 @@ class Reeb_Graph(object):
 
     
     def build_graph(self,E,weights,fun,emb):
-    
+        """! @brief Build a NetworkX graph from Reeb graph edges, weights, and embeddings.
+
+        Creates an undirected graph with node positions set from the embedding coordinates
+        and edge capacities set from the weight matrix. Also computes the reachability
+        mask between source (node 0) and sink (last node).
+
+        @param E Edge array or list of (source, target) pairs.
+        @param weights Edge weight matrix (sparse or dict) representing intersection sizes.
+        @param fun Numpy array of node measures (normalised component sizes).
+        @param emb Numpy array of shape (N, 3) with node embedding positions.
+        @return NetworkX Graph with node positions and edge capacities.
+        """
         # create networkx graph
         G=nx.Graph()
         
@@ -624,7 +742,14 @@ class Reeb_Graph(object):
     
     
     def compute_max_flow(self,D_ = None):
-        
+        """! @brief Compute the maximum flow through the Reeb graph from source to sink.
+
+        Uses scipy's maximum_flow algorithm on the weighted adjacency matrix to
+        find the maximum flow from node 0 (source) to the last node (sink).
+        Results are stored in self.max_flow and self.D_flow.
+
+        @param D_ Optional sparse weight matrix to use instead of self.D_reeb_w.
+        """
         if D_ is None:
             D = self.D_reeb_w.astype(int)
         else:
@@ -645,7 +770,18 @@ class Reeb_Graph(object):
         
     
     def compute_tunnels(self, n=10, D_= None, independent = False, plot=False):
-        
+        """! @brief Find transport tunnels through the Reeb graph using shortest path algorithms.
+
+        Iteratively finds paths from source (node 0) to sink (last node) using the
+        Bellman-Ford algorithm on negated weights, extracting the widest paths first.
+        After each path is found, edge capacities are reduced (or removed if independent).
+
+        @param n Maximum number of tunnels to find (default 10).
+        @param D_ Optional sparse weight matrix to use instead of self.D_reeb_w.
+        @param independent If True, remove edges entirely after use; if False, subtract the
+               minimum capacity along the path (default False).
+        @param plot If True, plot each tunnel as it is found (default False).
+        """
         dummy = 1-independent
         self.PATHS = []
         self.MIN = [] 
@@ -707,7 +843,11 @@ class Reeb_Graph(object):
                 
 
     def plot_reeb(self,):
-        
+        """! @brief Visualise the Reeb graph as a 3D network plot.
+
+        Retrieves node measures from the graph attributes and uses them as
+        colour values for the 3D scatter plot.
+        """
         try:
             fun_ = nx.get_node_attributes(self.G, 'measure')
             fun = np.array([fun_[v] for v in self.G.nodes])
@@ -718,7 +858,14 @@ class Reeb_Graph(object):
 
         
     def plot_tunnel(self,path, D):
-       
+        """! @brief Visualise a specific tunnel path on the Reeb graph.
+
+        Highlights the nodes belonging to the tunnel path in red and all other
+        nodes in blue, then renders the 3D network plot.
+
+        @param path Array of node indices forming the tunnel path.
+        @param D Sparse or dense weight matrix used to colour depleted edges.
+        """
         fun = np.array(['blue' for v in self.G.nodes])
         
         for v in path:
@@ -728,7 +875,14 @@ class Reeb_Graph(object):
 
                 
     def network_plot_3D(self, fun, D = None):
-        
+        """! @brief Create a 3D network visualisation of the Reeb graph using matplotlib.
+
+        Plots nodes as a 3D scatter plot coloured by fun, and draws edges as lines.
+        Edges with zero weight in D (if provided) are drawn in red.
+
+        @param fun Node colour values: a numpy array of scalars or colour strings.
+        @param D Optional weight matrix; edges with D[i,j]==0 are coloured red (default None).
+        """
         # Get node positions
         pos = nx.get_node_attributes(self.G, 'pos')
         # Loop on the pos dictionary to extract the x,y,z coordinates of each node
@@ -770,7 +924,16 @@ class Reeb_Graph(object):
         
         
     def plot_res_grid(self,three_d = False, heights_=None, axis=-1):
-        
+        """! @brief Visualise the residual grid points.
+
+        In 3D mode, renders all residual grid points as a scatter plot. In 2D mode,
+        plots cross-sectional slices of the residual grid at specified heights along
+        the given axis.
+
+        @param three_d If True, produce a single 3D scatter plot; otherwise plot 2D slices (default False).
+        @param heights_ Optional array of height values at which to plot 2D slices (default None, uses all unique values).
+        @param axis The coordinate axis perpendicular to the slicing planes (default -1, i.e. z-axis).
+        """
         if three_d:
             C = self.res_grid
 
@@ -818,8 +981,17 @@ class Reeb_Graph(object):
 
 
     def plot_path_connected_comp(self, comps, three_d = False, boundaries=False, plot_reeb=False, plot_sorrounding=True):
-        """
-        comps -> a set of path connected components, indexed as the vertices of the reeb graph
+        """! @brief Plot path-connected components of the Reeb graph in the residual grid.
+
+        Visualises the residual grid points belonging to the specified Reeb graph
+        components, optionally overlaying the Reeb graph edges and surrounding
+        backbone atoms.
+
+        @param comps Array or list of Reeb graph vertex indices identifying the components to plot.
+        @param three_d If True, produce a 3D scatter plot; otherwise plot 2D slices (default False).
+        @param boundaries If True, include boundary nodes (first and last) in the selection (default False).
+        @param plot_reeb If True, overlay the Reeb graph edges and nodes on the plot (default False).
+        @param plot_sorrounding If True, overlay surrounding backbone atoms on the plot (default True).
         """
         
         comp = []
@@ -894,6 +1066,14 @@ class Reeb_Graph(object):
 
         
     def make_tunnel_matrix(self,):
+        """! @brief Create a tunnel capacity matrix scaled by area and particle size.
+
+        Converts the Reeb graph weight matrix into a tunnel capacity matrix by
+        scaling edge weights by the ratio of the grid cell area to the particle
+        cross-sectional area, then rounding up.
+
+        @return Numpy array with the scaled tunnel capacity matrix.
+        """
         D = np.copy(self.D_reeb_w)
         area_unit = self.d_x*self.d_y
         D = D*(area_unit/(np.pi*np.power(self.d_Li/2,2)))
@@ -902,7 +1082,18 @@ class Reeb_Graph(object):
     
     
     def compute_bottlenecks(self, D_ = None, plot=False, col_thresh = -0.001, plot_thresh = 400, include_deadlocks = False):
+        """! @brief Identify bottleneck nodes in the Reeb graph flow network.
 
+        Computes a divergence-like quantity at each node by examining the difference
+        between incoming and outgoing weights. Nodes with significant net flow imbalance
+        indicate bottlenecks. Results are stored in self.DIV.
+
+        @param D_ Optional weight matrix to use instead of self.D_reeb_w (default None).
+        @param plot If True, plot the divergence profile and a 3D network coloured by bottleneck status (default False).
+        @param col_thresh Threshold for colouring nodes as bottlenecks in the plot (default -0.001).
+        @param plot_thresh Threshold for filtering divergence values in the line plot (default 400).
+        @param include_deadlocks If True, include dead-end nodes in the divergence computation (default False).
+        """
         if D_ is None:
             D_w = np.copy(self.D_reeb_w)
         else:
@@ -940,8 +1131,16 @@ class Reeb_Graph(object):
             
             
     def compute_sorrounding_structure(self,path,boundaries=False):
-        """
-        path -> a subset of the vertices of the reeb graph (not the indexes! the actual vertices!)
+        """! @brief Find backbone atoms surrounding a given Reeb graph path.
+
+        For each vertex in the path, collects the corresponding residual grid points,
+        then finds the nearest backbone atoms to those grid points using periodic
+        distance calculations.
+
+        @param path Array or list of Reeb graph vertex indices (not grid indices).
+        @param boundaries If True, include boundary vertices in the selection (default False).
+        @return Tuple (cloud, cloud_P, cloud_S) with all nearby atoms, primary atoms,
+                and secondary atoms respectively.
         """
         cloud_P = []
         cloud_S = []

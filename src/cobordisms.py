@@ -1,3 +1,15 @@
+##
+# @file cobordisms.py
+# @brief Cobordism-based relative homology computations for paired complexes.
+#
+# This module provides functions for computing kernel, image, and cokernel
+# persistence using cobordism techniques. It handles vertex permutations,
+# simplex ordering, and boundary matrix operations needed for the
+# relative homology computation pipeline.
+#
+# @version 1.3.0
+# @date March 2026
+
 import oineus
 from functools import cmp_to_key
 import math

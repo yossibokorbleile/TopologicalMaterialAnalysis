@@ -1,7 +1,16 @@
 ##
-# @internal
-# @file io.py
-# @brief functions to read configuration and computation settings, load atoms as well as save outputs.
+# @file toma_functions.py
+# @brief Core functions for I/O, persistent homology computation, APF calculation, and visualisation.
+#
+# This module provides the main computational pipeline for ToMA, including:
+# - Reading configuration and computation settings from INI files
+# - Loading atomic structures from simulation files via ASE
+# - Computing persistent homology using weighted alpha complexes (via Diode and Oineus)
+# - Kernel/image/cokernel persistence for relative homology
+# - Accumulated Persistence Function (APF) calculation
+# - Persistence diagram and APF plotting
+# - Representative cycle extraction and visualisation
+#
 # @version 1.3.0
 # @date March 2026
 
@@ -466,13 +475,16 @@ def oineus_compare(x, y):
 		return 1
 
 def sub_complex(points : pandas.DataFrame, z_upper : float, z_lower : float):
-	"""! Given the points, and the upper and lower thresholds in the 'z'-component. 
+	"""! Determine which points belong to the subcomplex based on z-coordinate thresholds.
 
-	@param points		pandas.DataFrame containing of the points.
+	Points with z-coordinate above @p z_upper or below @p z_lower are included in the
+	subcomplex. This is used to define the surface layers for kernel/image/cokernel persistence.
+
+	@param points		pandas.DataFrame containing the points with a 'z' column.
 	@param z_upper		float giving the upper threshold, any point above this is in the subcomplex
 	@param z_lower		float giving the lower threshold, any point below this is in the subcomplex
 
-	@return sub_comp	list containing the indices of the points on which we build the subcomplex
+	@return sub_comp	list of booleans indicating whether each point is in the subcomplex
 	"""
 	print("The upper threshold is {} and the lower threshold is {}".format(z_upper, z_lower))
 	sub_comp = []
@@ -606,10 +618,15 @@ def oineus_kernel_image_cokernel(points : pandas.DataFrame, params : oineus.Redu
 	print("finished oineus_kernel_image_cokernel")
 	return kicr, dgm_0, dgm_1, dgm_2
 
-def calculate_APF(dgm): 
-	"""! Calcualte the APF from a diagram 
-	@param dgm 		the diargam you want to calculate the APF for
-	@return APF		the APF as a list of coordiantes
+def calculate_APF(dgm):
+	"""! Calculate the Accumulated Persistence Function (APF) from a persistence diagram.
+
+	The APF is a vectorisation of a persistence diagram. For each point (b, d), the
+	mean age m = (b+d)/2 and lifetime l = |d-b| are computed. Points are sorted by
+	mean age, and the lifetimes are cumulatively summed.
+
+	@param dgm 		pandas.DataFrame with columns 'birth' and 'death'
+	@return APF		pandas.DataFrame with columns 'mean age' and 'lifetime' (cumulative)
 	"""
 	lifetime = abs(dgm["death"] - dgm["birth"]) #get the lifetime of each point
 	mean_age = (dgm["death"] + dgm["birth"])/2 #get the mean age
@@ -619,9 +636,17 @@ def calculate_APF(dgm):
 			APF[i,1] = APF[i,1] + APF[i-1,1] #TODO: remove duplicates and only keep the last value of each one
 	return pandas.DataFrame(APF, columns = ["mean age", "lifetime"])
 
-# Function to compute the persistent homology 
 def compute():
+	"""! Run the full persistent homology computation pipeline.
+	@brief Compute persistence diagrams and APFs for all samples in the session state.
 
+	This function is the main computation entry point for the Streamlit GUI. It iterates
+	over the configured sample range, loads each time step, computes persistent homology
+	(and optionally kernel/image/cokernel persistence), and stores all results in
+	st.session_state for later visualisation.
+
+	@note Requires configuration to be loaded in st.session_state before calling.
+	"""
 	if 'params' not in st.session_state:
 		st.session_state.params = oineus.ReductionParams()
 	if "kicr_params" not in st.session_state:

@@ -1,7 +1,6 @@
 ##
-# @internal
-# @file Circular_Max_Flow.py
-# @brief Streamlit page for computing circular max flow.
+# @file 3_Circular_Max_Flow.py
+# @brief Streamlit page for computing circular max flow through Reeb graphs.
 # @version 1.3.0
 # @date March 2026
 # @author: Yossi Bokor Bleile

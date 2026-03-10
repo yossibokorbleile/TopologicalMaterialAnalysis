@@ -1,6 +1,5 @@
 ##
-# @internal
-# @file Single_Configuration.py
+# @file 1_Single_Configuration.py
 # @brief Streamlit page for analysing a single configuration.
 # @version 1.3.0
 # @date March 2026

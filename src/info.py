@@ -1,10 +1,10 @@
 ##
-# @internal
 # @file info.py
+# @brief Application metadata: license, name, and copyright information.
 # @authors Yossi Bokor Bleile
 # @version 1.3.0
 # @date March 2026
-# @copyright BSD
+# @copyright GPL
 #
 
 import os

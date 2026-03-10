@@ -1,6 +1,5 @@
 ##
-# @internal
-# @file 2_License.py
+# @file 5_License.py
 # @brief Streamlit page for displaying the license information.
 # @version 1.3.0
 # @date March 2026
