@@ -3,7 +3,7 @@
 # @file Batch_Mode.py
 # @brief Streamlit page for analysing a single configuration.
 # @version 1.3.0
-# @date December 2024
+# @date March 2026
 # @author: Yossi Bokor Bleile
 
 import streamlit as st

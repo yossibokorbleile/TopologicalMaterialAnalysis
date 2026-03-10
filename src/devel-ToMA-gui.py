@@ -3,7 +3,7 @@
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
 # @version 1.3.0
-# @date February 2024
+# @date March 2026
 # @copyright GPL
 # 
 # @section License
