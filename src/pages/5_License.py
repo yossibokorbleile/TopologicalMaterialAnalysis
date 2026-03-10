@@ -2,7 +2,7 @@
 # @internal
 # @file 2_License.py
 # @brief Streamlit page for displaying the license information.
-# @version 1.0.0
+# @version 1.3.0
 # @date December 2024
 # @author Yossi Bokor Bleile
 

@@ -2,7 +2,7 @@
 # @internal
 # @file info.py
 # @authors Yossi Bokor Bleile
-# @version 1.0.0
+# @version 1.3.0
 # @date December 2024
 # @copyright BSD
 #
