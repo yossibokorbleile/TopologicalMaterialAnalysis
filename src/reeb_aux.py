@@ -994,9 +994,27 @@ def make_neigh_(grid,p_graph,i_graph,f):
     return aux
 
 
-@jit(nopython=False, parallel=False, fastmath=True)    
+@jit(nopython=False, parallel=False, fastmath=True)
 def connect_lvl_sets_aux(i, n_c, C, grid, lvl_to_grid, REEB_GRAPH, norm, count):
-    
+    """! @brief Connect components of adjacent level sets for Reeb graph construction.
+
+    Assigns Reeb graph node labels to grid points at level i based on their
+    connected component membership C, then computes edge weights between
+    level i and level i-1 nodes by counting shared grid points.
+
+    @param i              Current level-set index.
+    @param n_c            Number of connected components at this level.
+    @param C              Component labels for points at this level (shape: (n_level,)).
+    @param grid           Grid point coordinates (shape: (npts, 3)).
+    @param lvl_to_grid    Mapping from level-set indices to grid indices.
+    @param REEB_GRAPH     Reeb graph label matrix (shape: (npts, n_levels)), modified in place.
+    @param norm           Normalisation factor for edge weights and node sizes.
+    @param count          Running counter for Reeb graph node identifiers.
+    @return Tuple (REEB_GRAPH_col, AUX_w, AUX_f, AUX_e, count) where
+            REEB_GRAPH_col is the updated column i of REEB_GRAPH, AUX_w
+            contains weighted edges, AUX_f contains node sizes, AUX_e
+            contains node mean coordinates, and count is the updated counter.
+    """
     AUX_w = np.zeros((n_c*len(np.unique(REEB_GRAPH[:,i-1])),3))
     AUX_f = np.zeros((n_c,))
     AUX_e = np.zeros((n_c,3)) 
