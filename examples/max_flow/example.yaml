@@ -17,9 +17,9 @@ backbone_atoms: ["Si", "P", "B", "Ge", "O", "S"]
 flow_atoms: ["Na", "Li"]
 
 # --- Optional: sample only part of the trajectory ---
-# frame_start: 0       # first frame index to use (default: 0)
-# frame_end: 500       # last frame index, exclusive (default: all)
-# frame_step: 1        # read every Nth frame from the slice (default: 1)
+frame_start: 0       # first frame index to use (default: 0)
+frame_end: 100       # last frame index, exclusive (default: all)
+frame_step: 1        # read every Nth frame from the slice (default: 1)
 #
 # Note: stride below sub-samples *after* the slice above is applied.
 
@@ -30,6 +30,8 @@ reeb_stride: 2
 stride: 20
 periodic: true
 common_backbone: true
+apply_frechet_mean: false
+print_mean_stucture: false
 repeat: [1, 1, 1]
 
 # --- Output ---

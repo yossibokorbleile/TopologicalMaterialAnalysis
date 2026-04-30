@@ -12,22 +12,27 @@ def compute_backbone(
     flow_atoms,
     reeb_stride,
     common_backbone=True,
+    apply_frechet_mean=False,
+    print_mean_stucture=False,
     repeat=(1, 1, 1),
 ):
     """Compute backbone radii and flow coordinates"""
     print("processing backbone")
     n_steps = len(ase_atoms)
 
-    unwrapped_atoms = unwrap_trajectory(ase_atoms, np.diagonal(ase_atoms[0].get_cell()))
-    repeated_frames = []
-    for atoms in unwrapped_atoms:
-        new_atoms = atoms.repeat(repeat)
-        repeated_frames.append(new_atoms)
+    if repeat != (1, 1, 1):
+        unwrapped_atoms = unwrap_trajectory(
+            ase_atoms, np.diagonal(ase_atoms[0].get_cell())
+        )
+        repeated_frames = []
+        for atoms in unwrapped_atoms:
+            new_atoms = atoms.repeat(repeat)
+            new_atoms.wrap()
+            repeated_frames.append(new_atoms)
+    else:
+        repeated_frames = ase_atoms
 
     cell = np.diagonal(repeated_frames[0].get_cell())
-    mean_positions = np.mean([at.get_positions() for at in repeated_frames], axis=0)
-    mean_positions = np.remainder(mean_positions, cell)
-
     atoms = backbone_atoms + flow_atoms
     n_backbone_types = len(backbone_atoms)
 
@@ -55,19 +60,57 @@ def compute_backbone(
     backbone_atom_types = atom_types[backbone_idxs]
     backbone_coords = atom_coords[:, backbone_idxs, :]
     flow_coords = atom_coords[:, flow_idxs, :]
-    backbone_mean = mean_positions[backbone_idxs]
+
+    if apply_frechet_mean:
+        print("Using Fréchet mean for backbone computation. This may take a while...")
+        backbone_mean = safe_point_cloud_frechet_mean_numba(
+            backbone_coords,
+            cell,
+            m,
+            subsample=min([20, len(atom_coords)]),
+            tol=0.001,
+            maxiter=20,
+        )
+
+    else:
+        unwrapped_atoms = unwrap_trajectory(
+            repeated_frames, np.diagonal(repeated_frames[0].get_cell())
+        )
+        mean_positions = np.mean([at.get_positions() for at in unwrapped_atoms], axis=0)
+        mean_positions = np.remainder(mean_positions, cell)
+        backbone_mean = mean_positions[backbone_idxs]
 
     M_flow = preprocess_PATHS(backbone_mean, backbone_coords, flow_coords, cell, m)
 
+    if print_mean_stucture:
+        from ase import Atoms
+
+        back_structure = Atoms(
+            symbols=backbone_atom_types,
+            positions=backbone_mean,
+            cell=cell,
+            pbc=True,
+        )
+
+        flow_structure = Atoms(
+            symbols=atom_types[flow_idxs],
+            positions=M_flow[0, :, :],
+            cell=cell,
+            pbc=True,
+        )
+
+        mean_structure = back_structure + flow_structure
+        mean_structure.write("mean_structure.xyz")
+
     if common_backbone is True:
         radii = []
-        # radii_old = []
         for a in backbone_atoms:
             a_mean = backbone_mean[backbone_atom_types == a]
             dist_matrix = flow_to_fmean_dist(M_flow, a_mean, cell, m)
-            # r = rdf_onset_radius(dist_matrix.flatten(), np.prod(cell))
-            # radii.append(r)
-            radii.append(np.min(dist_matrix))
+            r = rdf_onset_radius(dist_matrix.flatten(), np.prod(cell))
+            # r = np.min(dist_matrix)
+            radii.append(r)
+            print(r, np.min(dist_matrix))
         backbone_radii = []
         for a in backbone_atom_types:
             backbone_radii.append(float(radii[backbone_atoms.index(a)]))
@@ -76,7 +119,6 @@ def compute_backbone(
             flow_to_fmean_dist(M_flow, backbone_mean, cell, m), axis=-1
         )
     print("backbone_radii", radii)
-    # print("backbone_radii_old", radii_old)
     return backbone_mean, backbone_radii, cell, m
 
 

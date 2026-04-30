@@ -30,6 +30,8 @@ Optional — calculation
     stride            int           Analysis frame sub-sampling (default 20).
     periodic          bool          Use PBC (default true).
     common_backbone   bool          Same radii per atom type (default true).
+    apply_frechet_mean bool         Use Fréchet mean for backbone, instead of Arithmetic mean. Computational cost is higher. (default false).
+    print_mean_stucture bool         Print the mean structure to a file. (default false)
     repeat            [int,int,int] Supercell repeat (default [1,1,1]).
 
 Optional — output
@@ -78,6 +80,8 @@ class FlowConfig:
     stride: int = 20
     periodic: bool = True
     common_backbone: bool = True
+    apply_frechet_mean: bool = False
+    print_mean_stucture: bool = False
     repeat: tuple = (1, 1, 1)
 
     # Output
@@ -187,6 +191,8 @@ def run_flow_analysis(cfg: FlowConfig) -> dict:
         cfg.reeb_stride,
         common_backbone=cfg.common_backbone,
         repeat=cfg.repeat,
+        apply_frechet_mean=cfg.apply_frechet_mean,
+        print_mean_stucture=cfg.print_mean_stucture,
     )
 
     flow = compute_max_flow(
