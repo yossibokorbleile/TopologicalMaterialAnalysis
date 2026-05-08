@@ -15,6 +15,7 @@ def compute_backbone(
     apply_frechet_mean=False,
     print_mean_stucture=False,
     repeat=(1, 1, 1),
+    radii_figures = False,
 ):
     """Compute backbone radii and flow coordinates"""
     print("processing backbone")
@@ -102,14 +103,15 @@ def compute_backbone(
         mean_structure = back_structure + flow_structure
         mean_structure.write("mean_structure.xyz")
 
+    rdf_figures = []
     if common_backbone is True:
         radii = []
         for a in backbone_atoms:
             a_mean = backbone_mean[backbone_atom_types == a]
             dist_matrix = flow_to_fmean_dist(M_flow, a_mean, cell, m)
-            r = rdf_onset_radius(dist_matrix.flatten(), np.prod(cell))
-            # r = np.min(dist_matrix)
+            r, fig = rdf_onset_radius(dist_matrix.flatten(), np.prod(cell), radii_figures=radii_figures, label=f"{a}-{flow_atoms[0]}")
             radii.append(r)
+            rdf_figures.append(fig)
             print(r, np.min(dist_matrix))
         backbone_radii = []
         for a in backbone_atom_types:
@@ -119,7 +121,7 @@ def compute_backbone(
             flow_to_fmean_dist(M_flow, backbone_mean, cell, m), axis=-1
         )
     print("backbone_radii", radii)
-    return backbone_mean, backbone_radii, cell, m
+    return backbone_mean, backbone_radii, cell, m, rdf_figures
 
 
 def compute_max_flow(
@@ -182,7 +184,7 @@ def compute_max_flow(
 import matplotlib.pyplot as plt
 
 
-def rdf_onset_radius(distances_flat, box_volume, n_bins=200, rrange=6, threshold=0.01):
+def rdf_onset_radius(distances_flat, box_volume, n_bins=200, rrange=6, threshold=0.01, label="", radii_figures=False):
     """
     Find the onset of the first peak in the RDF
     """
@@ -200,13 +202,19 @@ def rdf_onset_radius(distances_flat, box_volume, n_bins=200, rrange=6, threshold
             onset_idx = i
             break
 
-    plt.plot(xval, gr)
-    plt.axvline(xval[onset_idx], color="red", linestyle="--")
-    plt.xlabel("Distance")
-    plt.ylabel("g(r)")
-    plt.show()
+    if radii_figures:
+        fig, ax = plt.subplots()
+        title = f"RDF — {label}" if label else "RDF"
+        ax.set_title(title)
+        ax.plot(xval, gr)
+        ax.axvline(xval[onset_idx], color="red", linestyle="--", label=f"onset r = {xval[onset_idx]:.3f} Å")
+        ax.set_xlabel("Distance (Å)")
+        ax.set_ylabel("g(r)")
+        ax.legend()
+    else:
+        fig = None
 
-    return xval[onset_idx]
+    return xval[onset_idx], fig
 
 
 def unwrap_trajectory(atoms, cell):

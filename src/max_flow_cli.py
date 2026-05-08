@@ -45,6 +45,7 @@ import sys
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import yaml
@@ -64,6 +65,7 @@ class FlowConfig:
 
     # Required
     trajectory_path: str = ""
+    file_format: str = "lammps-dump-text"
     atom_type_map: dict = field(default_factory=dict)
     backbone_atoms: list = field(default_factory=lambda: ["Si", "O"])
     flow_atoms: list = field(default_factory=lambda: ["Na"])
@@ -88,6 +90,7 @@ class FlowConfig:
     output_csv: str = "flow_results.csv"
     verbose: bool = False
     save_reeb_backbone: bool = False
+    radii_figures: bool = False
 
 
 def load_config(yaml_path: str, cli_overrides: dict) -> FlowConfig:
@@ -151,7 +154,7 @@ def load_trajectory(cfg: FlowConfig) -> list:
         )
         print(f"Loading trajectory: {cfg.trajectory_path}  ({label})")
 
-    frames = read(cfg.trajectory_path, format="lammps-dump-text", index=index)
+    frames = read(cfg.trajectory_path, format=cfg.file_format, index=index)
 
     if not isinstance(frames, list):
         frames = [frames]
@@ -184,7 +187,7 @@ def run_flow_analysis(cfg: FlowConfig) -> dict:
 
     mean_volume = np.mean([f.get_volume() for f in frames])
 
-    backbone_mean, backbone_radii, cell, m = compute_backbone(
+    backbone_mean, backbone_radii, cell, m, rdf_figures = compute_backbone(
         frames,
         backbone_present,
         flow_present,
@@ -193,6 +196,7 @@ def run_flow_analysis(cfg: FlowConfig) -> dict:
         repeat=cfg.repeat,
         apply_frechet_mean=cfg.apply_frechet_mean,
         print_mean_stucture=cfg.print_mean_stucture,
+        radii_figures=cfg.radii_figures,
     )
 
     flow = compute_max_flow(
@@ -211,11 +215,17 @@ def run_flow_analysis(cfg: FlowConfig) -> dict:
     )
 
     slice_area = cell[0] * cell[1]
-    return {
+
+    output = {
         "flow": flow,
         "slice_area": slice_area,
         "norm_flow": flow / slice_area,
     }
+
+    if cfg.radii_figures:
+        output["rdf_figures"] = rdf_figures
+    
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +286,10 @@ def main():
         print("=" * 60)
 
     results = run_flow_analysis(cfg)
+
+    if cfg.radii_figures:
+        for fig in results.get("rdf_figures", []):
+            plt.close(fig)
 
     pd.DataFrame([results]).rename(
         columns={

@@ -30,7 +30,7 @@ reeb_stride: 2
 stride: 20
 periodic: true
 common_backbone: true
-apply_frechet_mean: false
+apply_frechet_mean: true
 print_mean_stucture: false
 repeat: [1, 1, 1]
 
