@@ -1,0 +1,40 @@
+# Max-flow analysis configuration
+# Run with: python ../../src/max_flow_cli.py --config ./example.yaml
+
+# Path to the LAMMPS dump file
+trajectory_path: "md_stats.lammpstrj"
+
+# LAMMPS integer type → element symbol
+atom_type_map:
+  1: "Si"
+  5: "O"
+  8: "Na"
+
+# Which elements form the rigid backbone
+backbone_atoms: ["Si", "P", "B", "Ge", "O", "S"]
+
+# Which elements are the mobile ions to track
+flow_atoms: ["Na", "Li"]
+
+# --- Optional: sample only part of the trajectory ---
+frame_start: 0       # first frame index to use (default: 0)
+frame_end: 100       # last frame index, exclusive (default: all)
+frame_step: 1        # read every Nth frame from the slice (default: 1)
+#
+# Note: stride below sub-samples *after* the slice above is applied.
+
+# --- Calculation parameters ---
+grid_spacing: 0.2
+fat: 1.0
+reeb_stride: 2
+stride: 20
+periodic: true
+common_backbone: true
+apply_frechet_mean: true
+print_mean_stucture: false
+repeat: [1, 1, 1]
+
+# --- Output ---
+output_csv: "flow_example.csv"
+verbose: true
+save_reeb_backbone: false
