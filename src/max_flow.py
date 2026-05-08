@@ -1,3 +1,14 @@
+##
+# @internal
+# @file max_flow.py
+# @workflow functions for computing circular max flow.
+# @version 1.3.1
+# @date May 2026
+# @author: Yossi Bokor Bleile
+# @author: Matteo Pegoraro
+# @author: Rasmus Christensen
+# @copyright GPL
+
 import pickle
 
 import numpy as np

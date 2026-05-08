@@ -1,3 +1,13 @@
+##
+# @internal
+# @file reeb_aux.py
+# @auxiliary functions for computing reeb graphs and circular max flow.
+# @version 1.3.1
+# @date May 2026
+# @author: Yossi Bokor Bleile
+# @author: Matteo Pegoraro
+# @copyright GPL
+
 import multiprocessing as mp
 import os
 
