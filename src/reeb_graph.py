@@ -1,11 +1,20 @@
+##
+# @internal
+# @file reeb_graph.py
+# @Functions for computing reeb graphs and circular max flow.
+# @version 1.3.1
+# @date May 2026
+# @author: Yossi Bokor Bleile
+# @author: Matteo Pegoraro
+# @author: Rasmus Christensen
+# @copyright GPL
+
 import multiprocessing as mp
 from itertools import product
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from diffusion_utils import *
-from reeb_aux import *
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import (
     bellman_ford,
@@ -13,6 +22,9 @@ from scipy.sparse.csgraph import (
     maximum_flow,
     shortest_path,
 )
+
+from diffusion_utils import *
+from reeb_aux import *
 
 
 class Reeb_Graph(object):
