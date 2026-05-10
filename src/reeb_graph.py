@@ -7,7 +7,7 @@
 # @author: Yossi Bokor Bleile
 # @author: Matteo Pegoraro
 # @author: Rasmus Christensen
-# @copyright GPL
+# @copyright 2026 GPL
 
 import multiprocessing as mp
 from itertools import product

@@ -2,9 +2,9 @@
 # @internal
 # @file info.py
 # @authors Yossi Bokor Bleile
-# @version 1.3.0
-# @date March 2026
-# @copyright BSD
+# @version 1.3.1
+# @date May 2026
+# @copyright 2026 GPL
 #
 
 import os

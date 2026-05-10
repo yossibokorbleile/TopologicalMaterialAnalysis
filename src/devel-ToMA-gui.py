@@ -2,9 +2,9 @@
 ##
 # @mainpage Topological Material Analysis (ToMA)
 # @authors Yossi Bokor Bleile
-# @version 1.3.0
-# @date March 2026
-# @copyright GPL
+# @version 1.3.1
+# @date May 2026
+# @copyright 2026 GPL
 # 
 # @section License
 # Topological Material Analysis (ToMA) is released under a GPL license. You should have received a [copy](LICENSE.md) of this when you downloaded this repository.

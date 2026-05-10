@@ -7,6 +7,7 @@
 # @author: Yossi Bokor Bleile
 # @author: Matteo Pegoraro
 # @author: Rasmus Christensen
+# @copyright 2026 GPL
 
 
 import streamlit as st

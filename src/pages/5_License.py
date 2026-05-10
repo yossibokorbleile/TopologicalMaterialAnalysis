@@ -2,9 +2,10 @@
 # @internal
 # @file 2_License.py
 # @brief Streamlit page for displaying the license information.
-# @version 1.3.0
-# @date March 2026
+# @version 1.3.1
+# @date May 2026
 # @author Yossi Bokor Bleile
+# @copyright 2026 GPL
 
 import streamlit as st
 

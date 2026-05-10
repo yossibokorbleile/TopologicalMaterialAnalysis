@@ -6,7 +6,8 @@
 # @date May 2026
 # @author: Yossi Bokor Bleile
 # @author: Matteo Pegoraro
-# @copyright GPL
+# @author: Matteo Pegoraro
+# @copyright 2026 GPL
 
 import multiprocessing as mp
 import os

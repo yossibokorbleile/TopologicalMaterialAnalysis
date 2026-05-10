@@ -1,3 +1,12 @@
+##
+# @internal
+# @file diffusion_utils.py
+# @brief Utility functions for diffusion calculations.
+# @version 1.3.1
+# @date May 2026
+# @author: Yossi Bokor Bleile
+# @author: Matteo Pegoraro
+# @copyright 2026 GPL
 import numpy as np
 import galois
 import matplotlib.pyplot as plt

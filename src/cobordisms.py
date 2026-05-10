@@ -1,3 +1,12 @@
+##
+# @internal
+# @file cobordisms.py
+# @brief Functions for cobordism analysis.
+# @version 1.3.1
+# @date May 2026
+# @author: Yossi Bokor Bleile
+# @copyright 2026 GPL
+
 import oineus
 from functools import cmp_to_key
 import math
