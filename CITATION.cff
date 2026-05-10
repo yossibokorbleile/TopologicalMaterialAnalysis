@@ -3,13 +3,13 @@ message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Bokor Bleile"
   given-names: "Yossi"
-  orcid: "https://orcid.org0000-0002-4861-9174"
+  orcid: "https://orcid.org/0000-0002-4861-9174"
   affiliation: "Institute of Science and Technology Austria, Maria Gugging, Austria"
 - family-names: "Pegoraro"
   given-names: "Matteo"
 - family-names: "Christensen"
   given-names: "Rasmus"
-title:yossibokorbleile/TopologicalMaterialAnalysis: v1.3.1-beta
+title: yossibokorbleile/TopologicalMaterialAnalysis: v1.3.1-beta
 version: v1.3.1-beta
 date-released: 2026-05-10
 license: "GPL"
