@@ -1,4 +1,4 @@
-cff-version: 1.1.0
+cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Bokor Bleile"
@@ -12,3 +12,4 @@ authors:
 title:yossibokorbleile/TopologicalMaterialAnalysis: v1.3.1-beta
 version: v1.3.1-beta
 date-released: 2026-05-10
+license: "GPL"
